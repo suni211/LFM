@@ -9,8 +9,12 @@ import random
 import time
 from datetime import datetime,timezone,timedelta
 import catalog
+import fan_variety
 
-CATEGORIES={'general':'잡담','manager':'감독평가','player':'선수평가','team':'팀평가','tactics':'전술/밴픽','transfer':'이적','notice':'공지'}
+CATEGORIES={'general':'잡담','manager':'감독평가','player':'선수평가','team':'팀평가',
+    'tactics':'전술/밴픽','transfer':'이적','praise':'칭찬','rant':'불만·욕설',
+    'cheers':'응원','meme':'밈·드립','analysis':'심층토론',
+    'prediction':'예상·토론','notice':'공지'}
 KST=timezone(timedelta(hours=9))
 
 def init(db):
@@ -53,7 +57,8 @@ def author(db,uid):
     name,trait,level=db.execute('SELECT name,trait,level FROM fan_authors WHERE id=?',(uid,)).fetchone()
     return dict(id=uid,name=name,level=level,trait=trait,npc=True)
 
-def publish(db,league,key,category,title,body,season,week,subjects,sentiment=0,discussion=True):
+def publish(db,league,key,category,title,body,season,week,subjects,sentiment=0,
+            discussion=True,fan_reactions=True):
     existing=db.execute('SELECT id FROM fan_posts WHERE league=? AND event_key=?',(league,key)).fetchone()
     if existing:return existing[0]
     writers=ensure_authors(db,league);rng=random.Random(seed((league,key)))
@@ -73,11 +78,26 @@ def publish(db,league,key,category,title,body,season,week,subjects,sentiment=0,d
             'patient':'선수 호흡과 감독의 운영이 자리 잡을 시간도 필요하다고 봅니다.'}
         commenters=[w for w in writers if w[0]!=writer[0]];rng.shuffle(commenters)
         for i,commenter in enumerate(commenters[:rng.randint(3,5)]):
-            db.execute('INSERT INTO fan_comments(post_id,author,body,created_at) VALUES(?,?,?,?)',(pid,commenter[0],responses[commenter[2]],now+i+1))
+            varied=fan_variety.reply(seed((league,key,commenter[0],i)),commenter[2])
+            # Preserve a seed comment as context; vary its actual phrasing per fan.
+            text=varied+' '+(responses[commenter[2]] if i==0 else '')
+            db.execute('INSERT INTO fan_comments(post_id,author,body,created_at) VALUES(?,?,?,?)',(pid,commenter[0],text.strip(),now+i+1))
+    # Recorded results, signings and rumors anchor the discussion. Each event
+    # gets distinct positive, critical and neutral fan perspectives, without
+    # inventing a new match result, person, or transfer confirmation.
+    if fan_reactions and discussion and category!='notice':
+        tones=(1,1,0,-1) if sentiment>0 else (-1,-1,0,1) if sentiment<0 else (0,-1,1,0)
+        base_style=seed((league,key,'fan-voices')) % fan_variety.STYLES_PER_SENTIMENT
+        for i,tone in enumerate(tones):
+            style=(base_style+i*349) % fan_variety.STYLES_PER_SENTIMENT
+            name,post_body=fan_variety.voice(style,tone,title,body)
+            kind=('praise','cheers')[i%2] if tone>0 else ('rant','analysis')[i%2] if tone<0 else ('general','meme')[i%2]
+            publish(db,league,key+':fan:'+str(i),kind,name,post_body,season,week,
+                    subjects,sentiment=tone,discussion=True,fan_reactions=False)
     trim(db,league)
     return pid
 
-def trim(db,league,limit=100):
+def trim(db,league,limit=2000):
     extra=[row[0] for row in db.execute("SELECT id FROM fan_posts WHERE league=? AND category!='notice' ORDER BY id DESC LIMIT -1 OFFSET ?",(league,limit))]
     for start in range(0,len(extra),400):
         chunk=extra[start:start+400]

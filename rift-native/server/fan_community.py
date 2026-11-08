@@ -91,7 +91,7 @@ def publish(db,league,key,category,title,body,season,week,subjects,sentiment=0,
         for i,tone in enumerate(tones):
             style=(base_style+i*349) % fan_variety.STYLES_PER_SENTIMENT
             name,post_body=fan_variety.voice(style,tone,title,body)
-            kind=('praise','cheers')[i%2] if tone>0 else ('rant','analysis')[i%2] if tone<0 else ('general','meme')[i%2]
+            kind=('praise','cheers')[i%2] if tone>0 else ('analysis','rant')[i%2] if tone<0 else ('general','meme')[i%2]
             publish(db,league,key+':fan:'+str(i),kind,name,post_body,season,week,
                     subjects,sentiment=tone,discussion=True,fan_reactions=False)
     trim(db,league)

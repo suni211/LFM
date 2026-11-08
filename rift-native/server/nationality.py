@@ -8,9 +8,16 @@ from functools import lru_cache
 from pathlib import Path
 
 FILE=Path(__file__).resolve().parent.parent/'assets'/'nationality-overrides.json'
+COUNTRY_HINTS=Path(__file__).resolve().parent.parent/'assets'/'country-hints.json'
 @lru_cache(maxsize=1)
 def known():
     return json.loads(FILE.read_text(encoding='utf-8')).get('people',{}) if FILE.is_file() else {}
+
+@lru_cache(maxsize=1)
+def country_hints():
+    """Unverified country profiles, not suitable for import-quota citizenship."""
+    if not COUNTRY_HINTS.is_file():return {}
+    return json.loads(COUNTRY_HINTS.read_text(encoding='utf-8')).get('people',{})
 
 # ISO country-code choices for game managers; user-selected nationality is
 # self-reported, never inferred from location, employer or league.
@@ -28,6 +35,13 @@ COUNTRIES={
 def enrich(person):
     """Country is sourced by person ID, not guessed from a team or region."""
     p=dict(person)
+    hint=country_hints().get(p.get('id',''))
+    if hint and not p.get('nationality_code'):
+        p['country_code']=hint['code']
+        p['country_name_ko']=hint['name']
+        p['country_source']=hint['source']
+        p['country_hint']=True
+        p['nationality_pending']=True
     row=known().get(p.get('id',''))
     if row:
         if not p.get('nationality_name_ko') and row.get('name'):
@@ -36,6 +50,8 @@ def enrich(person):
             p['nationality_code']=row['code']
         p['nationality_verified_source']=row.get('source')
         p['nationality_origin']='verified-source'
+        p.pop('country_hint',None)
+        p.pop('nationality_pending',None)
     elif p.get('real_person') is False and p.get('nationality_name_ko'):
         p['nationality_origin']='fictional-game-profile'
     elif p.get('real_person') and not p.get('nationality_code'):

@@ -4,6 +4,7 @@ from pathlib import Path
 import catalog
 import clubs
 import dashboard
+import leadership
 import staffing
 
 def roots():
@@ -48,13 +49,25 @@ def find_career(db, league, team):
     return dict(id=row[0], name=row[1], season=row[2], week=row[3])
 
 def front_office(staff,manager=None,owner=None):
-    """Public roles are not player records. Unknown identities stay unfilled."""
+    """Owner/operator, manager, head coach and coaching staff are separate."""
     entries=[]
     if owner:
-        entries.append(dict(name=owner,role='구단주',role_key='OWNER',source='game'))
+        entries.append(dict(name=owner['name'],role='구단주·운영 주체',role_key='OWNER',
+            source=owner['source'],nationality_name_ko=owner.get('nationality_name_ko'),
+            nationality_code=owner.get('nationality_code'),source_url=owner.get('source_url')))
+        if owner.get('representative'):
+            entries.append(dict(name=owner['representative'],role=owner.get('representative_role') or '운영 대표',
+                role_key='EXECUTIVE',source=owner['source'],source_url=owner.get('source_url'),
+                nationality_name_ko=owner.get('nationality_name_ko'),
+                nationality_code=owner.get('nationality_code')))
     if manager:
-        entries.append(dict(name=manager,role='감독',role_key='MANAGER',source='game'))
+        entries.append(dict(name=manager['name'],role='감독',role_key='MANAGER',
+            source=manager.get('source','game'),person_id=manager.get('person_id'),
+            nationality_name_ko=manager.get('nationality_name_ko'),
+            nationality_code=manager.get('nationality_code')))
     for person in staff:
+        if manager and person.get('id')==manager.get('person_id'):
+            continue
         raw=str(person.get('raw_role') or '').casefold()
         assigned=str(person.get('staff_role') or '')
         if 'head coach' in raw or '수석' in raw or assigned=='HEAD_COACH':
@@ -75,8 +88,9 @@ def front_office(staff,manager=None,owner=None):
             role=label,role_key=key,source='real' if person.get('real_person') else 'generated',
             nationality_name_ko=person.get('nationality_name_ko'),
             nationality_code=person.get('nationality_code'),nationality=person.get('nationality')))
-    order={'OWNER':0,'MANAGER':1,'HEAD_COACH':2,'COACH':3,'GM':4,'ANALYST':5,'DOCTOR':6,'COMMUNITY':7}
-    return sorted(entries,key=lambda item:(order.get(item['role_key'],9),item['name']))
+    order={'OWNER':0,'EXECUTIVE':1,'MANAGER':2,'HEAD_COACH':3,'COACH':4,'GM':5,
+           'ANALYST':6,'DOCTOR':7,'COMMUNITY':8}
+    return sorted(entries,key=lambda item:(order.get(item['role_key'],10),item['name']))
 
 def view(db, user, league, team):
     import online_world
@@ -94,10 +108,14 @@ def view(db, user, league, team):
     season=online_world.clock(db)['season']
     standings=dashboard.league_table(db,league,season)
     ranking=next((row for row in standings if row['team']==team),None)
-    # A head coach is not automatically the club manager.
-    manager_name=None
+    owner_info=leadership.owner_info(league,team,bool(career and db.execute(
+        "SELECT 1 FROM club_profiles WHERE career_id=? AND mode='create'",(career['id'],)).fetchone()))
+    manager_info=leadership.ai_manager(rows)
     body=dict(identity=identity(league,team),players=players,academy=academy,staff=staff,other=other,
-              manager=manager_name,owner=None,front_office=front_office(staff),season=season,standing=ranking,news=[],cash_history=[],
+              manager=manager_info['name'],manager_info=manager_info,
+              owner=owner_info['name'],owner_info=owner_info,
+              front_office=front_office(staff,manager_info,owner_info),
+              season=season,standing=ranking,news=[],cash_history=[],
               career=None,finances=None,standings=standings,recent=dashboard.last_five(db,team))
     if not career:
         return body
@@ -106,8 +124,12 @@ def view(db, user, league, team):
     career['role'] = member[0] if member else ('operator' if operator else '')
     body['career'] = career
     manager_row=db.execute('SELECT name FROM manager_profiles WHERE career_id=?',(career['id'],)).fetchone()
-    if manager_row:body['manager']=manager_row[0]
-    body['front_office']=front_office(staff,body['manager'])
+    human=clubs.human_owner(db,career['id'])
+    if manager_row and human:
+        body['manager_info']=dict(name=manager_row[0],source='user',role='감독',
+                                  nationality_name_ko='',nationality_code='',person_id=None)
+        body['manager']=manager_row[0]
+    body['front_office']=front_office(staff,body['manager_info'],owner_info)
     body['news']=[dict(season=sn,week=wk,headline=headline,body=summary)
         for sn,wk,headline,summary in db.execute(
             'SELECT season,week,headline,body FROM career_news WHERE career_id=? ORDER BY season DESC,week DESC,id DESC LIMIT 8',(career['id'],))]

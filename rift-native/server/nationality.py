@@ -26,13 +26,20 @@ COUNTRIES={
 }
 
 def enrich(person):
-    """Non-mutating ID-based country annotation; preserves original source values."""
+    """Country is sourced by person ID, not guessed from a team or region."""
     p=dict(person)
     row=known().get(p.get('id',''))
-    if not row:return p
-    if not p.get('nationality_name_ko') and row.get('name'):
-        p['nationality_name_ko']=row['name']
-    if not p.get('nationality_code') and row.get('code'):
-        p['nationality_code']=row['code']
-    p['nationality_verified_source']=row.get('source')
+    if row:
+        if not p.get('nationality_name_ko') and row.get('name'):
+            p['nationality_name_ko']=row['name']
+        if not p.get('nationality_code') and row.get('code'):
+            p['nationality_code']=row['code']
+        p['nationality_verified_source']=row.get('source')
+        p['nationality_origin']='verified-source'
+    elif p.get('real_person') is False and p.get('nationality_name_ko'):
+        p['nationality_origin']='fictional-game-profile'
+    elif p.get('real_person') and not p.get('nationality_code'):
+        country=p.get('nationality_name_ko')
+        if country not in COUNTRIES.values():
+            p['nationality_pending']=True
     return p

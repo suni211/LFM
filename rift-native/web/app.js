@@ -706,6 +706,254 @@ async function draftLobby() {
     '<a class="act" href="/app/schedule">전체 경기 일정</a></section>','/app/draft')
   await topbar()
 }
+// The visual draft arena mirrors the authoritative 20-step server sequence.
+function draftSequence(first) {
+  if(first!==0&&first!==1)return []
+  const other=1-first
+  return [
+    ...Array.from({length:6},(_,i)=>({action:'ban',team:i%2?other:first})),
+    ...[first,other,other,first,first,other].map(team=>({action:'pick',team})),
+    ...[other,first,other,first].map(team=>({action:'ban',team})),
+    ...[other,first,first,other].map(team=>({action:'pick',team}))
+  ]
+}
+function draftSignature(game) {
+  const s=game?.series||{}
+  return JSON.stringify([game?.state,s.phase,s.draft_version,s.swap_version,
+    s.first,s.blue,s.chooser,s.choice,s.response_until,s.swap_until,
+    s.draft?.length,s.sets?.length,s.score,s.autoplay])
+}
+let draftWatch=null
+let draftPollBusy=false
+async function pollLiveDraft() {
+  const matchPath=location.pathname.match(/^\/(?:rift\/)?app\/draft\/(\d+)$/)
+  if(!matchPath||!draftWatch||!token()||draftPollBusy)return
+  const id=Number(matchPath[1])
+  if(id!==draftWatch.id)return
+  draftPollBusy=true
+  try{
+    const response=await api('/fixtures?id='+draftWatch.careerId)
+    const latest=(response.fixtures||[]).find(g=>g.id===id)
+    if(!latest||location.pathname!==matchPath[0])return
+    if(draftSignature(latest)!==draftWatch.signature)await draftMatch(id)
+  }catch(_error){
+    // Keep the arena open during connection interruptions; the next poll retries.
+  }finally{draftPollBusy=false}
+}
+function updateDraftClock(){
+  const element=document.getElementById('draft-live-clock')
+  if(!element)return
+  const until=Number(element.dataset.until||0)
+  if(!until){element.textContent='—';return}
+  const seconds=Math.max(0,Math.ceil(until-Date.now()/1000))
+  element.textContent=String(Math.floor(seconds/60)).padStart(2,'0')+':'+
+    String(seconds%60).padStart(2,'0')
+  element.classList.toggle('is-ending',seconds>0&&seconds<=20)
+}
+setInterval(updateDraftClock,1000)
+setInterval(pollLiveDraft,2500)
+window.addEventListener('focus',pollLiveDraft)
+
+async function draftMatch(id) {
+  await loadChampionMeta()
+  const current=await requireCareer();if(!current)return
+  const data=await api('/fixtures?id='+current.id)
+  const game=(data.fixtures||[]).find(item=>item.id===id)
+  if(!game){go('/app/draft');return}
+  const series=game.series||{}
+  const isDraft=series.phase==='draft'
+  const roster=isDraft?(await api('/champions')).champions||[]:[]
+  const sequence=draftSequence(series.first)
+  const history=series.draft||[]
+  const turn=sequence[history.length]
+  const isOurTurn=isDraft&&turn?.team===0
+  const sideBlue=series.blue===1?1:0
+  const clubLeague=current.club_profile?.league||''
+  const clubName=displayTeam(clubLeague,current.name)
+  const enemyName=displayTeam(clubLeague,game.opponent)
+  const ourSide=series.blue===undefined?'미정':series.blue===0?'블루':'레드'
+  const phaseNames={choice:'진영 · 선픽 결정',draft_pending:'밴픽 준비 중',draft:'실시간 밴픽',
+    swap:'최종 포지션 교환',ready:'경기 준비 중',feedback:'세트 피드백',finished:'경기 종료'}
+  const phaseText=phaseNames[series.phase]||'경기 준비'
+  const currentAction=turn?.action==='ban'?'밴':'픽'
+  const whose=turn?.team===0?'우리 팀':'상대 팀'
+  const progress=history.length
+  const score=series.score||[0,0]
+  const until=series.phase==='swap'?series.swap_until:
+    ['choice','draft'].includes(series.phase)?series.response_until:null
+  const teamName=team=>team===0?clubName:enemyName
+  const sideLabel=team=>team===sideBlue?'블루 진영':'레드 진영'
+  const teamLogo=team=>logoImg(clubLeague,team===0?current.name:game.opponent)
+  const taken=new Set([
+    ...(series.fearless_bans||[]),
+    ...history.map(item=>item.champion)
+  ])
+  const renderSlots=(team,action,count)=>{
+    const filled=history.filter(item=>item.team===team&&item.action===action)
+    return Array.from({length:count},(_,index)=>{
+      const item=filled[index]
+      const active=isDraft&&turn?.team===team&&turn.action===action&&index===filled.length
+      return '<div class="arena-slot'+(item?' is-filled':'')+(active?' is-active':'')+'">'+
+        '<span class="arena-slot-number">'+(index+1)+'</span>'+
+        (item?championIcon(item.champion):'<span class="arena-slot-placeholder">'+(action==='ban'?'✕':'?')+'</span>')+
+        '<span class="arena-slot-label">'+(item?esc(championKo(item.champion)):action==='ban'?'밴 대기':'픽 대기')+'</span></div>'
+    }).join('')
+  }
+  const renderSide=team=>{
+    const color=team===sideBlue?'blue':'red'
+    return '<aside class="arena-side arena-'+color+'">'+
+      '<div class="arena-side-heading"><span>'+esc(sideLabel(team))+'</span>'+
+      (team===0?'<strong>MY TEAM</strong>':'<strong>OPPONENT</strong>')+'</div>'+
+      '<div class="arena-pick-list">'+renderSlots(team,'pick',5)+'</div>'+
+      '<div class="arena-ban-caption">BANS <small>금지 챔피언 5</small></div>'+
+      '<div class="arena-ban-list">'+renderSlots(team,'ban',5)+'</div></aside>'
+  }
+  const pickStep=isDraft&&turn?'STEP '+(history.length+1)+' / 20 · '+whose+' '+currentAction+' 차례':''
+  const turnText=isDraft?pickStep:phaseText
+  const panels=[]
+  if(series.phase==='choice'){
+    const choice=series.choice
+    const allowed=series.chooser===1&&choice?.category?
+      (choice.category==='priority'?['side']:['priority']):['priority','side']
+    const options=[['priority','first','선픽 선택','밴픽 순서를 먼저 결정'],['priority','second','후픽 선택','상대보다 나중에 선택'],
+      ['side','blue','블루 진영','블루 사이드에서 시작'],['side','red','레드 진영','레드 사이드에서 시작']]
+    panels.push('<div class="arena-choice-panel"><h2>진영 · 선택 순서 결정</h2>'+
+      '<p>'+(series.chooser===1&&choice?'상대 팀이 '+esc(choice.value)+'을 선택했습니다. 다른 항목을 선택하세요.':'선픽·후픽 또는 블루·레드를 결정하면 다음 단계로 넘어갑니다.')+'</p>'+
+      '<div class="arena-choice-grid">'+options.filter(([category])=>allowed.includes(category)).map(([category,value,label,desc])=>
+        '<button class="arena-choice-option" data-choice="'+category+'" data-value="'+value+'">'+
+        '<strong>'+label+'</strong><small>'+desc+'</small></button>').join('')+'</div></div>')
+  }else if(isDraft){
+    const sorted=roster.slice().sort((a,b)=>championKo(a.name).localeCompare(championKo(b.name),'ko'))
+    const choices=sorted.map(champ=>{
+      const unavailable=taken.has(champ.name)
+      return '<button type="button" class="arena-champion" data-champ="'+esc(champ.name)+
+        '" data-name="'+esc(championKo(champ.name))+'" data-roles="'+esc((champ.roles||[]).join(' '))+
+        '" aria-label="'+esc(championKo(champ.name))+'" '+(unavailable?'disabled title="이미 사용했거나 피어리스 금지된 챔피언"':'')+'>'+
+        championIcon(champ.name)+'<span>'+esc(championKo(champ.name))+'</span>'+
+        (unavailable?'<small>선택 불가</small>':'')+'</button>'
+    }).join('')
+    panels.push('<div class="arena-champion-panel"><div class="arena-pool-heading">'+
+      '<div><small>CHAMPION POOL</small><h2>챔피언 선택</h2></div>'+
+      '<span class="arena-available">'+(sorted.length-taken.size)+' / '+sorted.length+' 후보</span></div>'+
+      '<label class="arena-search-label"><span class="sr-only">챔피언 검색</span>'+
+      '<input id="champion-pick-filter" type="search" autocomplete="off" placeholder="챔피언 이름 검색 · 한국어 / 영어"></label>'+
+      '<div class="arena-role-filters" role="group" aria-label="포지션 필터">'+
+      [['','전체'],['TOP','탑'],['JUNGLE','정글'],['MID','미드'],['ADC','원딜'],['SUPPORT','서포터']].map(([value,label])=>
+        '<button type="button" class="arena-filter'+(value===''?' is-selected':'')+
+        '" data-draft-role="'+value+'">'+label+'</button>').join('')+'</div>'+
+      '<div class="arena-champion-grid" id="arena-champion-grid">'+choices+'</div>'+
+      '<div class="arena-confirm"><div class="arena-chosen">'+
+      '<small>SELECTED CHAMPION</small><strong id="selected-champion">챔피언을 선택하세요</strong>'+
+      '<span id="draft-selection-hint">'+(isOurTurn?'지금은 우리 팀 차례입니다.':'상대 선택을 기다리는 중입니다.')+'</span></div>'+
+      '<button type="button" class="arena-submit" id="pick" disabled>'+
+      (turn?.action==='ban'?'밴 확정':'픽 확정')+'</button></div>'+
+      '<button type="button" class="arena-auto" id="auto">남은 밴픽 자동 진행</button></div>')
+  }else if(series.phase==='swap'){
+    const roles=[['TOP','탑'],['JUNGLE','정글'],['MID','미드'],['ADC','원딜'],['SUPPORT','서포터']]
+    panels.push('<div class="arena-choice-panel"><h2>픽 완료 · 포지션 교환</h2>'+
+      '<p>선수의 역할 숙련 조건이 맞으면 스왑할 수 있습니다. 30초 뒤 경기가 진행됩니다.</p>'+
+      '<div class="arena-swap-controls"><label>첫 번째 포지션<select id="swap-a">'+roles.map(([id,name])=>'<option value="'+id+'">'+name+'</option>').join('')+'</select></label>'+
+      '<label>두 번째 포지션<select id="swap-b">'+roles.map(([id,name],i)=>'<option value="'+id+'"'+(i===1?' selected':'')+'>'+name+'</option>').join('')+'</select></label>'+
+      '<button type="button" class="arena-submit" id="swap">포지션 교환</button></div></div>')
+  }else if(series.phase==='draft_pending'){
+    panels.push('<div class="arena-choice-panel"><h2>밴픽 서버 준비 중</h2><p>상대 진영과 픽·밴 순서가 확정됐습니다. 자동으로 밴픽 화면으로 전환됩니다.</p></div>')
+  }else {
+    panels.push('<div class="arena-choice-panel"><h2>'+esc(phaseText)+'</h2>'+
+      '<p>밴픽을 완료했거나 세트가 진행 중입니다. 경기 화면에서 이어서 확인하세요.</p>'+
+      '<a class="arena-submit" href="/app/match/'+id+'">경기 화면 보기</a></div>')
+  }
+  const steps=sequence.map((step,i)=>{
+    const done=i<history.length
+    const now=i===history.length&&isDraft
+    const color=step.team===sideBlue?'blue':'red'
+    return '<span class="arena-step '+color+(done?' is-done':'')+(now?' is-current':'')+
+      '" title="'+(i+1)+'단계: '+esc(teamName(step.team))+' '+(step.action==='ban'?'밴':'픽')+'">'+
+      (done?'✓':i+1)+'</span>'
+  }).join('')
+  const blueTeam=sideBlue,redTeam=1-sideBlue
+  const statusTone=isOurTurn?' own-turn':isDraft?' enemy-turn':''
+  const html='<div class="draft-arena">'+
+    '<div class="arena-topline"><a href="/app/draft">〈 밴픽 경기 목록</a>'+
+    '<span>'+esc(game.competition||'리그')+' · '+esc(game.stage||'정규 시즌')+
+    ' · BO'+game.best_of+' · '+game.season+'시즌 '+game.week+'주</span></div>'+
+    '<header class="arena-scoreboard">'+
+    '<div class="arena-team-banner is-blue">'+teamLogo(blueTeam)+
+    '<div><small>BLUE SIDE'+(blueTeam===0?' · 우리 팀':'')+'</small><h2>'+esc(teamName(blueTeam))+'</h2></div></div>'+
+    '<div class="arena-center-score"><span>GAME '+((series.sets?.length||0)+1)+'</span>'+
+    '<strong>'+score[0]+' <i>:</i> '+score[1]+'</strong>'+
+    '<small>'+esc(ourSide==='미정'?'진영 결정 전':'우리 팀 '+ourSide+' 진영')+'</small></div>'+
+    '<div class="arena-team-banner is-red"><div><small>RED SIDE'+(redTeam===0?' · 우리 팀':'')+'</small>'+
+    '<h2>'+esc(teamName(redTeam))+'</h2></div>'+teamLogo(redTeam)+'</div></header>'+
+    '<div class="arena-status'+statusTone+'"><div><small>CURRENT PHASE</small>'+
+    '<strong>'+esc(turnText)+'</strong></div><div class="arena-progress-label">'+progress+' / 20</div>'+
+    '<div class="arena-timer"><small>TIME LEFT</small>'+
+    '<strong id="draft-live-clock" data-until="'+(until||0)+'">—</strong></div></div>'+
+    '<div class="arena-layout">'+renderSide(blueTeam)+
+    '<div class="arena-workspace">'+panels.join('')+'</div>'+renderSide(redTeam)+'</div>'+
+    '<footer class="arena-footer"><div class="arena-footer-title"><span>BAN & PICK ORDER</span>'+
+    '<span>총 20단계 · '+progress+'단계 완료</span></div>'+
+    '<div class="arena-steps">'+(steps||'<span class="arena-waiting">진영 결정 후 순서 표시</span>')+'</div>'+
+    '<p>피어리스 드래프트 · 이미 사용한 챔피언과 같은 세트의 밴·픽 챔피언은 중복 선택할 수 없습니다.</p></footer></div>'
+  shell(html,'/app/draft/'+id)
+  draftWatch={id,careerId:current.id,signature:draftSignature(game)}
+  updateDraftClock()
+  const submit=async(path,body)=>{
+    try{await api(path,body);await draftMatch(id)}
+    catch(error){alert(error.message);await draftMatch(id)}
+  }
+  document.querySelectorAll('[data-choice]').forEach(button=>button.onclick=()=>{
+    button.disabled=true
+    submit('/draft-choice',{id,category:button.dataset.choice,value:button.dataset.value,manual:true})
+  })
+  let selected=''
+  let currentRole=''
+  const pick=document.getElementById('pick')
+  const cards=[...document.querySelectorAll('[data-champ]')]
+  if(pick){
+    cards.forEach(card=>card.onclick=()=>{
+      if(!isOurTurn)return
+      selected=card.dataset.champ
+      document.getElementById('selected-champion').textContent=card.dataset.name
+      document.getElementById('draft-selection-hint').textContent='확정을 누르면 되돌릴 수 없습니다.'
+      cards.forEach(other=>other.classList.toggle('is-selected',other===card))
+      pick.disabled=false
+    })
+    if(!isOurTurn)cards.forEach(card=>{card.disabled=true})
+    pick.onclick=()=>{
+      if(!selected||!isOurTurn)return
+      pick.disabled=true
+      submit('/draft-action',{id,champion:selected,version:series.draft_version})
+    }
+    const filter=document.getElementById('champion-pick-filter')
+    const applyFilter=()=>{
+      const query=filter.value.trim().toLocaleLowerCase('ko')
+      cards.forEach(card=>{
+        const names=(card.dataset.name+' '+card.dataset.champ).toLocaleLowerCase('ko')
+        const roleList=card.dataset.roles.split(' ')
+        card.hidden=!(names.includes(query)&&(!currentRole||roleList.includes(currentRole)))
+      })
+    }
+    filter.oninput=applyFilter
+    document.querySelectorAll('[data-draft-role]').forEach(button=>button.onclick=()=>{
+      currentRole=button.dataset.draftRole
+      document.querySelectorAll('[data-draft-role]').forEach(other=>other.classList.toggle('is-selected',other===button))
+      applyFilter()
+    })
+  }
+  const auto=document.getElementById('auto')
+  if(auto)auto.onclick=()=>{
+    if(!confirm('남은 밴픽을 AI에게 맡기겠습니까? 자동 진행은 되돌릴 수 없습니다.'))return
+    auto.disabled=true
+    submit('/draft-auto',{id,version:series.draft_version})
+  }
+  const swap=document.getElementById('swap')
+  if(swap)swap.onclick=()=>{
+    swap.disabled=true
+    submit('/draft-swap',{id,first:document.getElementById('swap-a').value,
+      second:document.getElementById('swap-b').value,version:series.swap_version})
+  }
+  await topbar()
+}
 async function match(id,draftView=false) {
   await loadChampionMeta()
   const current = await requireCareer(); if (!current) return
@@ -1402,7 +1650,7 @@ async function draw() {
     if (path === '/app/data') return await dataHub()
     if(path==='/app/draft')return await draftLobby()
     const draftPath=path.match(/^\/app\/draft\/(\d+)$/)
-    if(draftPath)return await match(Number(draftPath[1]),true)
+    if(draftPath)return await draftMatch(Number(draftPath[1]))
     let matchPath = path.match(/^\/app\/match\/(\d+)$/)
     if (matchPath) return await match(Number(matchPath[1]))
     let personPath = path.match(/^\/app\/player\/([^/]+)(?:\/([^/]+))?$/)

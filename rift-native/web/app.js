@@ -501,11 +501,14 @@ function leagueStandingsTable(rows,league,currentTeam='') {
   return `<div class="table-scroll"><table class="league-table"><thead><tr><th>순위</th><th>구단</th><th>경기</th><th>승</th><th>패</th><th>세트 득실</th><th>득실차</th></tr></thead><tbody>${(rows||[]).map((r,i)=>`<tr class="${r.team===currentTeam?'mine':''}"><td>${r.rank==null?'—':r.rank}</td><td>${logoImg(league,r.team)}<a href="/app/team/${encodeURIComponent(league)}/${encodeURIComponent(r.team)}">${esc(r.team)}</a></td><td>${r.played||0}</td><td>${r.wins||0}</td><td>${r.losses||0}</td><td>${r.sets_won||0}:${r.sets_lost||0}</td><td>${(r.sets_won||0)-(r.sets_lost||0)>0?'+':''}${(r.sets_won||0)-(r.sets_lost||0)}</td></tr>`).join('')}</tbody></table></div>${(rows||[]).every(r=>!r.played)?'<p class="muted-note">아직 완료된 경기가 없습니다. 첫 경기 이후 순위가 확정됩니다.</p>':''}`
 }
 function frontOfficeCard(p) {
-  const labels={real:'실존 프런트·코칭스태프',generated:'생성 프런트·코칭스태프',verified:'구단 공식 출처',simulation:'게임 내 가상 운영진','registered-coach':'등록된 코치진',user:'유저 감독',game:'게임 내 직책'}
-  const source=labels[p.source]||'게임 내 직책'
+  const labels={real:'실존 프런트·코칭스태프',generated:'생성 프런트·코칭스태프',verified:'출처 확인됨',simulation:'게임 내 운영진','registered-coach':'등록된 코치진',user:'유저 감독',game:'게임 내 직책'}
+  const source=labels[p.source]||'직책 등록'
   const link=typeof p.source_url==='string'&&/^https:\/\//.test(p.source_url)?'<a class="front-source" href="'+esc(p.source_url)+'" target="_blank" rel="noopener">정보 출처</a>':''
-  const detail=p.role_key==='OWNER'?'구단 운영 주체':p.role_key==='EXECUTIVE'?'구단 대표':p.role_key==='MANAGER'?'전술 및 선수단 책임자':'코칭·구단 운영 인력'
-  return '<div class="front-person"><div class="front-role">'+esc(p.role||'직책 미확인')+'</div><strong>'+esc(p.name||'정보 미등록')+'</strong>'+flagAndCountry(p)+'<small>'+esc(detail)+'</small><small>'+esc(source)+'</small>'+link+'</div>'
+  const role=String(p.role_key||'')
+  const hasNationality=p.show_nationality!==false && role!=='OWNER' && role!=='EXECUTIVE'
+  const country=hasNationality?flagAndCountry(p):''
+  const details=role==='OWNER'?'구단 소유·운영 조직':role==='EXECUTIVE'?'대표자':role==='MANAGER'?'담당 감독':'프런트·코치진'
+  return '<div class="front-person"><div class="front-role">'+esc(p.role||'직책 미확인')+'</div><strong>'+esc(p.name||'정보 미등록')+'</strong>'+country+'<small>'+esc(details)+'</small><small>'+esc(source)+'</small>'+link+'</div>'
 }
 function frontOfficePanel(data) {
   const positions=[...(data.front_office||[])]

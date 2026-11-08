@@ -7,6 +7,7 @@ const NAV = [
   ['1군', '/app/squad', '선수단'],
   ['2군', '/app/academy', '선수단'],
   ['전술', '/app/tactics', '선수단'],
+  ['밴픽', '/app/draft', '대회'],
   ['훈련', '/app/training', '선수단'],
   ['프런트', '/app/staff', '구단'],
   ['프런트 DB', '/app/front-database', '구단'],
@@ -177,7 +178,7 @@ async function career() {
   return careerCache
 }
 function shell(body,path) {
-  const categories=[['구단',['home','inbox','news','finance','vision','community','staff','front-database','sponsors']],['선수단',['squad','academy','medical','relations','players','solo']],['전술·훈련',['tactics','training']],['영입',['transfers','shortlist']],['리그·경기',['schedule','leagues','history','data']],...(isOperator?[['운영',['operator','clubs']]]:[])]
+  const categories=[['구단',['home','inbox','news','finance','vision','community','staff','front-database','sponsors']],['선수단',['squad','academy','medical','relations','players','solo']],['전술·훈련',['tactics','draft','training']],['영입',['transfers','shortlist']],['리그·경기',['schedule','leagues','history','data']],...(isOperator?[['운영',['operator','clubs']]]:[])]
   const selected=NAV.find(n=>n[1]===path)?.[0]||'구단 관리'
   const menu=categories.map(([label,keys])=>`<details class="nav-category"><summary>${label}<span>⌄</span></summary><div class="dropdown">${keys.map(key=>{const item=NAV.find(n=>n[1]==='/app/'+key)||[key==='clubs'?(isOperator?'구단 조회':'구단 선택'):key,'/app/'+key];return `<a href="${item[1]}" class="${path===item[1]?'on':''}">${item[0]}</a>`}).join('')}</div></details>`).join('')
   document.getElementById('app').innerHTML=`<div id="shell"><header id="masthead"><div id="top"></div><nav id="navigation"><a class="brand" href="/app/home">R/M<span>RIFT MANAGER</span></a>${menu}${isOperator?'<span class="account-link">운영자 · 관전 모드</span>':'<a class="account-link" href="/app/manager">감독 프로필</a>'}<button id="logout" aria-label="로그아웃">로그아웃</button></nav></header><main id="view" aria-label="${esc(selected)}">${body}</main></div>`
@@ -671,13 +672,48 @@ async function schedule() {
  document.querySelectorAll('.calendar-match').forEach(a=>a.onclick=e=>{e.preventDefault();go(a.getAttribute('href'))})
  await topbar()
 }
-async function match(id) {
+async function draftLobby() {
+  const current=await requireCareer();if(!current)return
+  const [fixtureData,preflight]=await Promise.all([
+    api('/fixtures?id='+current.id),
+    api('/lineup-readiness?id='+current.id)
+  ])
+  const fixtures=fixtureData.fixtures||[]
+  const active=fixtures.filter(g=>g.state==='queued')
+  const upcoming=fixtures.filter(g=>g.state==='scheduled').sort((a,b)=>a.season-b.season||a.week-b.week).slice(0,6)
+  const errors=(preflight.issues||[]).map(issue=>
+    '<div class="row"><b>'+esc(issue.nickname||issue.role||'선수단')+
+    '</b><span>'+esc(issue.reason)+'</span></div>').join('')
+  const games=active.map(g=>
+    '<a class="row" href="/app/draft/'+g.id+'"><div><b>'+
+    esc(g.opponent)+'</b><p>'+esc(g.competition||'정규 시즌')+
+    ' · '+g.season+'시즌 '+g.week+'주차 · BO'+g.best_of+'</p></div>'+
+    '<strong>밴픽 입장</strong></a>').join('')
+  const planned=upcoming.map(g=>
+    '<div class="row"><span>'+g.season+'시즌 '+g.week+'주 · '+esc(g.opponent)+
+    '</span><small>예정</small></div>').join('')
+  shell('<div class="page-heading"><div><p class="eyebrow">LIVE DRAFT</p>'+
+    '<h1>밴픽 센터</h1>'+
+    '<p>경기 진행과 별도로 밴·픽, 선픽·후픽, 블루·레드 진영을 선택하는 곳입니다.</p></div></div>'+
+    '<section class="panel"><h2>1군 주전 · 밴픽 출전 상태</h2>'+
+    (preflight.ready?'<p>주전 5명이 건강하며 계약도 유효합니다.</p>':
+     '<p class="err">밴픽을 시작할 수 없습니다. 아래 문제를 해결하세요.</p>'+errors)+
+    '<a class="act" href="/app/squad">1군·2군 선수 변경</a></section>'+
+    '<section class="panel"><h2>진행 중 경기</h2>'+
+    (games||'<p class="empty">현재 밴픽에 입장할 경기가 없습니다. 운영자가 주차를 진행하면 해당 경기의 밴픽이 열립니다.</p>')+
+    '</section><section class="panel"><h2>예정 경기</h2>'+
+    (planned||'<p class="empty">예정된 경기가 없습니다.</p>')+
+    '<a class="act" href="/app/schedule">전체 경기 일정</a></section>','/app/draft')
+  await topbar()
+}
+async function match(id,draftView=false) {
   await loadChampionMeta()
   const current = await requireCareer(); if (!current) return
   const data = await api('/fixtures?id=' + current.id)
   const game = data.fixtures.find(item => item.id === id)
   if (!game) { shell('<p>경기를 찾지 못했습니다.</p>', '/app/schedule'); return }
   const series = game.series || {}
+  if(!draftView&&['choice','draft_pending','draft','swap'].includes(series.phase))return go('/app/draft/'+id)
   let controls = `<p>${esc(game.competition)} ${esc(game.stage)} · ${esc(series.phase || game.state)}</p>`
   if (series.phase === 'choice') controls += `<button class="act" data-choice="priority" data-value="first">선픽</button><button class="act" data-choice="priority" data-value="second">후픽</button><button class="act" data-choice="side" data-value="blue">블루</button><button class="act" data-choice="side" data-value="red">레드</button>`
   if (series.phase === 'draft') {
@@ -687,7 +723,14 @@ async function match(id) {
   if (series.phase === 'swap') controls += `<p>스왑은 30초입니다. 역할 번호를 바꿉니다.</p><input id="swap-a" value="0"/><input id="swap-b" value="1"/><button class="act" id="swap">스왑</button>`
   if (series.phase === 'feedback') controls += `<input id="note" maxlength="300" placeholder="세트 피드백"/><button class="act" id="note-save">전달</button>`
   if (game.result) controls += `<p>결과 ${(game.result.score || []).join(':')}</p>`
-  shell(`<div class="panel"><h2>${esc(game.opponent)}</h2>${controls}</div>`, '/app/match/' + id)
+  const progress=(series.draft||[]).map((entry,i)=>'<div class="row"><b>'+(i+1)+'. '+(entry.action==='ban'?'밴':'픽')+' · '+(entry.team===0?'우리 팀':'상대 팀')+'</b><span>'+championIcon(entry.champion)+esc(championKo(entry.champion))+'</span></div>').join('')
+  const draftBoard=draftView?'<section class="panel"><h2>현재 밴픽 순서 · '+(series.draft?.length||0)+' / 20</h2>'+
+    (progress||'<p>아직 밴픽 기록이 없습니다. 선픽·후픽 또는 진영을 선택하세요.</p>')+
+    '<p class="muted-note">밴픽 시간은 기존 서버 규칙에 따릅니다. 피어리스 제한은 계속 적용됩니다.</p></section>':''
+  shell('<div class="page-heading"><h1>'+(draftView?'밴픽 센터':'경기 진행')+' · '+esc(game.opponent)+'</h1>'+
+    '<a class="act" href="'+(draftView?'/app/schedule':'/app/draft')+'">경기 목록</a></div>'+
+    draftBoard+'<div class="panel"><h2>'+esc(game.opponent)+'</h2>'+controls+'</div>',
+    (draftView?'/app/draft/':'/app/match/')+id)
   document.querySelectorAll('[data-choice]').forEach(button => button.onclick = () => api('/draft-choice', {id, category:button.dataset.choice, value:button.dataset.value, manual:true}).then(() => draw()).catch(error => alert(error.message)))
   const pick = document.getElementById('pick')
   if (pick) pick.onclick = () => api('/draft-action', {id, champion:document.getElementById('champ').value.trim(), version:series.draft_version}).then(() => draw()).catch(error => alert(error.message))
@@ -1357,6 +1400,9 @@ async function draw() {
     const leaguePath=path.match(/^\/app\/league\/(.+)$/)
     if(leaguePath)return await leagueOverview(decodeURIComponent(leaguePath[1]))
     if (path === '/app/data') return await dataHub()
+    if(path==='/app/draft')return await draftLobby()
+    const draftPath=path.match(/^\/app\/draft\/(\d+)$/)
+    if(draftPath)return await match(Number(draftPath[1]),true)
     let matchPath = path.match(/^\/app\/match\/(\d+)$/)
     if (matchPath) return await match(Number(matchPath[1]))
     let personPath = path.match(/^\/app\/player\/([^/]+)(?:\/([^/]+))?$/)

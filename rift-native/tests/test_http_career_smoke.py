@@ -110,8 +110,8 @@ class HttpCareerSmokeTests(unittest.TestCase):
         self.assertEqual(200,status,profile)
         self.assertEqual('FenRir',profile['person']['nickname'])
         traits=profile['player_analysis']['attributes']
-        self.assertEqual(28,traits['count'])
-        self.assertEqual('simulation-estimate',traits['source'])
+        self.assertEqual(30,traits['count'])
+        self.assertEqual('game-estimated',traits['source'])
         self.assertFalse(profile['player_analysis']['season']['available'])
         status,data=self.call('/league-overview?league=LCK%20CL',token=token)
         self.assertEqual(200,status,data)

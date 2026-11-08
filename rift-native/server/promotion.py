@@ -134,6 +134,24 @@ def year_end(db,season):
 
 def apply_new_season(db,season):
     from career_rules import seed_league
+    import club_history
+    demotions=db.execute("""SELECT league,team FROM franchise_exits
+        WHERE season=?""",(season-1,)).fetchall()
+    for major,team in demotions:
+        feeder=FEEDERS.get(major,())
+        if not feeder:continue
+        lower=feeder[0]
+        incumbents=db.execute("""SELECT c.id FROM careers c
+            JOIN club_profiles p ON p.career_id=c.id
+            WHERE c.name=? AND p.league=?""",(team,major)).fetchall()
+        for cid, in incumbents:
+            db.execute('UPDATE club_profiles SET league=? WHERE career_id=?',
+                       (lower,cid))
+            club_history.record(db,major,team,season,1,'license-lost',
+              '프랜차이즈 참가권 변동… '+team+' 하부 리그 재출발',
+              '게임 내 가상 프랜차이즈 재심사 결과')
+            try:seed_league(db,cid,lower,season,1)
+            except (ValueError,KeyError):pass
     rows=db.execute("""SELECT career_id,previous_league,new_league FROM franchise_promotions
         WHERE season=? AND status='approved'""",(season,)).fetchall()
     for cid,old,new in rows:

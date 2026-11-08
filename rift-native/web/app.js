@@ -564,6 +564,52 @@ async function team(league,name,tab) {
   document.documentElement.style.setProperty('--team',idn.color||'#17324d')
   if(token()&&careerId())await topbar()
 }
+async function readClubLogo(file) {
+  if(!file)return ''
+  if(file.size>80000 || !['image/png','image/jpeg','image/webp'].includes(file.type))
+    throw Error('80KB 이하 PNG, JPEG, WebP 로고만 업로드할 수 있습니다.')
+  return await new Promise((resolve,reject)=>{
+    const reader=new FileReader()
+    reader.onload=()=>resolve(String(reader.result||''))
+    reader.onerror=()=>reject(Error('이미지 파일을 읽지 못했습니다.'))
+    reader.readAsDataURL(file)
+  })
+}
+function clubHistoryPanel(history){
+  return '<section class="panel"><h2>구단 역사 · 변경 기록</h2>'+
+    ((history||[]).length?history.map(h=>'<div class="club-timeline-event"><small>'+h.season+'시즌 '+h.week+'주</small><b>'+esc(h.headline)+'</b><p>'+esc(h.details||'')+'</p></div>').join(''):
+     '<p class="empty">아직 기록된 개명·스폰서·프랜차이즈 변경 이력이 없습니다.</p>')+
+    '</section>'
+}
+async function sponsorsPage(){
+  const current=await requireCareer();if(!current)return
+  const data=await api('/sponsor-offers?id='+current.id)
+  const offers=(data.offers||[]).filter(o=>o.status==='offered')
+  const active=(data.contracts||[]).map(o=>'<div class="sponsor-company"><strong>'+esc(o.company)+'</strong><span>'+o.start_season+'~'+o.end_season+'시즌 · 가상 스폰서</span><b>'+money(o.amount)+'</b></div>').join('')
+  const choices=offers.map(o=>'<div class="sponsor-company"><div><small>시즌 '+o.season+' · 지역 '+esc(o.region)+'</small><strong>'+esc(o.company)+'</strong><span>계약 금액 '+money(o.amount)+'</span></div><button class="act" data-sponsor="'+o.id+'">가상 제안 수락</button></div>').join('')
+  shell('<div class="page-heading"><div><p class="eyebrow">SPONSORSHIP</p><h1>스폰서 제안</h1><p>성적과 구단 성장에 따라 지역 기업 이름을 활용한 게임 내 가상 제안이 도착합니다.</p></div></div><section class="panel"><h2>새로운 계약 제안</h2>'+ (choices||'<p class="empty">현재 도착한 새 스폰서 제안이 없습니다. 시즌 성적을 쌓아 보세요.</p>')+'<p class="muted-note">'+esc(data.notice||'실제 기업과의 후원 관계가 아닙니다.')+'</p></section><section class="panel"><h2>스폰서 변경 이력</h2>'+(active||'<p class="empty">체결된 가상 계약이 없습니다.</p>')+'</section>','/app/sponsors')
+  document.querySelectorAll('[data-sponsor]').forEach(btn=>btn.onclick=async()=>{
+    if(!confirm('게임 내 가상 스폰서 제안을 수락하시겠습니까?'))return
+    try{await api('/sponsor-accept',{id:current.id,offer:Number(btn.dataset.sponsor)});careerCache=null;draw()}
+    catch(e){alert(e.message)}
+  })
+  await topbar()
+}
+async function clubLogoSettings(){
+  const current=await requireCareer();if(!current)return
+  const league=current.club_profile?.league||''
+  const team=current.name
+  const data=await api('/club-identity?league='+encodeURIComponent(league)+'&team='+encodeURIComponent(team))
+  const history=clubHistoryPanel(data.history)
+  shell('<div class="page-heading"><div><p class="eyebrow">CLUB IDENTITY</p><h1>구단 로고 설정</h1><p>구단을 선택하거나 창단한 후 팀명은 변경할 수 없습니다. 유저 감독은 본인 구단의 로고만 변경할 수 있습니다.</p></div></div><section class="panel club-brand-manager"><div>'+logoImg(league,team)+'</div><div><h2>'+esc(data.display_name)+'</h2><p>'+esc(league)+' · 확정된 구단명</p><form id="club-logo-form"><label>대표 구단 로고 선택 · 최대 80KB<input type="file" name="logo" accept="image/png,image/jpeg,image/webp" required/></label><button class="act" type="submit">구단 로고 저장</button></form><p id="club-brand-error" class="err"></p></div></section>'+history,'/app/club-identity-settings')
+  document.getElementById('club-logo-form').onsubmit=async e=>{e.preventDefault();try{
+    const logo_data=await readClubLogo(e.target.elements.logo.files[0])
+    if(!logo_data)throw Error('로고 이미지를 선택하세요.')
+    await api('/club-logo',{id:current.id,logo_data})
+    media.brandings=null;careerCache=null;draw()
+  }catch(error){document.getElementById('club-brand-error').textContent=error.message}}
+  await topbar()
+}
 async function leagueIndex() {
   const [board,current]=await Promise.all([api('/clubs'),isOperator?Promise.resolve(null):career()])
   const mine=current?.club_profile?.league||''
@@ -677,6 +723,8 @@ async function draw() {
     if (path === '/app/shortlist') return await shortlist()
     if (path === '/app/competition') return go('/app/leagues')
     if (path === '/app/leagues') return await leagueIndex()
+    if (path === '/app/sponsors') return await sponsorsPage()
+    if (path === '/app/club-identity-settings') return await clubLogoSettings()
     const leaguePath=path.match(/^\/app\/league\/(.+)$/)
     if(leaguePath)return await leagueOverview(decodeURIComponent(leaguePath[1]))
     if (path === '/app/data') return await dataHub()

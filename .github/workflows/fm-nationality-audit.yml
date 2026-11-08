@@ -1,0 +1,41 @@
+name: FM integration nationality verification
+on:
+  push:
+    branches:
+      - fix/fm-unified-nationality-2026-11-08
+    paths:
+      - 'rift-native/tools/import_leaguepedia_nationalities.py'
+      - '.github/workflows/fm-nationality-audit.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  nationality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install pycountry
+      - name: Resolve player nationalities from Leaguepedia
+        run: python -u rift-native/tools/import_leaguepedia_nationalities.py
+      - name: Publish audit report and verified country mapping
+        if: success()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add rift-native/assets/nationality-overrides.json rift-native/nationality-cargo-report.json
+          if ! git diff --staged --quiet; then
+            git commit -m 'Import verified per-player nationalities from Leaguepedia Cargo'
+            git push origin HEAD:fix/fm-unified-nationality-2026-11-08
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: leaguepedia-nationality-audit
+          path: rift-native/nationality-cargo-report.json
+          if-no-files-found: ignore

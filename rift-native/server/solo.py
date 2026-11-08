@@ -207,8 +207,23 @@ def repair_short_handles(db):
             if pid not in owned:
                 p=json.loads(raw)
                 used.add(str(p.get('nickname') or '').casefold())
+    # Preserve already-short, unique player aliases across migrations.
+    kept={}
     signatures=solo_handles.signatures_for(used)
     for pid,person in people:
+        old=str(person.get('nickname') or '')
+        if (solo_handles.valid(old) and old.casefold() not in used
+            and not (solo_handles._fingerprint(old) & signatures)):
+            kept[pid]=old
+            used.add(old.casefold())
+            signatures.update(solo_handles._fingerprint(old))
+    # Include other people's old nicknames to avoid clashing with UNIQUE
+    # nickname_key while migrating previously recruited solo-only prospects.
+    for pid,person in people:
+        if pid not in kept and solo_handles.valid(person.get('nickname')):
+            used.add(str(person['nickname']).casefold())
+    for pid,person in people:
+        if pid in kept:continue
         nickname=solo_handles.choose(pid,used,signatures)
         old=str(person.get('nickname') or '')
         person['nickname']=nickname

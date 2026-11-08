@@ -107,3 +107,10 @@
 @media(max-width:1200px){.fm-club-dashboard{grid-template-columns:1fr 1fr}.fm-dashboard-standing,.fm-dashboard-news,.fm-dashboard-squad,.fm-dashboard-front,.fm-dashboard-finance,.fm-dashboard-form{grid-column:auto;grid-row:auto}}
 @media(max-width:850px){.fm-team-header{flex-wrap:wrap}.fm-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.fm-club-dashboard,.fm-club-finance,.fm-league-dashboard{grid-template-columns:1fr}.fm-league-ranking,.fm-league-games,.fm-league-clubs{grid-column:1}}
 @media(max-width:550px){.fm-metrics,.fm-league-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.fm-team-header{padding:16px}.fm-team-header>.logo,.fm-team-header>.club-monogram{width:60px;height:60px}.fm-team-header>a.act{margin-left:0}.fm-league-club-list{grid-template-columns:1fr}}
+
+
+/* Club image is always primary; preset emblem is fallback-only. */
+img.club-primary-image{object-fit:contain;object-position:center}
+.club-emblem-fallback{display:inline-flex;align-items:center;justify-content:center;gap:2px;overflow:hidden;text-align:center}
+.club-emblem-fallback .club-emblem-symbol{font-size:.72em;opacity:.62;line-height:1}
+.fm-team-header>img.club-primary-image,.continue-club img.club-primary-image{object-fit:contain;object-position:center}

@@ -24,6 +24,7 @@ import search
 import dashboard
 import solo
 import player_departures
+import scouting
 import series_state
 import manual_draft
 from highlight_recording import clip_path
@@ -62,6 +63,7 @@ def init():
         search.init(db)
         solo.init(db)
         player_departures.init(db)
+        scouting.init(db)
         solo.repair_legacy_handles(db)
         recruitment.repair_initial_pool(db)
         import training
@@ -228,7 +230,10 @@ class Handler(BaseHTTPRequestHandler):
                         if not 1<=cid<=2**63-1: raise ValueError()
                         if not news.member(db,uid,cid): return self.reply(404,{'error':'not found'})
                     if url.path=='/teams': return self.reply(200,{'teams':catalog.teams()})
-                    if url.path=='/person': return self.reply(200,{'person':catalog.detail(db,cid,query['person'][0])})
+                    if url.path=='/person':
+                        person=catalog.detail(db,cid,query['person'][0])
+                        report=scouting.report(db,cid,person)
+                        return self.reply(200,{'person':person,'scouting':report})
                     return self.reply(200,catalog.search(db,cid,int(query.get('page',['0'])[0]),
                         *[query.get(key,[''])[0] for key in ('query','team','kind','league')],origin=query.get('origin',['all'])[0]))
                 except FileNotFoundError:
@@ -401,7 +406,7 @@ class Handler(BaseHTTPRequestHandler):
                     'another club is developing this player','already your prospect','this player is in another club tryout',
                     'prospect list is full','talk again later','not your prospect','not ready for pro debut',
                     'debut the prospect before the pro roster','operators choose a team',
-                    '닉네임과 이름을 각각 1~30자로 입력하세요.','감독 능력치는 각각 1~20, 합계 60으로 설정하세요.','invalid shotcallers','오더 담당은 현재 1군 주전 선수 중에서 선택하세요.'}
+                    '닉네임과 이름을 각각 1~30자로 입력하세요.','감독 닉네임은 영문 2~20자만 사용할 수 있습니다.','이미 사용 중인 감독 닉네임입니다.','감독 능력치는 각각 1~20, 합계 60으로 설정하세요.','invalid shotcallers','오더 담당은 현재 1군 주전 선수 중에서 선택하세요.'}
             message=str(error)
             self.reply(400,{'error':message if message in public else 'invalid request'})
         except (TypeError,KeyError): self.reply(400,{'error':'invalid request'})

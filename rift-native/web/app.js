@@ -1323,27 +1323,31 @@ document.addEventListener('click',event=>{const a=event.target.closest('a[href]'
 new MutationObserver(()=>{if(!BASE)return;document.querySelectorAll('a[href^="/app"],img[src^="/media"]').forEach(el=>{const attr=el.tagName==='A'?'href':'src';el.setAttribute(attr,BASE+el.getAttribute(attr))})}).observe(document.getElementById('app'),{childList:true,subtree:true})
 window.addEventListener('popstate', draw)
 
-// A single authoritative online clock is shared by every connected account.
-// Re-check it automatically rather than requiring users to refresh the site.
-// Background tabs catch up immediately when brought back to the foreground.
+// The authoritative season/week lives on the server, never in each player's
+// browser. Every logged-in tab detects the operator's update without user action.
+// Reloading the current URL also refetches match schedules, rosters, finances,
+// news, community and other derived views; a partial topbar redraw is insufficient.
 let worldSyncBusy=false
-let worldRedrawBusy=false
+let worldSyncReloading=false
 async function syncGlobalTurn() {
-  if(!token()||worldSyncBusy||worldRedrawBusy)return
+  if(!token()||worldSyncBusy||worldSyncReloading)return
   worldSyncBusy=true
   try {
     const fresh=await api('/world')
     if(!worldState){worldState=fresh;return}
     if(fresh.version===worldState.version&&fresh.season===worldState.season&&fresh.week===worldState.week)return
+    worldSyncReloading=true
     worldState=fresh
     careerCache=null
-    worldRedrawBusy=true
-    try {await draw()} finally {worldRedrawBusy=false}
+    window.location.reload()
   } catch(_error) {
-    // Offline or temporarily unavailable: retry on the next poll.
+    // Offline clients will catch up on their next successful check.
   } finally {worldSyncBusy=false}
 }
-setInterval(syncGlobalTurn,2000)
+// At most about one second of sync delay in foreground tabs. Browsers may
+// throttle hidden tabs, so catch up immediately on focus/visibility restore.
+setInterval(syncGlobalTurn,1000)
 window.addEventListener('focus',syncGlobalTurn)
+window.addEventListener('pageshow',syncGlobalTurn)
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncGlobalTurn()})
 draw()

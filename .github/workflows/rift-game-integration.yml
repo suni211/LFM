@@ -29,6 +29,8 @@ jobs:
         run: python3 -m unittest discover -s rift-native/tests -p 'test_country_roster_roles.py' -v
       - name: Rookie manager invitations and existing team identity
         run: python3 -m unittest discover -s rift-native/tests -p 'test_rookie_career_features.py' -v
+      - name: Validate per-player detailed attributes and operator edits
+        run: python3 -m unittest discover -s rift-native/tests -p 'test_player_attributes.py' -v
       - name: Run real API integration smoke test with temporary DB
         run: python3 -m unittest discover -s rift-native/tests -p 'test_http_career_smoke.py' -v
       - name: Migrate older solo player nicknames and Master floor

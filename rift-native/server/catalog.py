@@ -94,14 +94,15 @@ def search(db,career,page=0,query='',team='',kind='',league='',origin='all'):
 
 def teams():
     groups={}
-    for p in load()['people']:
+    catalog_people=load()['people']
+    for p in catalog_people:
         if not p.get('real_person'): continue
         key=(p.get('league',''),p.get('team',''))
         if not key[1]: continue
         group=groups.setdefault(key,dict(league=key[0],team=key[1],players=0,staff=0,unclassified=0))
         group['players' if p.get('kind')=='player' else 'staff' if p.get('kind')=='coach' else 'unclassified']+=1
     import tier2_leagues
-    for club in tier2_leagues.additional():
+    for club in tier2_leagues.additional(catalog_people):
         groups.setdefault((club['league'],club['team']),club)
     return list(sorted(groups.values(),key=lambda row:(row['league'],row['team'])))
 

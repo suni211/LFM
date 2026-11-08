@@ -30,6 +30,8 @@ jobs:
           git add rift-native/assets/country-hints.json rift-native/country-hints-report.json
           if ! git diff --staged --quiet; then
             git commit -m 'Map source-backed player countries (citizenship review pending)'
+            git fetch origin fix/fm-unified-nationality-2026-11-08
+            git rebase origin/fix/fm-unified-nationality-2026-11-08
             git push origin HEAD:fix/fm-unified-nationality-2026-11-08
           fi
       - uses: actions/upload-artifact@v4

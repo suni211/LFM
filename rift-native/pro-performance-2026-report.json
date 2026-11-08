@@ -1,0 +1,21 @@
+{
+  "roster_count": 1088,
+  "matched_players": 464,
+  "observed_games": 7429,
+  "excluded": {
+    "nickname-ambiguous-or-missing": 7047,
+    "invalid-role": 2912
+  },
+  "source_columns": {
+    "nick": "playername",
+    "role": "position",
+    "win": "result",
+    "kills": "kills",
+    "deaths": "deaths",
+    "assists": "assists",
+    "dpm": "dpm",
+    "team": "teamname",
+    "league": "league"
+  },
+  "note": "Performance and game salaries are fictional evaluation, based on observed results. No actual salaries are disclosed."
+}

@@ -7,6 +7,8 @@ import base64
 import binascii
 import json
 import catalog
+from functools import lru_cache
+from collections import defaultdict
 
 MAJORS={'LCK','LPL','LEC','LCS'}
 STARTER_FIRST={'CBLOL','LCP'}
@@ -25,10 +27,18 @@ def power(person):
     vals=[v for v in eval_.values() if type(v) in (int,float)]
     return sum(vals)/len(vals) if vals else 50
 
+@lru_cache(maxsize=1)
+def _club_powers():
+    """Read the catalog once for all invitation and league rankings."""
+    ratings=defaultdict(list)
+    for person in catalog.load()['people']:
+        if person.get('kind')=='player' and person.get('team'):
+            ratings[(person.get('league'),person['team'])].append(power(person))
+    return {key:sum(sorted(values,reverse=True)[:5])/min(5,len(values))
+            for key,values in ratings.items()}
+
 def club_power(league,team):
-    players=[p for p in catalog.load()['people'] if p.get('league')==league and p.get('team')==team and p.get('kind')=='player']
-    if not players:return 50.
-    return sum(sorted((power(p) for p in players),reverse=True)[:5])/min(5,len(players))
+    return _club_powers().get((league,team),50.)
 
 def takeover_allowed(league,team):
     if is_second(league) or league in STARTER_FIRST:return True

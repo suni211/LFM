@@ -137,7 +137,7 @@ class Handler(BaseHTTPRequestHandler):
                     """SELECT p.league,c.name,b.short,b.color,b.emblem,b.logo_data
                     FROM club_branding b JOIN careers c ON c.id=b.career_id
                     JOIN club_profiles p ON p.career_id=c.id"""):
-                    brandings[league+'\\n'+name]=dict(
+                    brandings[league+'\n'+name]=dict(
                         short=short,color=color,emblem=emblem,logo_data=logo_data)
                 return self.reply(200,{'brandings':brandings})
             if url.path=='/clubs':

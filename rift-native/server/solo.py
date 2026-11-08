@@ -19,6 +19,7 @@ STALL_GAIN={'독함':1,'꾸준':2,'조급':3}
 STALL_LIMIT={'독함':24,'꾸준':12,'조급':6}
 TALK_CHANCE={'독함':0.30,'꾸준':0.52,'조급':0.70}
 DEBUT_MMR=1100
+PRO_MIN_MMR=2800  # Master 0 LP floor for all professional solo-queue records
 PROSPECT_LIMIT=15
 MAJOR={'LCK','LPL','LEC','LCS'}
 
@@ -35,6 +36,7 @@ def init(db):
         backfill(db)
         db.execute("INSERT OR REPLACE INTO solo_seed VALUES('ready','1')")
     seed_easter(db)
+    db.execute("UPDATE solo_ranks SET mmr=? WHERE path='pro' AND mmr<?",(PRO_MIN_MMR,PRO_MIN_MMR))
 
 def _unit(key):
     return int.from_bytes(hashlib.sha256(key.encode()).digest()[:4],'big')/4294967295
@@ -59,8 +61,8 @@ def start_mmr(person, path):
     spread=int(_unit(person['id']+':mmr')*360)
     if path=='pro':
         league=person.get('league') or ''
-        base=2460 if league in MAJOR else 1760 if ('CL' in league or 'Academy' in league or 'Challengers' in league) else 1500 if league else 1300
-        return base+spread//2
+        base=3220 if league in MAJOR else 2950 if ('CL' in league or 'Academy' in league or 'Challengers' in league or 'LDL' in league) else 2850
+        return max(PRO_MIN_MMR,base+spread//2)
     return 280+int(_unit(person['id']+':amateur')*1050)
 
 def public_row(row, rank=None):
@@ -240,7 +242,7 @@ def debut(db, career, person_id):
         db.execute('UPDATE generated_people SET assignment=?,payload=? WHERE id=?',(assignment,json.dumps(raw,ensure_ascii=False),person_id))
     if db.execute("SELECT 1 FROM sqlite_master WHERE name='club_roster'").fetchone():
         db.execute("UPDATE club_roster SET assignment=? WHERE person_id=? AND assignment='academy'",(assignment,person_id))
-    db.execute("UPDATE solo_ranks SET path='pro',stall=0 WHERE person_id=?",(person_id,))
+    db.execute("UPDATE solo_ranks SET path='pro',mmr=MAX(mmr,?),stall=0 WHERE person_id=?",(PRO_MIN_MMR,person_id))
     clock,_=_turn(db)
     club_messages.publish(db,career,'solo-debut:'+person_id,clock['season'],clock['week'],'프로 데뷔',
                           row[8]+'을 구단에서 직접 키운 뒤 프로로 데뷔시켰습니다. 이제 선발과 영입 시장에 프로로 올라갑니다.')

@@ -153,6 +153,24 @@ class Handler(BaseHTTPRequestHandler):
                 return updates.serve(self, urlsplit(self.path).path)
             if not uid: return self.reply(401,{'error':'unauthorized'})
             url = urlsplit(self.path)
+            if url.path=='/operator/nationality-audit':
+                if not online_world.operator(db,uid):
+                    return self.reply(403,{'error':'forbidden'})
+                people=catalog.load()['people']
+                real=[p for p in people if p.get('real_person')]
+                missing=[p for p in real if not p.get('nationality_code')]
+                by_league={}
+                for p in real:
+                    league_name=p.get('league') or '리그 미확인'
+                    row=by_league.setdefault(league_name,{'total':0,'verified':0,'missing':0})
+                    row['total']+=1
+                    row['verified']+=bool(p.get('nationality_code'))
+                    row['missing']+=not bool(p.get('nationality_code'))
+                return self.reply(200,dict(total=len(people),with_code=sum(bool(p.get('nationality_code')) for p in people),
+                    missing_code=sum(not bool(p.get('nationality_code')) for p in people),
+                    real_total=len(real),real_missing=len(missing),
+                    by_league=by_league,verified=False,
+                    note='국적 미확인 선수의 국가를 리그/이름으로 임의 추정하지 않았습니다.'))
             if url.path=='/operator/world':
                 if not online_world.operator(db,uid):return self.reply(403,{'error':'forbidden'})
                 world=online_world.clock(db)

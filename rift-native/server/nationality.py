@@ -53,6 +53,11 @@ def enrich(person):
         p.pop('country_hint',None)
         p.pop('nationality_pending',None)
     elif p.get('real_person') is False and p.get('nationality_name_ko'):
+        # Fictional source records already specify a game-country label.
+        # Turning that existing label into its ISO code is not a claim about
+        # a real person's citizenship.
+        p['nationality_code']=next((code for code,label in COUNTRIES.items()
+            if label==p['nationality_name_ko']),p.get('nationality_code'))
         p['nationality_origin']='fictional-game-profile'
     elif p.get('real_person') and not p.get('nationality_code'):
         country=p.get('nationality_name_ko')

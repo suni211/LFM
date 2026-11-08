@@ -9,8 +9,10 @@ import sqlite3
 
 ROLES = frozenset(("TOP", "JUNGLE", "MID", "ADC", "SUPPORT"))
 ASIA = frozenset(("JP", "TW", "HK", "MO", "VN", "TH", "PH", "ID", "MY", "SG",
-                  "AU", "NZ", "IN", "PK", "BD", "NP", "KH", "LA", "MM", "MN",
-                  "KZ", "UZ", "KG", "TJ", "TM", "LK", "BN", "TL", "BT", "MV"))
+                  "IN", "PK", "BD", "NP", "KH", "LA", "MM", "MN", "KZ", "UZ",
+                  "KG", "TJ", "TM", "LK", "BN", "TL", "BT", "MV", "AF", "IR",
+                  "IQ", "SY", "JO", "IL", "PS", "SA", "AE", "QA", "KW", "BH",
+                  "OM", "YE", "AZ", "AM", "GE", "TR", "CY"))
 EMEA = frozenset(("GB", "FR", "DE", "ES", "PT", "IT", "PL", "TR", "SE", "DK",
                   "NO", "FI", "NL", "BE", "CH", "AT", "CZ", "SK", "HU", "RO",
                   "BG", "GR", "UA", "RU", "RS", "HR", "SI", "BA", "LT", "LV",
@@ -22,6 +24,7 @@ DOMESTIC = {
     "LCK": frozenset(("KR",)), "LCK CL": frozenset(("KR",)),
     "LPL": frozenset(("CN",)), "LDL": frozenset(("CN",)),
     "LCP": ASIA,
+    "FLS": ASIA, "WildCard": ASIA,
     "LJL": frozenset(("JP",)),
     "PCS": frozenset(("TW", "HK", "MO")),
     "VCS": frozenset(("VN",)),
@@ -103,7 +106,7 @@ def status(db, person, league, year, region=""):
     country = code(person)
     if country and country in origin_countries(league, region):
         return "domestic"
-    if third_year(db, person["id"], league, year):
+    if country and third_year(db, person["id"], league, year):
         return "resident"
     return "foreign" if country else "unknown"
 

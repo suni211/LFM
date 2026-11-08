@@ -10,6 +10,7 @@ import news
 import competition_rules
 import qualification
 import catalog
+import import_rules
 import club_messages
 import recruitment
 import clubs
@@ -49,6 +50,7 @@ def init():
         catalog.init(db)
         club_messages.init(db)
         recruitment.init(db)
+        import_rules.init(db)
         clubs.init(db)
         online_world.init(db)
         management.init(db)
@@ -107,7 +109,7 @@ class Handler(BaseHTTPRequestHandler):
     def get(self):
         with closing(connect()) as db:
             uid=self.user(db)
-            if urlsplit(self.path).path=='/health': return self.reply(200,{'status':'ok','revision':'web-rosters-manager-20261105','capabilities':['clubs','dashboard','search','community','draft-swap','management','fearless','response-timeout-180','manual-draft','fountain-defense','backdoor-protection','six-slot-builds','competitions','account-errors','tactics','phase-orders','personal-training','champion-pool','solo-ladder','prospect-debut','operator-desk','stove-leaks','easter-academy','client-updates','web'],'champion_abilities':'partial'})
+            if urlsplit(self.path).path=='/health': return self.reply(200,{'status':'ok','revision':'gcp-import-limits-20261108','capabilities':['clubs','dashboard','search','community','draft-swap','management','fearless','response-timeout-180','manual-draft','fountain-defense','backdoor-protection','six-slot-builds','competitions','account-errors','tactics','phase-orders','personal-training','champion-pool','solo-ladder','prospect-debut','operator-desk','stove-leaks','easter-academy','client-updates','web','import-quotas','residency-year-3'],'champion_abilities':'partial'})
             if urlsplit(self.path).path.startswith('/updates/'):
                 import updates
                 return updates.serve(self, urlsplit(self.path).path)
@@ -201,7 +203,10 @@ class Handler(BaseHTTPRequestHandler):
                     cid=int(parse_qs(url.query)['id'][0])
                     if not 1<=cid<=2**63-1: raise ValueError()
                     if not news.member(db,uid,cid): return self.reply(404,{'error':'not found'})
-                    return self.reply(200,recruitment.view(db,cid))
+                    state=recruitment.view(db,cid)
+                    state['import_quota']=import_rules.summary(db,clubs.profile(db,cid)['league'],
+                        2025+db.execute('SELECT season FROM careers WHERE id=?',(cid,)).fetchone()[0],state['people'])
+                    return self.reply(200,state)
                 except (KeyError,ValueError): return self.reply(400,{'error':'invalid career'})
             if url.path in ('/inbox','/shortlist'):
                 query=parse_qs(url.query)
@@ -386,6 +391,8 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         self.normalize_path()
         try: self.post()
+        except import_rules.ForeignQuotaError as error:
+            self.reply(409,{'error':str(error)})
         except ValueError as error:
             public={'at most three coaches','select exactly one player per role',
                     'five players, one per role, and at most three coaches required',
@@ -661,6 +668,11 @@ class Handler(BaseHTTPRequestHandler):
                     except ValueError as error:return self.reply(409,{'error':str(error)})
                 elif self.path == '/draft-choice':
                     game=db.execute('SELECT career_id,season,week FROM fixtures WHERE id=?',(fixture,)).fetchone()
+                    try:
+                        import_rules.for_career(db,game[0])
+                    except import_rules.ForeignQuotaError as error:
+                        db.execute('ROLLBACK')
+                        return self.reply(409,{'error':str(error)})
                     if management.readiness(db,game[0],(game[1]-1)*104+game[2]):
                         return self.reply(409,{'error':'select healthy contracted players before draft'})
                     if state['phase']=='feedback' and time.time()>=state['feedback_until']:
@@ -712,6 +724,11 @@ class Handler(BaseHTTPRequestHandler):
                     lineup=recruitment.view(db,cid)['roster']
                     if len(lineup)!=5 or {p['role'] for p in lineup}!=set(recruitment.ROLES):
                         return self.reply(409,{'error':'finalize the five-player lineup before advancing'})
+                try:
+                    import_rules.for_career(db,cid)
+                except import_rules.ForeignQuotaError as error:
+                    db.execute('ROLLBACK')
+                    return self.reply(409,{'error':str(error)})
                 pending = db.execute(
                     "SELECT 1 FROM fixtures WHERE state='queued'").fetchone()
                 if pending:

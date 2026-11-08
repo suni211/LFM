@@ -211,6 +211,8 @@ def advance(db,career,season,week):
     if payroll:
         ledger(db,career,'payroll:'+str(now),-payroll,'salary','선수·스탭 주간 급여 · 연봉 104턴 분할',season,week)
         club_messages.publish(db,career,'payroll:'+str(now),season,week,'급여 지급',format(payroll,',')+'원을 지급했습니다. 재정 원장에서 확인할 수 있습니다.')
+    import player_departures
+    player_departures.weekly(db,career,season,week)
     if db.execute('SELECT cash FROM club_finances WHERE career_id=?',(career,)).fetchone()[0]<0:
         club_vision.change(db,career,'negative-cash:'+str(now),-2,0,'현금 잔액 적자로 구단주 신임 하락')
 

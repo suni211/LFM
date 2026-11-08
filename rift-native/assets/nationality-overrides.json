@@ -7827,6 +7827,148 @@
       "evidence_type": "individual-confirmed-country-nationality",
       "citizenship_verified": true,
       "identity_match": "specific competitive nickname, 2026 tournament participant or verified individual player page"
+    },
+    "f92030861707fc4aac43": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://liquipedia.net/leagueoflegends/Bdd",
+      "verified_on": "2026-11-08",
+      "evidence_type": "individual-player-page-country-or-birthplace",
+      "citizenship_verified": true,
+      "identity_match": "unique competitive nickname and matching player real name"
+    },
+    "26b81e3c6ae696116579": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://liquipedia.net/leagueoflegends/Cuzz",
+      "verified_on": "2026-11-08",
+      "evidence_type": "individual-player-page-country-or-birthplace",
+      "citizenship_verified": true,
+      "identity_match": "unique competitive nickname and matching player real name"
+    },
+    "b53bde1312d1edafde36": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://liquipedia.net/leagueoflegends/Teddy",
+      "verified_on": "2026-11-08",
+      "evidence_type": "individual-player-page-country-or-birthplace",
+      "citizenship_verified": true,
+      "identity_match": "unique competitive nickname and matching player real name"
+    },
+    "ddb290e55b1d29ed5bab": {
+      "code": "TW",
+      "name": "대만",
+      "source": "https://liquipedia.net/leagueoflegends/JunJia",
+      "verified_on": "2026-11-08",
+      "evidence_type": "individual-player-page-country-or-birthplace",
+      "citizenship_verified": true,
+      "identity_match": "unique competitive nickname and matching player real name"
+    },
+    "5092b77b27853a2c15fd": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://liquipedia.net/leagueoflegends/Croco",
+      "verified_on": "2026-11-08",
+      "evidence_type": "individual-player-page-country-or-birthplace",
+      "citizenship_verified": true,
+      "identity_match": "unique competitive nickname and matching player real name"
+    },
+    "562621062154460743f9": {
+      "code": "TW",
+      "name": "대만",
+      "source": "https://liquipedia.net/leagueoflegends/HongQ",
+      "verified_on": "2026-11-08",
+      "evidence_type": "individual-player-page-country-or-birthplace",
+      "citizenship_verified": true,
+      "identity_match": "unique competitive nickname and matching player real name"
+    },
+    "3d6fc746f18bdd38d525": {
+      "code": "GR",
+      "name": "그리스",
+      "source": "https://g2esports.com/pages/team-member/labrov",
+      "verified_on": "2026-11-08",
+      "evidence_type": "individual-player-page-country-or-birthplace",
+      "citizenship_verified": true,
+      "identity_match": "unique competitive nickname and matching player real name"
+    },
+    "520e047958b80e35d6eb": {
+      "code": "ES",
+      "name": "스페인",
+      "source": "https://lol.fandom.com/wiki/Razork",
+      "verified_on": "2026-11-08",
+      "evidence_type": "individual-player-page-country-or-birthplace",
+      "citizenship_verified": true,
+      "identity_match": "unique competitive nickname and matching player real name"
+    },
+    "a0e6c402b5423c85dbea": {
+      "code": "AU",
+      "name": "호주",
+      "source": "https://lol.fandom.com/wiki/FBI",
+      "verified_on": "2026-11-08",
+      "evidence_type": "individual-player-page-country-or-birthplace",
+      "citizenship_verified": true,
+      "identity_match": "unique competitive nickname and matching player real name",
+      "also_reported_nationalities": [
+        "AU",
+        "CN"
+      ]
+    },
+    "7a66973ccaa560fa7eb2": {
+      "code": "US",
+      "name": "미국",
+      "source": "https://lol.fandom.com/wiki/Srtty",
+      "verified_on": "2026-11-08",
+      "evidence_type": "individual-player-page-country-or-birthplace",
+      "citizenship_verified": true,
+      "identity_match": "unique competitive nickname and matching player real name",
+      "also_reported_nationalities": [
+        "US",
+        "AU"
+      ]
+    },
+    "12b105b7cabcf6efb59e": {
+      "code": "SE",
+      "name": "스웨덴",
+      "source": "https://lol.fandom.com/wiki/Yike",
+      "verified_on": "2026-11-08",
+      "evidence_type": "individual-player-page-country-or-birthplace",
+      "citizenship_verified": true,
+      "identity_match": "unique competitive nickname and matching player real name",
+      "also_reported_nationalities": [
+        "SE",
+        "PE"
+      ]
+    },
+    "62970d020bf6d507206c": {
+      "code": "CA",
+      "name": "캐나다",
+      "source": "https://lol.fandom.com/wiki/Jojopyun",
+      "verified_on": "2026-11-08",
+      "evidence_type": "individual-player-page-country-or-birthplace",
+      "citizenship_verified": true,
+      "identity_match": "unique competitive nickname and matching player real name",
+      "also_reported_nationalities": [
+        "CA",
+        "KR"
+      ]
+    },
+    "ae0be261206c8408e56f": {
+      "code": "DK",
+      "name": "덴마크",
+      "source": "https://liquipedia.net/leagueoflegends/Sencux",
+      "verified_on": "2026-11-08",
+      "evidence_type": "individual-player-page-country-or-birthplace",
+      "citizenship_verified": true,
+      "identity_match": "unique competitive nickname and matching player real name"
+    },
+    "da4a0aa55dd8b6d47577": {
+      "code": "US",
+      "name": "미국",
+      "source": "https://en.wikipedia.org/wiki/Goldenglue",
+      "verified_on": "2026-11-08",
+      "evidence_type": "individual-player-page-country-or-birthplace",
+      "citizenship_verified": true,
+      "identity_match": "unique competitive nickname and matching player real name"
     }
   },
   "country_or_birthplace_accepted": true

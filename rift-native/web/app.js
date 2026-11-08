@@ -401,10 +401,10 @@ function rosterTable(people, records={}, development={}, contracts={}) {
   if(!people.length)return '<p class="empty">등록된 선수가 없습니다.</p>'
   return `<div class="table-scroll"><table class="roster-table"><thead><tr>${['선수 얼굴 · 닉네임 / 이름','구분','소속 팀','게임 레이팅','OVR','인지도','국적','포지션','연봉','시장가치','계약년도','만료'].map(t=>`<th>${t}</th>`).join('')}</tr></thead><tbody>${people.map(p=>{
     const c=contracts[p.id],d=development[p.id],r=records[p.id],eco=p.economics||{};const ratings=p.game_evaluation?.ratings||p.stats;const values=ratings?Object.values(ratings).filter(Number.isFinite):[];const ovr=d?.ovr??(values.length?Math.round(values.reduce((a,b)=>a+b,0)/values.length):null)
-    const start=c?.start_turn?`${2026+Math.floor((c.start_turn-1)/104)}년 · ${Math.floor((c.start_turn-1)/104)+1}시즌`:'미기록'
-    const expiry=c?`${2026+Math.floor((c.end_turn-1)/104)}년 · ${Math.floor((c.end_turn-1)/104)+1}시즌 ${((c.end_turn-1)%104)+1}주`:p.contract_end||'확인 중'
+    const start=c?.start_turn?`${2026+Math.floor((c.start_turn-1)/150)}년 · ${Math.floor((c.start_turn-1)/150)+1}시즌`:'미기록'
+    const expiry=c?`${2026+Math.floor((c.end_turn-1)/150)}년 · ${Math.floor((c.end_turn-1)/150)+1}시즌 ${((c.end_turn-1)%150)+1}주`:p.contract_end||'확인 중'
     const group=p.kind==='player'?(p.real_person?'실존 선수':'생성 선수'):(p.real_person?'실존 프런트':'생성 프런트');const assignment=rosterStatus(p)
-    return `<tr><td>${personLink(p)}</td><td><span class="identity-tag ${p.real_person?'real':'generated'}">${group}</span><small>${esc(assignment)}</small></td><td>${logoImg(p.league,p.team)}${esc(p.team||'무소속')}</td><td><b class="rating">${eco.rating??'미평가'}</b><small>${r?.rating!=null?'게임 경기 평점 '+Number(r.rating).toFixed(1):'능력·경력 평가'}</small></td><td><b>${d?.ovr??eco.ovr??ovr??'미평가'}</b></td><td><b>${eco.fame??'미평가'}</b></td><td>${flagAndCountry(p)}</td><td>${esc(ROLE[p.role]||'확인 중')}</td><td>${money(c?.annual_salary??eco.annual_salary??p.salary)}<small>${c?'실제 게임 계약':'게임 연봉 추정'}</small></td><td>${money(eco.market_value)}</td><td>${start}</td><td>${esc(expiry)}${!c&&p.contract_estimated?'<small>예상</small>':''}</td></tr>`
+    return `<tr><td>${personLink(p)}</td><td><span class="identity-tag ${p.real_person?'real':'generated'}">${group}</span><small>${esc(assignment)}</small></td><td>${logoImg(p.league,p.team)}${esc(p.team||'무소속')}</td><td><b class="rating">${eco.rating??'미평가'}</b><small>${r?.rating!=null?'게임 경기 평점 '+Number(r.rating).toFixed(1):'능력·경력 평가'}</small></td><td><b>${d?.ovr??eco.ovr??ovr??'미평가'}</b></td><td><b>${eco.fame??'미평가'}</b></td><td>${flagAndCountry(p)}</td><td>${esc(ROLE[p.role]||'확인 중')}</td><td>${money(c?.annual_salary??eco.annual_salary??p.salary)}<small>${c?'구단 계약':'연봉 추정'}</small></td><td>${money(eco.market_value)}</td><td>${start}</td><td>${esc(expiry)}${!c&&p.contract_estimated?'<small>예상</small>':''}</td></tr>`
   }).join('')}</tbody></table></div>`
 }
 async function squad(which) {
@@ -512,17 +512,6 @@ async function managementPage(kind) {
       '</div><div class="budget-editor"><label>이적 예산 조정<input id="budget-transfer" type="number" min="0" value="'+budget+'"/></label>'+
        '<label>급여 예산<input id="budget-wage" type="number" min="0" value="'+Number(data.wage_budget||0)+'"/></label>'+
        '<button class="act" id="save-budget">예산 저장</button></div></section></div>'+
-      '<section class="panel"><h2>선수 계약 · 에이전트 재협상</h2><p class="muted-note">게임 내 현재 연봉·시장가치와 성적·사기·에이전트 신뢰에 따른 최소 요구 연봉입니다.</p>'+
-       (data.contracts||[]).filter(c=>c.active).map(c=>{
-         const p=c.person,eco=p.economics||{},minimum=Number(c.agent_asking_salary??c.annual_salary)
-         return '<div class="panel"><div class="row">'+personLink(p)+
-           '<span>현재 연봉 <b>'+money(c.annual_salary)+'</b></span>'+
-           '<span>시장가치 <b>'+money(eco.market_value)+'</b></span>'+
-           '<span>에이전트 요구 <b>'+money(minimum)+'</b></span></div>'+
-           '<div class="row"><label>제안 연봉<input type="number" min="'+minimum+'" step="100000" value="'+minimum+'" data-renew-salary="'+esc(p.id)+'"></label>'+
-           '<label>계약 기간<select data-renew-years="'+esc(p.id)+'"><option value="1">1시즌</option><option value="2">2시즌</option><option value="3">3시즌</option></select></label>'+
-           '<button class="act" data-renew="'+esc(p.id)+'">에이전트와 재계약</button></div></div>'
-       }).join('')+'</section>'+
        '<section class="panel"><h2>회계 내역 · '+ledger.length+'건</h2>'+
        ledger.map(row=>'<div class="finance-ledger-line"><span>'+row.season+'시즌 '+row.week+'주 · '+esc(row.description)+'</span>'+
        '<b class="'+(row.amount>=0?'positive':'negative')+'">'+(row.amount>=0?'+':'')+money(row.amount)+'</b></div>').join('')+'</section>'
@@ -576,16 +565,6 @@ async function managementPage(kind) {
   shell(body, path)
   const budget = document.getElementById('save-budget')
   if (budget) budget.onclick = () => api('/management', {id:current.id, action:'budget', transfer_budget:Number(document.getElementById('budget-transfer').value), wage_budget:Number(document.getElementById('budget-wage').value)}).then(() => draw()).catch(error => alert(error.message))
-  document.querySelectorAll('[data-renew]').forEach(button => button.onclick = async () => {
-    const pid=button.dataset.renew
-    const salary=Number(document.querySelector('[data-renew-salary="'+CSS.escape(pid)+'"]').value)
-    const years=Number(document.querySelector('[data-renew-years="'+CSS.escape(pid)+'"]').value)
-    if(!confirm('에이전트 조건으로 재계약을 제안할까요?'))return
-    try {
-      await api('/management',{id:current.id,action:'renew',person:pid,annual_salary:salary,years})
-      await managementPage('finance')
-    } catch(error) {alert(error.message)}
-  })
   document.querySelectorAll('[data-release]').forEach(button => button.onclick = async () => {
     const approve=button.dataset.approve==='true'
     if(!confirm(approve?'선수와 합의해 계약을 종료하고 FA로 전환할까요?':'선수의 FA 요청을 거절할까요?'))return
@@ -842,7 +821,40 @@ async function player(id, tab) {
       '개별 능력은 게임 평가 모델의 추정값이고, KDA·CS·피해량은 실제로 진행된 LFM 경기만 집계합니다. '+
       '솔로랭크 전적은 프로 경기 성적에 포함하지 않습니다.</p></section>':'')
   else if(tab==='personal') main=`<section class="panel"><h2>개인 정보</h2><div class="info-pairs"><p>영문 닉네임 <b>${esc(person.nickname||'기록 없음')}</b></p><p>본명 <b>${esc(person.real_name||'기록 없음')}</b></p><p>국적 <b>${flagAndCountry(person)}</b></p><p>리그 <b>${esc(person.league||'무소속')}</b></p><p>지역 <b>${esc(person.region||person.nationality_name_ko||'정보 없음')}</b></p><p>포지션 <b>${esc(ROLE[person.role]||person.role||'정보 없음')}</b></p><p>솔로랭크 <b>${esc(person.solo?.label||'정보 없음')}</b></p></div></section>`
-  else if(tab==='contract') main=`<section class="panel"><h2>계약 · 연봉 · 시장가치</h2><div class="info-pairs"><p>계약 종료 <b>${esc(person.contract_end||'정보 없음')}</b></p><p>연봉 <b>${money(contract?.annual_salary??eco.annual_salary??person.salary)}</b></p><p>계약 분류 <b>${contract?'게임 내 확정 계약':'성적·인지도 기준 게임 추정'}</b></p><p>시장가치 <b>${money(eco.market_value)}</b></p><p>굿즈 연매출 예상 <b>${money(eco.merch_annual_sales)}</b></p><p>굿즈 연간 순이익 예상 <b>${money(eco.merch_annual_profit)}</b></p><p>계약 기간 <b>${contract?contract.remaining_turns+'주 남음':'구단 계약 정보 없음'}</b></p><p>현재 상태 <b>${contract?(contract.active?'계약 중':'계약 종료'):'외부 구단 또는 FA'}</b></p></div><h3>FM 게임 평가 기준</h3><p>${esc(eco.criteria?.rating||'능력치·경기 성적 기준')}</p><p>${esc(eco.criteria?.fame||'경기 출전·인지도 기준')}</p><p>${esc(eco.criteria?.salary||'성적·인지도 기준 게임 연봉 추정')}</p><p>${esc(eco.criteria?.market_value||'레이팅·인지도·굿즈 판매 기대 수익 기준')}</p></section>`
+  else if(tab==='contract') {
+    const expiryYear=contract?.expiry_season?2025+contract.expiry_season:null
+    const expiryText=contract?.expiry_season?
+      expiryYear+'년 · '+contract.expiry_season+'시즌 '+((contract.end_turn-1)%150+1)+'주':
+      person.contract_end||'정보 없음'
+    const minimum=Number(contract?.agent_asking_salary??contract?.annual_salary??0)
+    const canRenew=!isOperator&&person.kind==='player'&&contract?.active===true&&contract.renewal_eligible===true
+    const renewalPanel=canRenew?
+      '<section class="panel"><h2>재계약 협상 · 에이전트</h2>'+
+      '<p class="muted-note">계약 만료 시즌의 스토브리그입니다. 요구 연봉과 잔여 급여 예산을 확인하세요.</p>'+
+      '<div class="row"><span>현재 연봉 <b>'+money(contract.annual_salary)+'</b></span>'+
+      '<span>에이전트 최소 요구 <b>'+money(minimum)+'</b></span></div>'+
+      '<div class="row"><label>제안 연봉<input id="player-renew-salary" type="number" min="'+minimum+'" step="100000" value="'+minimum+'"></label>'+
+      '<label>계약 연장 기간<select id="player-renew-years"><option value="1">1시즌</option><option value="2">2시즌</option><option value="3">3시즌</option></select></label>'+
+      '<button class="act" id="player-renew-submit">재계약 제안</button></div></section>':
+      (!isOperator&&person.kind==='player'&&contract?.active?
+       '<section class="panel"><h2>재계약 안내</h2><p>계약 만료 시즌('+
+        esc(expiryYear??'확인 중')+'년)의 스토브리그(1~10주 또는 145~150주)에만 재계약할 수 있습니다.</p></section>':'')
+    main='<section class="panel"><h2>계약 · 연봉 · 시장가치</h2><div class="info-pairs">'+
+      '<p>계약 종료 <b>'+esc(expiryText)+'</b></p>'+
+      '<p>연봉 <b>'+money(contract?.annual_salary??eco.annual_salary??person.salary)+'</b></p>'+
+      '<p>계약 분류 <b>'+(contract?'구단 계약':'성적·인지도 기준 연봉 추정')+'</b></p>'+
+      '<p>시장가치 <b>'+money(eco.market_value)+'</b></p>'+
+      '<p>굿즈 연매출 예상 <b>'+money(eco.merch_annual_sales)+'</b></p>'+
+      '<p>굿즈 연간 순이익 예상 <b>'+money(eco.merch_annual_profit)+'</b></p>'+
+      '<p>계약 기간 <b>'+(contract?contract.remaining_turns+'주 남음':'구단 계약 정보 없음')+'</b></p>'+
+      '<p>현재 상태 <b>'+(contract?(contract.active?'계약 중':'계약 종료'):'외부 구단 또는 FA')+'</b></p>'+
+      '</div><h3>FM 게임 평가 기준</h3>'+
+      '<p>'+esc(eco.criteria?.rating||'능력치·경기 성적 기준')+'</p>'+
+      '<p>'+esc(eco.criteria?.fame||'경기 출전·인지도 기준')+'</p>'+
+      '<p>'+esc(eco.criteria?.salary||'성적·인지도 기준 게임 연봉 추정')+'</p>'+
+      '<p>'+esc(eco.criteria?.market_value||'레이팅·인지도·굿즈 판매 기대 수익 기준')+'</p></section>'+
+      renewalPanel
+  }
   else if(tab==='history') main=`<section class="panel"><h2>선수 이력</h2><p>현재 소속 ${joined}</p><p>최초 등록 구단: ${esc(person.registered_team||person.team||'정보 없음')}</p><p class="muted-note">경기·이적 기록은 커리어 진행에 따라 누적됩니다.</p></section>`
   else if(tab==='report') main='<div class="report-grid">'+
      '<section class="panel scout-report-card"><p class="eyebrow">PRIVATE SCOUTING</p>'+
@@ -890,6 +902,20 @@ async function player(id, tab) {
   const fb=document.getElementById('player-follow')
   if(fb)fb.onclick=()=>api('/follows',{id:current.id,kind:'player',entity:person.nickname,enabled:!following})
     .then(()=>player(id,tab)).catch(e=>alert(e.message))
+  const renewButton=document.getElementById('player-renew-submit')
+  if(renewButton)renewButton.onclick=async()=>{
+    const salary=Number(document.getElementById('player-renew-salary').value)
+    const years=Number(document.getElementById('player-renew-years').value)
+    if(!confirm('에이전트 조건으로 재계약을 제안할까요?'))return
+    try {
+      renewButton.disabled=true
+      await api('/management',{id:current.id,action:'renew',person:id,annual_salary:salary,years})
+      await player(id,'contract')
+    } catch(error) {
+      alert(error.message)
+      renewButton.disabled=false
+    }
+  }
   const editor=document.getElementById('operator-attribute-form')
   if(editor)editor.onsubmit=async event=>{
     event.preventDefault()

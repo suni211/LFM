@@ -278,12 +278,14 @@ async function training() {
 async function managementPage(kind) {
   const current = await requireCareer(); if (!current) return
   const data = await api('/management?id=' + current.id)
+  const departures = kind === 'medical' ? await api('/departure-requests?id=' + current.id) : {requests:[]}
   let body = ''
   if (!data.initialized) body = '<p>재정과 계약이 아직 열리지 않았습니다.</p>'
   else if (kind === 'finance') {
     body = `<div class="panel"><h2>재정</h2><p>보유 ${money(data.cash)}</p><p>이적 예산 ${money(data.transfer_budget)}</p><p>급여 예산 ${money(data.wage_budget)}</p><p>연봉 합계 ${money(data.annual_payroll)}</p><p>구단주 ${data.board} / 팬 ${data.fans}</p><label>이적 예산</label><input id="budget-transfer" value="${data.transfer_budget}"/><label>급여 예산</label><input id="budget-wage" value="${data.wage_budget}"/><button class="act" id="save-budget">예산 저장</button></div><div class="panel"><h2>원장</h2>${(data.ledger || []).map(row => `<div class="row">${row.season}시즌 ${row.week}주 ${esc(row.description)} ${money(row.amount)}</div>`).join('')}</div>`
   } else if (kind === 'medical') {
     body = `<div class="panel"><h2>의료</h2>${(data.contracts || []).filter(item => item.person.kind === 'player').map(item => `<div class="row">${personLink(item.person)}<span>피로 ${item.fatigue} 사기 ${item.morale} 부상 ${item.injury_turns}</span><button class="act" data-treat="${esc(item.person.id)}" data-mode="rest">휴식</button><button class="act" data-treat="${esc(item.person.id)}" data-mode="rehab">재활</button><button class="act" data-treat="${esc(item.person.id)}" data-mode="normal">일반</button></div>`).join('')}</div>`
+    body += `<div class="panel"><h2>선수 면담 · FA 방출 요청</h2><p>출전 기회를 원하는 후보·2군 선수의 요청입니다. 감독이 방출에 동의하면 FA로 전환됩니다.</p>${departures.requests.map(r=>`<div class="row"><b>${esc(r.person_id)}</b><span>${esc(r.reason)} · 사기 ${r.morale ?? '-'}</span><button class="act" data-release="${esc(r.person_id)}" data-approve="true">합의 방출</button><button class="act" data-release="${esc(r.person_id)}" data-approve="false">요청 거절</button></div>`).join('')||'<p class="empty">현재 방출을 요청한 선수가 없습니다.</p>'}</div>`
   } else if (kind === 'relations') {
     body = `<div class="panel"><h2>관계</h2>${(data.relationships || []).map(item => `<div class="row">${esc(item.first)} · ${esc(item.second)} 신뢰 ${item.trust}<button class="act" data-a="${esc(item.first)}" data-b="${esc(item.second)}" data-way="listen">대화</button></div>`).join('') || '<p>관계가 없습니다.</p>'}</div>`
   } else if (kind === 'staff') {
@@ -297,6 +299,14 @@ async function managementPage(kind) {
   shell(body, path)
   const budget = document.getElementById('save-budget')
   if (budget) budget.onclick = () => api('/management', {id:current.id, action:'budget', transfer_budget:Number(document.getElementById('budget-transfer').value), wage_budget:Number(document.getElementById('budget-wage').value)}).then(() => draw()).catch(error => alert(error.message))
+  document.querySelectorAll('[data-release]').forEach(button => button.onclick = async () => {
+    const approve=button.dataset.approve==='true'
+    if(!confirm(approve?'선수와 합의해 계약을 종료하고 FA로 전환할까요?':'선수의 FA 요청을 거절할까요?'))return
+    try {
+      await api('/departure-decision',{id:current.id,person:button.dataset.release,approve})
+      await managementPage('medical')
+    } catch(error) {alert(error.message)}
+  })
   document.querySelectorAll('[data-treat]').forEach(button => button.onclick = () => api('/management', {id:current.id, action:'treatment', person:button.dataset.treat, treatment:button.dataset.mode}).then(() => draw()).catch(error => alert(error.message)))
   document.querySelectorAll('[data-way]').forEach(button => button.onclick = () => api('/management', {id:current.id, action:'mediate', first:button.dataset.a, second:button.dataset.b, approach:'listen'}).then(() => draw()).catch(error => alert(error.message)))
   const find = document.getElementById('staff-find')

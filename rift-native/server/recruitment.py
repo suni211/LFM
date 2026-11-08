@@ -81,7 +81,10 @@ def view(db,career):
                         "SELECT payload,assignment FROM generated_people WHERE career_id=? AND assignment!='departed'",(career,))]
             people=staffing.annotate(db,career,people)
             import solo
-            for person in people: solo.attach(db,person)
+            import player_economy
+            for person in people:
+                solo.attach(db,person)
+                person['economics']=player_economy.estimate(person)
             return dict(complete=bool(row and row[0]),people=people,mode='takeover',league=profile['league'],
                         roster=[p for p in people if p['assignment']=='first' and p.get('kind')=='player'],
                         staff=[p for p in people if p['assignment']=='staff'],
@@ -92,7 +95,10 @@ def view(db,career):
         people+=clubs.roster(db,career)
     people=staffing.annotate(db,career,people)
     import solo
-    for person in people: solo.attach(db,person)
+    import player_economy
+    for person in people:
+        solo.attach(db,person)
+        person['economics']=player_economy.estimate(person)
     return dict(complete=bool(row and row[0]),people=people,mode='create',league=clubs.profile(db,career)['league'],
                 roster=[p for p in people if p['assignment']=='first'],staff=[p for p in people if p['assignment']=='staff'],staff_limits=staffing.summary([p for p in people if p['assignment']=='staff']))
 

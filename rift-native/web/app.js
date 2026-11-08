@@ -29,7 +29,7 @@ const WIDGETS = {cash:'현금 흐름',
   board: '구단주·팬', form: '최근 경기'
 }
 const ROLE = {TOP:'탑', JUNGLE:'정글', MID:'미드', ADC:'원딜', SUPPORT:'서포터'}
-let media = {colors:{}, logos:{}}
+let media = {colors:{}, logos:{}, brandings:null}
 let careerCache = null
 let managerProfile = null
 let isOperator = false
@@ -96,18 +96,25 @@ async function api(path, body) {
   return data
 }
 function face(id, available=true) { if(!available)return '<span class="face-frame"><span class="face-placeholder" title="등록된 얼굴 없음">●</span></span>';return `<span class="face-frame"><img class="face" alt="선수 얼굴" src="${BASE}/media/portraits/${esc(id)}.png" onerror="this.style.display='none';this.nextElementSibling.hidden=false"/><span class="face-placeholder" hidden title="등록된 얼굴 없음">●</span></span>` }
-function logoImg(league, team) {
-  const item = media.logos[league + '\n' + team]
-  if (!item || !item.logo) return `<span class="club-monogram" aria-label="${esc(team)}">${esc((team||'RM').slice(0,2))}</span>`
-  return `<img class="logo" alt="" style="background:${esc(item.background || '#dce3ed')}" src="${BASE}/media/${esc(item.logo)}"/>`
+function logoImg(league, team, overrideBrand=null) {
+  const key=league+'\n'+team
+  const brand=overrideBrand||media.brandings?.[key]
+  const alt=esc(team||'구단')
+  // Uploaded or official club image is the representative identity.
+  // A selected shield/star/other emblem is strictly a last fallback.
+  const uploaded=brand?.logo_data
+  if(typeof uploaded==='string'&&uploaded.length<=110000&&/^data:image\/(png|jpeg|webp);base64,[a-zA-Z0-9+/=]+$/.test(uploaded))
+    return `<img class="logo club-primary-image" alt="${alt} 구단 로고" src="${esc(uploaded)}"/>`
+  const item=media.logos?.[key]
+  if(item?.logo)
+    return `<img class="logo club-primary-image" alt="${alt} 구단 로고" style="background:${esc(item.background||'#dce3ed')}" src="${BASE}/media/${esc(item.logo)}"/>`
+  const symbol={shield:'⬡',star:'★',crown:'♛',bolt:'ϟ',diamond:'◆'}[brand?.emblem]
+  const abbreviation=brand?.short||(team||'RM').slice(0,2)
+  const color=typeof brand?.color==='string'&&/^#[0-9a-fA-F]{6}$/.test(brand.color)?brand.color:'#17324d'
+  return `<span class="club-monogram club-emblem-fallback" style="background:${esc(color)};color:#fff" aria-label="${alt} 구단 로고 대체"><span class="club-emblem-symbol" aria-hidden="true">${symbol||''}</span><span>${esc(abbreviation)}</span></span>`
 }
 function careerLogo(careerItem) {
-  const brand=careerItem?.branding
-  if(!brand)return logoImg(careerItem?.club_profile?.league||'',careerItem?.name||'')
-  const alt=esc(careerItem.name||'구단 로고')
-  if(brand.logo_data&&/^data:image\/(png|jpeg|webp);base64,[a-zA-Z0-9+/=]+$/.test(brand.logo_data))
-    return `<img class="logo" alt="${alt}" src="${esc(brand.logo_data)}"/>`
-  return `<span class="club-monogram" style="background:${esc(brand.color)};color:white">${esc(brand.short||'RM')}</span>`
+  return logoImg(careerItem?.club_profile?.league||'',careerItem?.name||'',careerItem?.branding||null)
 }
 function teamColor(league, team) { return media.colors[league + '\n' + team] || '#17324d' }
 function go(href) { history.pushState({}, '', BASE && !href.startsWith(BASE + '/') ? BASE + href : href); draw() }
@@ -202,7 +209,7 @@ async function clubs() {
     let logo_data=''
     if(file){if(file.size>80000||!['image/png','image/jpeg','image/webp'].includes(file.type))throw Error('80KB 이하 PNG/JPEG/WebP 이미지만 사용할 수 있습니다.');logo_data=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(Error('로고 파일을 읽을 수 없습니다.'));reader.readAsDataURL(file)})}
     const result=await api('/careers',{mode:'create',name:form.elements.clubName.value.trim(),short:form.elements.short.value.trim().toUpperCase(),league:form.elements.league.value,color:form.elements.color.value,emblem:form.elements.emblem.value,logo_data})
-    localStorage.setItem('rift-career',result.id);careerCache=null;go('/app/onboarding')
+    localStorage.setItem('rift-career',result.id);careerCache=null;media.brandings=null;go('/app/onboarding')
   }catch(error){err.textContent=error.message;button.disabled=false}}
   await topbar()
 }
@@ -600,10 +607,14 @@ async function draw() {
   if (!token()) { login(); return }
   if (!Object.keys(media.colors).length) {
     const [colors, logos] = await Promise.all([fetch(BASE + '/media/club-colors.json').then(r => r.ok?r.json():{}).catch(()=>({})), fetch(BASE + '/media/club-assets.json').then(r => r.ok?r.json():{}).catch(()=>({}))])
-    media = {colors, logos}
+    media = {colors, logos, brandings:null}
   }
   try {
     worldState=await api('/world');isOperator=worldState.operator===true
+    if(media.brandings===null) {
+      const visual=await api('/club-brandings')
+      media.brandings=visual.brandings||{}
+    }
     if(isOperator){careerCache=null;localStorage.removeItem('rift-career');if(path==='/app/manager')return go('/app/home');if(path==='/app/home'||path==='/'||path==='/app/schedule')return await operatorDesk(path==='/app/schedule'?path:'/app/home');if(!['/app/clubs','/app/competition','/app/players'].includes(path)&&!/^\/app\/(player|team|entity)\//.test(path))return go('/app/home')}
     if(!managerProfile)managerProfile=await api('/manager-profile')
     if(!isOperator && !managerProfile.complete && path!=='/app/manager')return go('/app/manager')

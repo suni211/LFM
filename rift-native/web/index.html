@@ -1,1 +1,28 @@
-<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><meta name="theme-color" content="#101522"/><title>R/M · RIFT MANAGER</title><script>const root=location.pathname.startsWith('/rift')?'/rift':'';const css=document.createElement('link');css.rel='stylesheet';css.href=root+'/static/app.css?v=20261105-roster2';document.head.append(css);</script></head><body><div id="app"></div><script>const script=document.createElement('script');script.src=root+'/static/app.js?v=20261105-roster2';document.body.append(script);</script></body></html>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="theme-color" content="#101522"/>
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate"/>
+  <title>R/M · RIFT MANAGER</title>
+  <script>
+    // Test builds must never reuse an earlier game's CSS/JS from browser cache.
+    // The actual source is served by the running backend, not by this version.
+    const root = location.pathname.startsWith('/rift') ? '/rift' : '';
+    const assetVersion = '?v=' + Date.now().toString(36);
+    const css = document.createElement('link');
+    css.rel = 'stylesheet';
+    css.href = root + '/static/app.css' + assetVersion;
+    document.head.append(css);
+  </script>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+    const script = document.createElement('script');
+    script.src = root + '/static/app.js' + assetVersion;
+    document.body.append(script);
+  </script>
+</body>
+</html>

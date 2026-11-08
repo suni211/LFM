@@ -50,7 +50,8 @@ def academy_of(league,parent):
 
 def child_of(parent_league,parent_name):
     return next(((league,child) for league,names in PARENTS.items()
-                 for name in [names.get(parent_name)] if name and PARENT_LEAGUE[league]==parent_league),None)
+                 for child in [names.get(parent_name)]
+                 if child and PARENT_LEAGUE[league]==parent_league),None)
 
 def entries():
     return [dict(league=league,team=name,parent_team=parent[1] if parent else None,

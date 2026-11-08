@@ -28,6 +28,40 @@ VERIFIED={
         source_url='https://geng.fan/'),
 }
 
+# Staff identities below are verified against role-specific LoL sources.
+VERIFIED_COACHING={
+    ('LCK','T1'):{
+        'Tom':('HEAD_COACH','https://liquipedia.net/leagueoflegends/T1'),
+        'Mata':('COACH','https://liquipedia.net/leagueoflegends/T1'),
+        'Easyhoon':('COACH','https://liquipedia.net/leagueoflegends/T1')},
+    ('LCK','Gen.G'):{
+        'Ryu':('HEAD_COACH','https://liquipedia.net/leagueoflegends/Gen.G_Esports'),
+        'Lyn':('COACH','https://liquipedia.net/leagueoflegends/Gen.G_Esports'),
+        'Nova':('COACH','https://liquipedia.net/leagueoflegends/Gen.G_Esports')},
+    ('LCP','DetonatioN FocusMe'):{
+        'Paz':('HEAD_COACH','https://team-detonation.net/team/leagueoflegends'),
+        'TaNa':('COACH','https://team-detonation.net/team/leagueoflegends'),
+        'Gismo':('ANALYST','https://team-detonation.net/team/leagueoflegends')},
+}
+
+def annotate_verified_staff(league,team,people):
+    """Only a game-display correction; original source data remains untouched."""
+    corrections=VERIFIED_COACHING.get((league,team),{})
+    names={'HEAD_COACH':'수석코치','COACH':'코치','ANALYST':'분석관'}
+    result=[]
+    for raw in people:
+        person=dict(raw)
+        item=corrections.get(str(person.get('nickname') or ''))
+        if item:
+            role,url=item
+            person['kind']='coach' if role!='ANALYST' else 'staff'
+            person['staff_role']=role
+            person['staff_role_name']=names[role]
+            person['raw_role']='Head Coach' if role=='HEAD_COACH' else 'Analyst' if role=='ANALYST' else 'Coach'
+            person['staff_role_source']=url
+        result.append(person)
+    return result
+
 def owner_info(league,team,created=False):
     record=VERIFIED.get((league,team))
     if record:return deepcopy(record)
@@ -60,6 +94,7 @@ def ai_manager(people):
         return dict(name=catalog.display(real),source='registered-coach',
                     nationality_name_ko=real.get('nationality_name_ko',''),
                     nationality_code=real.get('nationality_code',''),
-                    person_id=real.get('id'),role='감독')
+                    person_id=real.get('id'),role='감독',
+                    source_url=real.get('staff_role_source',''))
     return dict(name='임시 감독 (게임 AI)',source='simulation',role='감독',
                 nationality_name_ko='',nationality_code='',person_id=None)

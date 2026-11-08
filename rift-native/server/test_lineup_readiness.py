@@ -27,8 +27,11 @@ class LineupReadinessTests(unittest.TestCase):
 
     def test_missing_starting_role_is_not_accepted(self):
         self.roster.pop()
+        for p in self.roster:
+            self.db.execute('INSERT INTO club_contracts VALUES(?,?,?,?)',(7,p['id'],1,150))
+            self.db.execute('INSERT INTO club_health VALUES(?,?,?)',(7,p['id'],0))
         errors=management.readiness_details(self.db,7,20)
-        self.assertEqual(1,len(errors)+sum(i['role']!='SUPPORT' for i in errors))
+        self.assertEqual(1,len(errors))
         self.assertEqual('SUPPORT',errors[0]['role'])
         self.assertTrue(management.readiness(self.db,7,20))
 

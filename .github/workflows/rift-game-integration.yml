@@ -33,6 +33,8 @@ jobs:
           path: |
             rift-native/nationality-gap-report.json
             rift-native/nationality-gap.csv
+      - name: Check existing-VM deploy Bash syntax
+        run: bash -n rift-native/deploy/gcp/install-vm.sh
       - name: Validate browser JavaScript
         run: node --check rift-native/web/app.js
       - name: Franchise sponsor and team identity checks

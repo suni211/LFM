@@ -385,14 +385,84 @@ async function solo() {
   document.querySelectorAll('[data-talk]').forEach(button => button.onclick = () => api('/solo-talk', {id:current.id, person:button.dataset.talk}).then(() => draw()).catch(error => alert(error.message)))
   await topbar()
 }
+
+let transferTab = 'rumor'
+let transferLeague = ''
+
 async function transfers() {
-  const current = await requireCareer(); if (!current) return
-  const [offers, activity] = await Promise.all([api('/transfer-offers?id=' + current.id), api('/transfer-activity?id=' + current.id)])
-  shell(`<div class="panel"><h2>이적 제안</h2><input id="pid" placeholder="선수 id"/><input id="salary" value="0"/><input id="fee" value="0"/><button class="act" id="quote">제안</button>${offers.offers.map(item => `<div class="row">#${item.id} ${esc(item.state)} 연봉 ${money(item.annual_salary)} 이적료 ${money(item.fee)}<button class="act" data-offer="${item.id}" data-choice="accept">수락</button><button class="act" data-offer="${item.id}" data-choice="decline">거절</button><button class="act" data-offer="${item.id}" data-choice="cancel">취소</button></div>`).join('')}</div><div class="panel"><h2>이적 기록</h2>${activity.events.map(item => `<div class="row">${esc(item.buyer_name || '')} ${money(item.fee)}</div>`).join('')}</div>`, '/app/transfers')
-  document.getElementById('quote').onclick = () => api('/transfer-offer', {id:current.id, person:document.getElementById('pid').value.trim(), annual_salary:Number(document.getElementById('salary').value), fee:Number(document.getElementById('fee').value), years:2, pitch:'development'}).then(() => draw()).catch(error => alert(error.message))
-  document.querySelectorAll('[data-offer]').forEach(button => button.onclick = () => api('/transfer-response', {id:current.id, offer:Number(button.dataset.offer), choice:button.dataset.choice}).then(() => draw()).catch(error => alert(error.message)))
+  const current = await requireCareer()
+  if (!current) return
+  const query = '&league=' + encodeURIComponent(transferLeague)
+  const [offers, rumors, official, available] = await Promise.all([
+    api('/transfer-offers?id=' + current.id),
+    api('/transfer-rumors?id=' + current.id + query),
+    api('/transfer-activity?id=' + current.id + query),
+    api('/clubs')
+  ])
+  const leagues = [...new Set(available.leagues || [])].sort()
+  const options = ['<option value="">전체 리그</option>', ...leagues.map(l =>
+    `<option value="${esc(l)}" ${l === transferLeague ? 'selected' : ''}>${esc(l)}</option>`)].join('')
+  const sections = [['rumor','루머'],['official','오피셜'],['mine','내 이적 제안']]
+  const tabs = sections.map(([id,title]) =>
+    `<button class="act ${id===transferTab?'on':''}" data-transfer-tab="${id}" aria-pressed="${id===transferTab}">${title}</button>`).join('')
+  let content = ''
+  if (transferTab === 'rumor') {
+    content = `<section class="panel"><h2>이적 루머</h2><p class="empty">접촉설·찌라시는 계약 확정이 아닙니다. 오피셜과 별개로 표시합니다.</p>${(rumors.events || []).map(item =>
+      `<article class="row"><div><small>${esc(item.league)} · ${item.season}시즌 ${item.week}주 · 미확정</small><b>${esc(item.headline)}</b><p>${esc(item.body)}</p></div></article>`).join('') || '<p>선택한 리그에 등록된 루머가 없습니다.</p>'}</section>`
+  } else if (transferTab === 'official') {
+    content = `<section class="panel"><h2>오피셜 · 확정 이적</h2><p class="empty">실제 게임 데이터에 기록된 완료 거래만 표시합니다. AI 거래 금액은 게임 내 금액입니다.</p>
+      ${(official.events || []).map(item =>
+        `<article class="row"><div><small>${esc(item.league || '리그 확인 중')} · ${item.season}시즌 ${item.week}주 · ${item.origin==='ai'?'AI 간 이적':'확정 거래'}</small>
+          <b><a href="/app/player/${encodeURIComponent(item.person_id)}">${esc(item.player_name || '선수 정보 확인 중')}</a></b>
+          <p>${esc(item.from_team || '자유계약')} → ${esc(item.to_team || item.buyer_name || '구단 확인 중')}</p>
+          <small>${esc(item.kind==='coach'?'코치':item.kind==='staff'?'스태프':'선수')} · 이적료 ${money(item.fee)}</small></div></article>`).join('') || '<p>선택한 리그에 확정된 이적 기록이 없습니다.</p>'}</section>`
+  } else {
+    const own = (offers.offers || []).filter(item => !transferLeague || item.person?.league===transferLeague ||
+      current.club_profile?.league===transferLeague)
+    const actionButtons = item => {
+      const buttons = []
+      if (item.direction !== 'outgoing' && ['quoted','ready'].includes(item.state)) {
+        buttons.push(`<button class="act" data-offer="${item.id}" data-choice="accept">조건 수락</button>`)
+      }
+      if (item.direction==='outgoing' && item.state==='seller_pending') {
+        buttons.push(`<button class="act" data-offer="${item.id}" data-choice="approve">이적 허용</button>`)
+        buttons.push(`<button class="act" data-offer="${item.id}" data-choice="decline">거절</button>`)
+      }
+      if (item.direction!=='outgoing' && !['completed','declined','cancelled'].includes(item.state)) {
+        buttons.push(`<button class="act" data-offer="${item.id}" data-choice="cancel">제안 취소</button>`)
+      }
+      return buttons.join('')
+    }
+    content = `<section class="panel"><h2>내 이적 제안</h2>
+      <div class="row"><input id="pid" aria-label="선수 ID" placeholder="선수 ID"/><input id="salary" type="number" min="0" aria-label="제안 연봉" value="0"/><input id="fee" type="number" min="0" aria-label="제안 이적료" value="0"/><button class="act" id="quote">영입 제안</button></div>
+      ${own.map(item => `<div class="row"><div><b>${esc(item.person?.nickname_ko || item.person?.nickname || item.person?.name || item.person_id)}</b>
+      <small>#${item.id} · ${esc(item.person?.league || '')} · ${esc(item.state)} · ${item.direction==='outgoing'?'매각 제안':'영입 제안'}</small>
+      <p>연봉 ${money(item.annual_salary)} · 이적료 ${money(item.fee)}</p></div><div>${actionButtons(item)}</div></div>`).join('') || '<p>진행 중이거나 완료된 제안이 없습니다.</p>'}</section>`
+  }
+  shell(`<div class="page-heading"><div><p class="eyebrow">TRANSFER MARKET</p><h1>이적시장</h1><p>AI 구단 이적 · 리그별 접촉설과 확정 계약</p></div></div>
+    <section class="panel"><div class="tabs">${tabs}</div>
+      <label for="transfer-league">리그 선택</label><select id="transfer-league">${options}</select></section>
+    ${content}`, '/app/transfers')
+  document.querySelectorAll('[data-transfer-tab]').forEach(button => button.onclick = () => {
+    transferTab=button.dataset.transferTab
+    transfers().catch(error => alert(error.message))
+  })
+  document.getElementById('transfer-league').onchange = event => {
+    transferLeague=event.target.value
+    transfers().catch(error => alert(error.message))
+  }
+  const quote = document.getElementById('quote')
+  if (quote) quote.onclick = () => api('/transfer-offer', {id:current.id,
+    person:document.getElementById('pid').value.trim(),
+    annual_salary:Number(document.getElementById('salary').value),
+    fee:Number(document.getElementById('fee').value), years:2, pitch:'development'})
+    .then(() => transfers()).catch(error => alert(error.message))
+  document.querySelectorAll('[data-offer]').forEach(button => button.onclick = () =>
+    api('/transfer-response',{id:current.id,offer:Number(button.dataset.offer),choice:button.dataset.choice})
+      .then(() => transfers()).catch(error => alert(error.message)))
   await topbar()
 }
+
 async function shortlist() {
   const current = await requireCareer(); if (!current) return
   const data = await api('/shortlist?id=' + current.id)

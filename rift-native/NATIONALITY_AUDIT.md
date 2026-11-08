@@ -1,6 +1,14 @@
 # LFM nationality verification gate
 
 Original people catalog: `rift-native/assets/people.json` (1,088 entries as of 2026-11-08).
+- Entries with ISO nationality code: **5 / 1,088**.
+- Entries still lacking ISO code: **1,083**.
+- Records marked as real people: **1,072**; real people lacking ISO code: **1,067**.
+- 16 LCK CL/LDL source placeholders are marked `real_person=false`; do not assign them a nationality by inferring a competitive region.
+- No 1,000-person verified-country mapping exists on this branch. Do not claim that bulk identity checks have been completed.
+- The league operator dashboard includes `/operator/nationality-audit` to report the true number after each import.
+
+LCK CL and LDL are standalone **competitions**, not club names `LCK 2군` or `LDL 2군`. Those 16 source placeholder team values have been corrected to `소속 미확인`. The LCK CL game directory has ten development club identities and links existing parent academy players as a **read-only club profile** without duplicating their IDs; the LDL game directory has development-organisation clubs but lacks verified 2026 individual rosters. These must not be presented as official 2026 LDL season participants or as fully verified playable squads.
 
 Run from the repo root:
 

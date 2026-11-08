@@ -121,7 +121,13 @@ class Handler(BaseHTTPRequestHandler):
     def get(self):
         with closing(connect()) as db:
             uid=self.user(db)
-            if urlsplit(self.path).path=='/health': return self.reply(200,{'status':'ok','revision':'web-rosters-manager-20261105','capabilities':['clubs','dashboard','search','community','draft-swap','management','fearless','response-timeout-180','manual-draft','fountain-defense','backdoor-protection','six-slot-builds','competitions','account-errors','tactics','phase-orders','personal-training','champion-pool','solo-ladder','prospect-debut','operator-desk','stove-leaks','easter-academy','client-updates','web'],'champion_abilities':'partial'})
+            if urlsplit(self.path).path=='/health':
+                _,web=self.roots()
+                fingerprints={filename:hashlib.sha256((web/filename).read_bytes()).hexdigest()[:16]
+                    if (web/filename).is_file() else None
+                    for filename in ('index.html','app.js','app.css')}
+                return self.reply(200,{'status':'ok','revision':'rift-ui-fresh-20261108',
+                    'web_sha256':fingerprints,'capabilities':['clubs','dashboard','search','community','draft-swap','management','fearless','response-timeout-180','manual-draft','fountain-defense','backdoor-protection','six-slot-builds','competitions','account-errors','tactics','phase-orders','personal-training','champion-pool','solo-ladder','prospect-debut','operator-desk','stove-leaks','easter-academy','client-updates','web'],'champion_abilities':'partial'})
             if urlsplit(self.path).path.startswith('/updates/'):
                 import updates
                 return updates.serve(self, urlsplit(self.path).path)

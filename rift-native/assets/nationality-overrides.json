@@ -7701,6 +7701,132 @@
       "identity_match": "exact competitive nickname + equivalent real-world name",
       "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
       "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "8f36d7b0471833f50074": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://liquipedia.net/leagueoflegends/Berserker_%28Korean_player%29",
+      "verified_on": "2026-11-08",
+      "evidence_type": "individual-confirmed-country-nationality",
+      "citizenship_verified": true,
+      "identity_match": "specific competitive nickname, 2026 tournament participant or verified individual player page"
+    },
+    "3d559d9b7e825733a61e": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://liquipedia.net/leagueoflegends/World_Championship/2026",
+      "verified_on": "2026-11-08",
+      "evidence_type": "individual-confirmed-country-nationality",
+      "citizenship_verified": true,
+      "identity_match": "specific competitive nickname, 2026 tournament participant or verified individual player page"
+    },
+    "d3dbf4208d2016e67853": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://liquipedia.net/leagueoflegends/World_Championship/2026",
+      "verified_on": "2026-11-08",
+      "evidence_type": "individual-confirmed-country-nationality",
+      "citizenship_verified": true,
+      "identity_match": "specific competitive nickname, 2026 tournament participant or verified individual player page"
+    },
+    "8e5fc939fdc13c75ecee": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://liquipedia.net/leagueoflegends/World_Championship/2026",
+      "verified_on": "2026-11-08",
+      "evidence_type": "individual-confirmed-country-nationality",
+      "citizenship_verified": true,
+      "identity_match": "specific competitive nickname, 2026 tournament participant or verified individual player page"
+    },
+    "8ab2528858f398329a0d": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://liquipedia.net/leagueoflegends/World_Championship/2026",
+      "verified_on": "2026-11-08",
+      "evidence_type": "individual-confirmed-country-nationality",
+      "citizenship_verified": true,
+      "identity_match": "specific competitive nickname, 2026 tournament participant or verified individual player page"
+    },
+    "9d350e0f4e2fff211825": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://liquipedia.net/leagueoflegends/Kanavi",
+      "verified_on": "2026-11-08",
+      "evidence_type": "individual-confirmed-country-nationality",
+      "citizenship_verified": true,
+      "identity_match": "specific competitive nickname, 2026 tournament participant or verified individual player page"
+    },
+    "a767ac6f0ebdfa212f4e": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://liquipedia.net/leagueoflegends/World_Championship/2026",
+      "verified_on": "2026-11-08",
+      "evidence_type": "individual-confirmed-country-nationality",
+      "citizenship_verified": true,
+      "identity_match": "specific competitive nickname, 2026 tournament participant or verified individual player page"
+    },
+    "a4544dd38d00291a2c72": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://liquipedia.net/leagueoflegends/World_Championship/2026",
+      "verified_on": "2026-11-08",
+      "evidence_type": "individual-confirmed-country-nationality",
+      "citizenship_verified": true,
+      "identity_match": "specific competitive nickname, 2026 tournament participant or verified individual player page"
+    },
+    "fe3d95770d80fedacc95": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://liquipedia.net/leagueoflegends/World_Championship/2026",
+      "verified_on": "2026-11-08",
+      "evidence_type": "individual-confirmed-country-nationality",
+      "citizenship_verified": true,
+      "identity_match": "specific competitive nickname, 2026 tournament participant or verified individual player page"
+    },
+    "6c541d871e79cc11b8d4": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://liquipedia.net/leagueoflegends/World_Championship/2026",
+      "verified_on": "2026-11-08",
+      "evidence_type": "individual-confirmed-country-nationality",
+      "citizenship_verified": true,
+      "identity_match": "specific competitive nickname, 2026 tournament participant or verified individual player page"
+    },
+    "96eca4367b543faccb45": {
+      "code": "VN",
+      "name": "베트남",
+      "source": "https://liquipedia.net/leagueoflegends/World_Championship/2026",
+      "verified_on": "2026-11-08",
+      "evidence_type": "individual-confirmed-country-nationality",
+      "citizenship_verified": true,
+      "identity_match": "specific competitive nickname, 2026 tournament participant or verified individual player page"
+    },
+    "263038d3a662f1db8a6d": {
+      "code": "VN",
+      "name": "베트남",
+      "source": "https://liquipedia.net/leagueoflegends/World_Championship/2026",
+      "verified_on": "2026-11-08",
+      "evidence_type": "individual-confirmed-country-nationality",
+      "citizenship_verified": true,
+      "identity_match": "specific competitive nickname, 2026 tournament participant or verified individual player page"
+    },
+    "958de43247e2cf7b5bc3": {
+      "code": "VN",
+      "name": "베트남",
+      "source": "https://liquipedia.net/leagueoflegends/World_Championship/2026",
+      "verified_on": "2026-11-08",
+      "evidence_type": "individual-confirmed-country-nationality",
+      "citizenship_verified": true,
+      "identity_match": "specific competitive nickname, 2026 tournament participant or verified individual player page"
+    },
+    "27607ee4bef1592a0917": {
+      "code": "PL",
+      "name": "폴란드",
+      "source": "https://www.lolesporthub.com/worlds-2026/players/inspired",
+      "verified_on": "2026-11-08",
+      "evidence_type": "individual-confirmed-country-nationality",
+      "citizenship_verified": true,
+      "identity_match": "specific competitive nickname, 2026 tournament participant or verified individual player page"
     }
   },
   "country_or_birthplace_accepted": true

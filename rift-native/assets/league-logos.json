@@ -29,5 +29,13 @@
     "url": "https://commons.wikimedia.org/wiki/Special:FilePath/CBLOL_logo.png",
     "source": "https://commons.wikimedia.org/wiki/File:CBLOL_logo.png",
     "year": 2021
+  },
+  "LFL": {
+    "url": "https://commons.wikimedia.org/wiki/Special:FilePath/LFL-Logo-2020-black.svg",
+    "source": "https://commons.wikimedia.org/wiki/File:LFL-Logo-2020-black.svg",
+    "year": 2020,
+    "note": "실존 LFL 로고의 역사적 버전(2020). 현재 시즌의 최신 디자인이라는 보장은 없음",
+    "license": "CC BY-SA 4.0",
+    "attribution": "Riot Games France"
   }
 }

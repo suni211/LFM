@@ -6,6 +6,7 @@ import uuid
 import catalog
 import staffing
 import handles
+import nationality
 
 ROLES=('TOP','JUNGLE','MID','ADC','SUPPORT')
 RETIRED={'ambition','score','bengi','marin','bang','wolf','mata','madlife','pray','gorilla',
@@ -74,11 +75,17 @@ def view(db,career):
         import clubs
         profile=clubs.profile(db,career)
         if profile['mode']=='takeover':
-            people=staffing.annotate(db,career,clubs.roster(db,career))
+            people=clubs.roster(db,career)
+            people += [nationality.enrich(dict(json.loads(raw),assignment=assignment))
+                       for raw,assignment in db.execute(
+                        "SELECT payload,assignment FROM generated_people WHERE career_id=? AND assignment!='departed'",(career,))]
+            people=staffing.annotate(db,career,people)
             import solo
             for person in people: solo.attach(db,person)
             return dict(complete=bool(row and row[0]),people=people,mode='takeover',league=profile['league'],
-                        roster=[p for p in people if p['assignment']=='first'],staff=[p for p in people if p['assignment']=='staff'],staff_limits=staffing.summary([p for p in people if p['assignment']=='staff']))
+                        roster=[p for p in people if p['assignment']=='first' and p.get('kind')=='player'],
+                        staff=[p for p in people if p['assignment']=='staff'],
+                        staff_limits=staffing.summary([p for p in people if p['assignment']=='staff']))
     people=[dict(json.loads(raw),assignment=assignment) for raw,assignment in db.execute(
         "SELECT payload,assignment FROM generated_people WHERE career_id=? AND assignment!='departed' ORDER BY real_name",(career,))]
     if db.execute("SELECT 1 FROM sqlite_master WHERE name='club_profiles'").fetchone():

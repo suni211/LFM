@@ -31,6 +31,11 @@ def game_clubs(db):
         for pid,team,league in db.execute('''SELECT o.person_id,c.name,p.league FROM person_ownership o
             JOIN careers c ON c.id=o.career_id JOIN club_profiles p ON p.career_id=c.id'''):
             if pid not in changes: changes[pid]=(team,league,None,None)
+    # Completed AI deals update the same person IDs used by all profile views.
+    if db.execute("SELECT 1 FROM sqlite_master WHERE name='ai_player_clubs'").fetchone():
+        for pid,league,team in db.execute("SELECT person_id,league,team FROM ai_player_clubs"):
+            if pid not in changes:
+                changes[pid]=(team,league,None,None)
     return changes
 
 def apply_game_club(person,changes):

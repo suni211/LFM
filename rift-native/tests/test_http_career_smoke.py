@@ -150,7 +150,7 @@ class HttpCareerSmokeTests(unittest.TestCase):
             db.execute("""INSERT INTO sponsor_offers
                 (career_id,season,company,region,amount)
                 VALUES(?,1,'삼성전자','KR',50000000)""",(career,))
-            offer=db.execute('SELECT id FROM sponsor_offers WHERE career_id=?',(career,)).fetchone()[0]
+            offer=db.execute("SELECT id FROM sponsor_offers WHERE career_id=? AND company='삼성전자' AND tier='main'",(career,)).fetchone()[0]
             initial=db.execute('SELECT cash FROM club_finances WHERE career_id=?',(career,)).fetchone()[0]
         status,data=self.call('/sponsor-accept',dict(id=career,offer=offer),token)
         self.assertEqual(200,status,data)

@@ -614,6 +614,7 @@ class Handler(BaseHTTPRequestHandler):
                     'another club is developing this player','already your prospect','this player is in another club tryout',
                     'prospect list is full','talk again later','not your prospect','not ready for pro debut',
                     '계약 만료 시즌의 스토브리그에서만 재계약할 수 있습니다.',
+                    '시즌과 주차는 운영자만 진행할 수 있습니다.',
                     'debut the prospect before the pro roster','operators choose a team',
                     '닉네임과 이름을 각각 1~30자로 입력하세요.','감독 닉네임은 영문 2~20자만 사용할 수 있습니다.','이미 사용 중인 감독 닉네임입니다.','감독 능력치는 각각 1~20, 합계 60으로 설정하세요.','감독 국적을 목록에서 선택해 주세요.','invalid shotcallers','오더 담당은 현재 1군 주전 선수 중에서 선택하세요.'}
             message=str(error)
@@ -1021,36 +1022,7 @@ class Handler(BaseHTTPRequestHandler):
                 db.execute('COMMIT')
                 return self.reply(200,dict(updated,advanced=True,operator=True))
             if self.path=='/advance':
-                cid=data['id']; version=data['version']
-                if type(cid)!=int or type(version)!=int: raise ValueError()
-                db.execute('BEGIN IMMEDIATE')
-                row=db.execute('SELECT c.week,c.season,c.version,m.role FROM careers c JOIN members m ON c.id=m.career_id WHERE c.id=? AND m.user_id=?',(cid,uid)).fetchone()
-                if not row: db.execute('ROLLBACK'); return self.reply(404,{'error':'not found'})
-                week,season,current,role=row
-                world=online_world.clock(db)
-                if (season,week,current)!=(world['season'],world['week'],world['version']):
-                    return self.reply(409,{'error':'online clock migration required'})
-                if current!=version: db.execute('ROLLBACK'); return self.reply(409,{'error':'stale version'})
-                setup=db.execute('SELECT complete FROM recruitment_state WHERE career_id=?',(cid,)).fetchone()
-                if setup and not setup[0]:
-                    db.execute('ROLLBACK')
-                    return self.reply(409,{'error':'finalize the five-player lineup before advancing'})
-                if setup:
-                    lineup=recruitment.view(db,cid)['roster']
-                    if len(lineup)!=5 or {p['role'] for p in lineup}!=set(recruitment.ROLES):
-                        return self.reply(409,{'error':'finalize the five-player lineup before advancing'})
-                if db.execute("SELECT 1 FROM fixtures WHERE state='queued' LIMIT 1").fetchone():
-                    db.execute('ROLLBACK')
-                    return self.reply(409,{'error':'finish the current series before advancing'})
-                readiness=online_world.vote(db,uid)
-                votes,members=readiness['ready_count'],readiness['member_count']
-                advanced=votes>members//2
-                if advanced:
-                    updated=advance_world(db)
-                    week,season,current=updated['week'],updated['season'],updated['version']
-                db.execute('COMMIT')
-                return self.reply(200,{'advanced':advanced,'week':week,'season':season,
-                    'version':current,'votes':votes,'members':members})
+                return self.reply(403,{'error':'시즌과 주차는 운영자만 진행할 수 있습니다.'})
             if self.path=='/plan':
                 cid=data.get('id')
                 if type(cid) is not int or not transfers.can_manage(db,uid,cid): return self.reply(403,{'error':'forbidden'})

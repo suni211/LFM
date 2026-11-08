@@ -108,16 +108,17 @@ function login() {
   document.getElementById('up').onclick = event => { event.preventDefault(); send('/register') }
 }
 async function operatorDesk() {
-  const [data,calendar,competition]=await Promise.all([
+  const [data,calendar,competition,nationalities]=await Promise.all([
     api('/operator/world'),
     api('/season-calendar?league=LCK'),
-    api('/competitions?id=0&league=LCK')
+    api('/competitions?id=0&league=LCK'),
+    api('/operator/nationality-audit')
   ])
   const upcoming=calendar.fixtures.filter(g=>g.week>=data.world.week).slice(0,12)
   const matchups=upcoming.map(g=>'<div class="row"><b>'+esc(g.season)+'시즌 '+esc(g.week)+'주</b><span>'+esc(g.home)+' vs '+esc(g.away)+'</span><small>BO'+g.best_of+'</small></div>').join('') || '<p>예정 대진이 없습니다.</p>'
   const newsCards=(data.qualification.events||[]).map(e=>'<div class="event-card"><b>'+esc(e.name)+'</b><p>'+esc(e.start)+' ~ '+esc(e.end)+'</p><small>'+esc(e.format)+'</small></div>').join('')
   const summary='<div class="page-heading"><div><p class="eyebrow">RIFT MANAGER · ONLINE WORLD</p><h1>리그 대시보드</h1><p>일반 유저와 같은 최신 화면 · 운영자 전용 조회 권한</p></div><a class="text-link" href="/app/history">시즌 역사관 ↗</a></div>'
-  const stats='<div class="grid3"><section class="panel"><h2>현재 시즌</h2><b>'+data.world.season+'시즌 '+data.world.week+'주차</b></section><section class="panel"><h2>리그 구단</h2><b>'+data.clubs.length+'팀</b></section><section class="panel"><h2>등록 계정</h2><b>'+data.accounts+'명</b></section></div>'
+  const stats='<div class="grid3"><section class="panel"><h2>현재 시즌</h2><b>'+data.world.season+'시즌 '+data.world.week+'주차</b></section><section class="panel"><h2>리그 구단</h2><b>'+data.clubs.length+'팀</b></section><section class="panel"><h2>등록 계정</h2><b>'+data.accounts+'명</b></section><section class="panel"><h2>국적 확인 현황</h2><b>'+nationalities.with_code+' / '+nationalities.total+'명</b><small>미확인 '+nationalities.missing_code+'명 · 확인 필요</small></section></div>'
   const main='<div class="fm-overview"><div><section class="panel"><h2>리그 순위 · LCK</h2>'+widget('standings',{standings:competition.standings,club:'',league:'LCK'})+'</section></div><div><section class="panel"><h2>이번 시즌 자동 생성 대진</h2>'+matchups+'<a class="text-link" href="/app/schedule">전체 일정 보기 ↗</a></section></div><div><section class="panel"><h2>국제대회</h2>'+newsCards+'</section></div></div>'
   shell(summary+stats+main,'/app/operator')
   await topbar()

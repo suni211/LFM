@@ -510,11 +510,9 @@ async function competition(selected='') {
   await topbar()
 }
 async function historyPage(selectedSeason=0,selectedLeague='') {
-  const requested=selectedSeason?'?season='+encodeURIComponent(selectedSeason):'?'
-  const query=requested+(selectedLeague?(requested==='?'?'':'&')+'league='+encodeURIComponent(selectedLeague):'')
-  const data=await api('/honors'+query)
-  const league=selectedLeague||''
-  const leagueHonors=data.awards.filter(a=>a.category!=='worlds_mvp')
+  const data=await api('/honors'+(selectedSeason?'?season='+encodeURIComponent(selectedSeason):''))
+  const league=selectedLeague||'LCK'
+  const leagueHonors=data.awards.filter(a=>a.league===league&&a.category!=='worlds_mvp')
   const ranks=[['퍼스트 팀',1],['세컨드 팀',2],['써드 팀',3]]
   const cards=ranks.map(([title,rank])=>{
     const lineup=Object.entries(ROLE).map(([role,roleName])=>{

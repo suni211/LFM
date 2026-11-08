@@ -339,25 +339,52 @@ async function squad(which) {
   await topbar()
 }
 async function tactics() {
-  const current = await requireCareer(); if (!current) return
-  const [data,registration]=await Promise.all([api('/plan?id='+current.id),api('/recruitment?id='+current.id)])
-  const plan = data.plan
-  const catalog = data.catalog
-  const phaseName = {early:'초반 운영', mid:'중반 운영', late:'후반 운영'}
-  const phases = ['early','mid','late'].map(phase => `<div class="panel"><h2>${phaseName[phase]}</h2><label>운영 전략</label><select data-phase="${phase}" data-key="order">${catalog.orders[phase].map(item => `<option ${plan[phase].order === item ? 'selected' : ''}>${esc(item)}</option>`).join('')}</select><label>운영 세부 지침</label><select data-phase="${phase}" data-key="sub">${catalog.subs[phase].map(item => `<option ${plan[phase].sub === item ? 'selected' : ''}>${esc(item)}</option>`).join('')}</select></div>`).join('')
-  const lanes = Object.entries(catalog.laning).map(([role, options]) => `<div class="row"><b>${ROLE[role]}</b><select data-lane="${role}">${options.map(item => `<option ${plan.laning[role] === item ? 'selected' : ''}>${esc(item)}</option>`).join('')}</select></div>`).join('')
-  const callerOptions=key=>'<option value="">담당 선수 선택</option>'+(registration.roster||[]).map(p=>`<option value="${esc(p.id)}" ${plan.callers?.[key]===p.id?'selected':''}>${esc(nickname(p))} · ${esc(ROLE[p.role]||p.role)}</option>`).join('')
-  const callers=`<section class="panel"><h2>오더 담당 선수</h2><div class="caller-selects"><label>오더 담당<select id="primary-caller">${callerOptions('primary')}</select></label><label>부오더 담당<select id="secondary-caller">${callerOptions('secondary')}</select></label></div><p>오더 담당이 교전을 지휘하고, 사망 중에는 부오더 담당이 이어받습니다.</p></section>`
-  shell(callers + phases + `<div class="panel"><h2>초반 라인전</h2>${lanes}<button class="act" id="save-plan">전술 저장</button><p>담당 선수와 운영 전략을 저장하면 다음 세트부터 적용됩니다.</p></div>`, '/app/tactics')
-  document.getElementById('save-plan').onclick = async () => {
-    const primary=document.getElementById('primary-caller').value,secondary=document.getElementById('secondary-caller').value
-    if(!primary||!secondary||primary===secondary)return alert('오더와 부오더를 맡을 서로 다른 주전 선수를 선택하세요.')
-    const next = {callers:{primary,secondary},early:{}, mid:{}, late:{}, laning:{}}
-    document.querySelectorAll('[data-phase]').forEach(select => { next[select.dataset.phase][select.dataset.key] = select.value })
-    document.querySelectorAll('[data-lane]').forEach(select => { next.laning[select.dataset.lane] = select.value })
-    try { await api('/plan', {id:current.id, plan:next}); alert('전술을 저장했습니다.') } catch (error) { alert(error.message) }
-  }
-  await topbar()
+ const current=await requireCareer();if(!current)return
+ const [data,registration]=await Promise.all([api('/plan?id='+current.id),api('/recruitment?id='+current.id)])
+ const plan=data.plan,catalog=data.catalog,draft=JSON.parse(JSON.stringify(plan))
+ draft.callers=draft.callers||{}
+ const roster=(registration.roster||[]).filter(p=>p.kind==='player')
+ const names={early:'초반',mid:'중반',late:'후반'}
+ const options=(items,selected,attrs)=>'<div class="tactic-option-grid">'+items.map(x=>'<button type="button" class="tactic-option '+(x===selected?'selected':'')+'" '+attrs+'="'+esc(x)+'">'+esc(x)+'</button>').join('')+'</div>'
+ const phases=['early','mid','late'].map((phase,index)=>'<section class="panel tactic-phase">'+
+   '<div class="tactic-phase-title"><span class="tactic-phase-number">0'+(index+1)+'</span><div><h2>'+names[phase]+' 운영</h2><p>'+(index===0?'라인전·정글 동선':index===1?'전령·드래곤·교전': '바론·장로·후반 운영')+'</p></div></div>'+
+   '<h3>경기 운영 전략</h3>'+options(catalog.orders[phase],plan[phase]?.order||'','data-tactic-order="'+phase+'" data-option')+
+   '<h3>세부 지침</h3>'+options(catalog.subs[phase],plan[phase]?.sub||'','data-tactic-sub="'+phase+'" data-option')+'</section>').join('')
+ const caller=key=>'<div class="tactic-callers"><h3>'+(key==='primary'?'메인 오더':'서브 오더')+'</h3><div class="tactic-caller-options">'+roster.map(p=>
+   '<button type="button" class="tactic-caller '+(draft.callers?.[key]===p.id?'selected':'')+'" data-tactic-caller="'+key+'" data-person="'+esc(p.id)+'">'+
+   face(p.id,Boolean(p.photo))+'<b>'+esc(nickname(p))+'</b><small>'+esc(ROLE[p.role]||p.role)+'</small></button>').join('')+'</div></div>'
+ const lanes=Object.entries(catalog.laning).map(([role,values])=>
+   '<div class="tactic-lane-row" id="tactic-'+role+'"><div class="tactic-lane-title"><b>'+esc(ROLE[role])+'</b><small>라인별 교전·압박 방식</small></div>'+
+   options(values,draft.laning?.[role]||'','data-tactic-lane="'+role+'" data-option')+'</div>').join('')
+ const positions={TOP:[19,26],JUNGLE:[38,46],MID:[55,50],ADC:[78,73],SUPPORT:[68,79]}
+ const markers=Object.entries(positions).map(([role,pos])=>'<a class="rift-position rift-'+role.toLowerCase()+'" href="#tactic-'+role+'" style="left:'+pos[0]+'%;top:'+pos[1]+'%">'+esc(ROLE[role])+'</a>').join('')
+ shell('<div class="page-heading"><div><p class="eyebrow">TACTICAL BOARD</p><h1>전술 센터</h1><p>실제 경기 중 사용할 오더·라인전 전략을 그래픽 보드에서 선택합니다.</p></div><button class="act" id="save-plan">전술 저장</button></div>'+
+   '<div class="tactic-main-grid"><section class="panel tactic-map-panel"><h2>소환사의 협곡 · 팀 운영 지도</h2>'+
+   '<div class="tactic-rift-map" role="img" aria-label="소환사의 협곡 5개 포지션 전술 배치">'+markers+'</div>'+
+   '<div class="tactic-map-legend"><span>탑 · 상단</span><span>정글 · 합류</span><span>미드 · 중심</span><span>원딜·서폿 · 하단</span></div>'+
+   '<p class="muted-note">포지션을 누르면 해당 전술 설정으로 이동합니다.</p></section>'+
+   '<section class="panel"><h2>콜 지휘 체계</h2>'+caller('primary')+caller('secondary')+
+   '<p class="muted-note">두 명의 서로 다른 1군 주전 선수를 선택해야 합니다.</p></section></div>'+
+   '<div class="tactic-phases">'+phases+'</div><section class="panel"><h2>라인별 전략</h2>'+
+   '<div class="tactic-lanes">'+lanes+'</div></section>'+
+   '<div class="tactic-save-banner"><span>수정된 전략은 다음 경기 세트부터 적용됩니다.</span><button class="act" id="save-plan-bottom">전술 저장</button></div>','/app/tactics')
+ const select=(kind,key,value,selector)=>{
+   if(kind==='order'||kind==='sub')draft[key][kind]=value
+   else if(kind==='lane')draft.laning[key]=value
+   else draft.callers[key]=value
+   document.querySelectorAll(selector).forEach(button=>button.classList.toggle('selected',(kind==='caller'?button.dataset.person:button.dataset.option)===value))
+ }
+ document.querySelectorAll('[data-tactic-order]').forEach(button=>button.onclick=()=>select('order',button.dataset.tacticOrder,button.dataset.option,'[data-tactic-order="'+button.dataset.tacticOrder+'"]'))
+ document.querySelectorAll('[data-tactic-sub]').forEach(button=>button.onclick=()=>select('sub',button.dataset.tacticSub,button.dataset.option,'[data-tactic-sub="'+button.dataset.tacticSub+'"]'))
+ document.querySelectorAll('[data-tactic-lane]').forEach(button=>button.onclick=()=>select('lane',button.dataset.tacticLane,button.dataset.option,'[data-tactic-lane="'+button.dataset.tacticLane+'"]'))
+ document.querySelectorAll('[data-tactic-caller]').forEach(button=>button.onclick=()=>select('caller',button.dataset.tacticCaller,button.dataset.person,'[data-tactic-caller="'+button.dataset.tacticCaller+'"]'))
+ const save=async()=>{if(!draft.callers.primary||!draft.callers.secondary||draft.callers.primary===draft.callers.secondary){
+    alert('메인·서브 오더를 서로 다른 주전 선수로 지정하세요.');return}
+   try{await api('/plan',{id:current.id,plan:draft});alert('전술이 저장되었습니다.')}catch(e){alert(e.message)}
+ }
+ document.getElementById('save-plan').onclick=save
+ document.getElementById('save-plan-bottom').onclick=save
+ await topbar()
 }
 async function training() {
   const current = await requireCareer(); if (!current) return

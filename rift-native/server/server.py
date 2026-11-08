@@ -26,6 +26,7 @@ import solo
 import player_departures
 import scouting
 import player_analysis
+import player_attributes
 import career_rules
 import rookie_offers
 import promotion
@@ -55,6 +56,7 @@ def init():
         competition_rules.init(db)
         qualification.init(db)
         catalog.init(db)
+        player_attributes.init(db)
         club_messages.init(db)
         recruitment.init(db)
         clubs.init(db)
@@ -336,8 +338,11 @@ class Handler(BaseHTTPRequestHandler):
                         person=catalog.detail(db,cid,query['person'][0])
                         report=scouting.report(db,cid,person)
                         breakdown=player_analysis.report(db,cid,person)
+                        attributes=player_attributes.read(db,person)
                         return self.reply(200,{'person':person,'scouting':report,
-                                               'player_analysis':breakdown})
+                                               'player_analysis':breakdown,
+                                               'attributes':attributes,
+                                               'can_edit_attributes':online_world.operator(db,uid)})
                     return self.reply(200,catalog.search(db,cid,int(query.get('page',['0'])[0]),
                         *[query.get(key,[''])[0] for key in ('query','team','kind','league')],origin=query.get('origin',['all'])[0]))
                 except FileNotFoundError:
@@ -551,8 +556,26 @@ class Handler(BaseHTTPRequestHandler):
                 return self.reply(200,{'token':token})
             uid=self.user(db)
             if not uid: return self.reply(401,{'error':'unauthorized'})
-            if online_world.operator(db,uid) and self.path not in ('/competition-rules','/person-evaluation','/fixtures','/league','/preferences','/operator/club-identity'):
+            if online_world.operator(db,uid) and self.path not in ('/competition-rules','/person-evaluation','/fixtures','/league','/preferences','/operator/club-identity','/operator/person-attributes'):
                 return self.reply(403,{'error':'운영자는 구단을 운영하거나 선수단·전술을 변경할 수 없습니다.'})
+            if self.path=='/operator/person-attributes':
+                if not online_world.operator(db,uid):
+                    return self.reply(403,{'error':'선수 능력치 수정은 운영자 전용입니다.'})
+                pid=data.get('person')
+                if not isinstance(pid,str) or not 1<=len(pid)<=128:
+                    return self.reply(400,{'error':'invalid person'})
+                try:
+                    person=catalog.detail(db,0,pid)
+                except KeyError:
+                    return self.reply(404,{'error':'선수를 찾을 수 없습니다.'})
+                try:
+                    db.execute('BEGIN IMMEDIATE')
+                    result=player_attributes.save(db,person,data.get('ratings'),uid)
+                    db.execute('COMMIT')
+                except ValueError as err:
+                    db.execute('ROLLBACK')
+                    return self.reply(400,{'error':str(err)})
+                return self.reply(200,{'saved':True,'attributes':result})
             if self.path=='/operator/club-identity':
                 if not online_world.operator(db,uid):
                     return self.reply(403,{'error':'구단 이름 수정은 운영자만 가능합니다.'})

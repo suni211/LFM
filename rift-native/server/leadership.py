@@ -122,7 +122,17 @@ def head_coach(people):
     candidates.sort(key=lambda row:(row[0],row[1]))
     return candidates[0][2]
 
-def ai_manager(people):
+VERIFIED_EXTERNAL_MANAGERS={
+    # The 2026 head coach was listed at LCK media day, but the imported team
+    # data omitted his personnel record. This is a sourced external identity.
+    ('LCK','DN SOOPers'):dict(
+        name='oDin (Joo Young-dal)',source='verified',
+        nationality_name_ko='대한민국',nationality_code='KR',
+        person_id=None,role='감독',
+        source_url='https://www.invenglobal.com/articles/20356/2026-lck-media-day-all-10-teams-vow-improved-performances-ahead-of-regular-season')
+}
+
+def ai_manager(people,league=None,team=None):
     real=head_coach(people)
     if real:
         import catalog
@@ -131,5 +141,7 @@ def ai_manager(people):
                     nationality_code=real.get('nationality_code',''),
                     person_id=real.get('id'),role='감독',
                     source_url=real.get('staff_role_source',''))
-    return dict(name='임시 감독 (게임 AI)',source='simulation',role='감독',
+    if league and team and (league,team) in VERIFIED_EXTERNAL_MANAGERS:
+        return deepcopy(VERIFIED_EXTERNAL_MANAGERS[(league,team)])
+    return dict(name='감독 정보 확인 중',source='unverified',role='감독',
                 nationality_name_ko='',nationality_code='',person_id=None)

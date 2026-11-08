@@ -411,12 +411,45 @@ async function managementPage(kind) {
   if (find) find.onclick = () => api('/staff-candidates', {id:current.id}).then(() => alert('스태프 후보를 만들었습니다.')).catch(error => alert(error.message))
   await topbar()
 }
+let calendarPage=0
 async function schedule() {
-  const current = await requireCareer(); if (!current) return
-  const data = await api('/fixtures?id=' + current.id)
-  shell(`<div class="panel"><h2>일정</h2>${data.fixtures.map(game => `<div class="row"><a href="/app/match/${game.id}">${game.season}시즌 ${game.week}주 ${esc(game.opponent)}</a><span>${esc(game.competition)} ${esc(game.state)}</span></div>`).join('') || '<p>일정이 없습니다.</p>'}</div>`, '/app/schedule')
-  document.querySelectorAll('a[href^="/app/match"]').forEach(link => link.addEventListener('click', event => { event.preventDefault(); go(link.getAttribute('href')) }))
-  await topbar()
+ const current=await requireCareer();if(!current)return
+ const data=await api('/fixtures?id='+current.id)
+ const all=data.fixtures||[]
+ const season=current.season
+ const currentWeek=current.week
+ const fixtures=all.filter(g=>g.season===season)
+ const maxPage=7
+ if(calendarPage<0||calendarPage>maxPage)calendarPage=Math.floor((currentWeek-1)/14)
+ const start=calendarPage*14+1
+ const cells=Array.from({length:14},(_,i)=>{
+   const week=start+i;if(week>104)return '<div class="calendar-cell calendar-unused"></div>'
+   const games=fixtures.filter(g=>g.week===week)
+   const status=week===currentWeek?'current-week':week<currentWeek?'past-week':'future-week'
+   return '<div class="calendar-cell '+status+'"><div class="calendar-cell-heading"><b>'+week+'주</b><small>'+
+       (week===currentWeek?'이번 주':'시즌 '+season)+'</small></div>'+
+      (games.length?games.map(g=>'<a class="calendar-match '+(g.state==='finished'?'played':g.state==='queued'?'ready':'scheduled')+'" href="/app/match/'+g.id+'">'+
+           logoImg(current.club_profile?.league||'',g.opponent)+'<span><b>'+esc(displayTeam(current.club_profile?.league||'',g.opponent))+'</b><small>'+
+           esc(g.competition||'정규 시즌')+' · BO'+g.best_of+' · '+(g.state==='finished'?'종료':g.state==='queued'?'진행':'예정')+'</small></span></a>').join(''):
+       '<div class="calendar-rest">경기 없음 <small>훈련·휴식</small></div>')+'</div>'
+ }).join('')
+ const nextGame=fixtures.filter(g=>g.state!=='finished'&&g.week>=currentWeek).sort((a,b)=>a.week-b.week)[0]
+ const ended=fixtures.filter(g=>g.state==='finished').length
+ shell('<div class="page-heading"><div><p class="eyebrow">SEASON PLANNER</p><h1>시즌 경기 캘린더</h1><p>'+season+'시즌 · 실제 날짜가 아닌 게임 주차 기준</p></div></div>'+
+  '<div class="calendar-summary"><div><small>현재</small><strong>'+currentWeek+'주</strong></div><div><small>진행 경기</small><strong>'+ended+'경기</strong></div><div><small>다음 상대</small><strong>'+esc(nextGame?displayTeam(current.club_profile?.league||'',nextGame.opponent):'미정')+'</strong></div></div>'+
+  '<section class="panel calendar-panel"><div class="calendar-toolbar"><div><h2>시즌 일정 · '+start+'~'+Math.min(104,start+13)+'주</h2><small>승패·예정 경기와 휴식 주간을 카드로 확인합니다</small></div>'+
+  '<div class="calendar-controls"><button data-calendar-prev '+(calendarPage===0?'disabled':'')+'>〈 이전</button><button data-calendar-now>이번 주</button><button data-calendar-next '+(calendarPage===maxPage?'disabled':'')+'>다음 〉</button></div></div>'+
+  '<div class="calendar-weekheaders">'+['월','화','수','목','금','토','일'].map(day=>'<span>'+day+'</span>').join('')+'</div>'+
+  '<div class="calendar-grid">'+cells+'</div>'+
+  '<div class="calendar-legend"><span><i class="dot-pending"></i> 예정</span><span><i class="dot-complete"></i> 종료</span><span><i class="dot-current"></i> 이번 주</span></div>'+
+  '<p class="muted-note">현재 경기 엔진은 요일이 아닌 주차로 움직입니다. 달력의 열은 날짜가 아니라 주차 카드를 정렬한 시각적 그리드이며 임의의 경기 날짜를 만들지 않습니다.</p></section>','/app/schedule')
+ const jump=n=>{calendarPage=Math.max(0,Math.min(maxPage,n));schedule()}
+ const prev=document.querySelector('[data-calendar-prev]'),next=document.querySelector('[data-calendar-next]'),now=document.querySelector('[data-calendar-now]')
+ if(prev)prev.onclick=()=>jump(calendarPage-1)
+ if(next)next.onclick=()=>jump(calendarPage+1)
+ if(now)now.onclick=()=>jump(Math.floor((currentWeek-1)/14))
+ document.querySelectorAll('.calendar-match').forEach(a=>a.onclick=e=>{e.preventDefault();go(a.getAttribute('href'))})
+ await topbar()
 }
 async function match(id) {
   const current = await requireCareer(); if (!current) return

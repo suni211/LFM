@@ -149,6 +149,24 @@ class Handler(BaseHTTPRequestHandler):
                     if not news.member(db,uid,cid): return self.reply(404,{'error':'not found'})
                     return self.reply(200,solo.ladder(db,cid,query.get('role',[''])[0]))
                 except ValueError: return self.reply(400,{'error':'invalid request'})
+            if url.path=='/league-overview':
+                league_name=parse_qs(url.query).get('league',[''])[0]
+                if not league_name or len(league_name)>80:
+                    return self.reply(400,{'error':'invalid league'})
+                clock=online_world.clock(db)
+                season=clock['season']
+                standings=dashboard.league_table(db,league_name,season)
+                clubs_in_league=[c for c in clubs.directory(db) if c['league']==league_name]
+                fixtures_rows=[dict(season=sn,week=wk,home=home,away=away,
+                                    competition=competition,stage=stage,state=state,
+                                    score=json.loads(raw).get('score') if raw else None)
+                    for sn,wk,home,away,competition,stage,state,raw in db.execute(
+                    """SELECT f.season,f.week,c.name,f.opponent,f.competition,f.stage,f.state,f.result
+                       FROM fixtures f JOIN careers c ON c.id=f.career_id
+                       WHERE f.season=? AND f.competition=? ORDER BY f.week,f.id LIMIT 160""",
+                    (season,league_name))]
+                return self.reply(200,dict(league=league_name,season=season,week=clock['week'],
+                    standings=standings,clubs=clubs_in_league,fixtures=fixtures_rows))
             if url.path=='/dashboard':
                 try:
                     cid=int(parse_qs(url.query)['id'][0])

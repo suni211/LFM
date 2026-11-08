@@ -424,3 +424,32 @@ img.club-primary-image{object-fit:contain;object-position:center}
 @media(max-width:1180px){.fm-player-dashboard{grid-template-columns:minmax(0,1.8fr) minmax(265px,1fr)}.fm-player-profile-heading{grid-template-columns:135px minmax(0,1fr)}.fm-player-head-stats{grid-column:1/-1;grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}}
 @media(max-width:900px){.fm-player-dashboard{grid-template-columns:1fr}.fm-attribute-sections{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:620px){.fm-player-profile-heading{grid-template-columns:1fr;padding:18px}.player-profile-face{width:125px;height:125px;min-width:125px}.player-profile-face .face-frame{width:125px;height:125px}.fm-player-head-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.fm-attribute-sections{grid-template-columns:1fr}.fm-season-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Player profile: 30 individual abilities and operator-only editing, 2026-11-08 */
+.face-frame .face-placeholder[hidden],.player-profile-face .face-placeholder[hidden],
+.face-frame img.face[hidden]{display:none!important}
+.player-profile-face .face-frame{position:relative;display:block;width:140px;height:140px;flex:none}
+.player-profile-face .face-frame>.face{display:block;width:100%;height:100%;object-fit:cover}
+.player-profile-face .face-frame>.face-placeholder{position:absolute;inset:0;display:grid;place-items:center;width:100%;height:100%;border-radius:10px;background:#263b5b}
+.portrait-person-svg{display:block;width:65%;height:65%;max-width:80px;color:#8aa8c8}
+.fm-editor-shortcut{display:inline-flex;align-items:center;justify-content:center;gap:7px;margin-top:9px;padding:9px 12px;font-size:12px;font-weight:700;text-decoration:none;background:#314b71;border-color:#81b4e2}
+.fm-editor-shortcut:hover{background:#436d99}
+.fm-attribute-editor{background:linear-gradient(135deg,#202942,#141d2b);border:1px solid #506987;border-radius:12px;padding:23px}
+.fm-attribute-editor>h2{font-size:24px;margin:6px 0 14px;color:#eef5ff}
+.fm-attribute-editor>p:not(.eyebrow){font-size:13px;color:#b9cddd;line-height:1.6}
+.fm-editor-meta{display:flex;gap:10px;flex-wrap:wrap;margin:17px 0 21px}
+.fm-editor-meta span{border:1px solid #4b6887;background:#273c58;color:#cee3f7;border-radius:7px;padding:6px 10px;font-size:11px}
+.fm-admin-stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(225px,1fr));gap:13px;align-items:start}
+.fm-admin-stat-group{padding:13px;border:1px solid #436285;background:#152339;border-radius:9px;min-width:0}
+.fm-admin-stat-group legend{font-size:14px;font-weight:800;color:#b8dff6;padding:0 7px}
+.fm-admin-stat-field{display:grid;grid-template-columns:minmax(0,1fr) 63px 34px;gap:7px;align-items:center;border-bottom:1px solid #2f4862;padding:8px 0}
+.fm-admin-stat-field:last-child{border-bottom:0}
+.fm-admin-stat-field>span{font-size:12px;color:#d2dfef}
+.fm-admin-stat-field>input{width:63px;max-width:63px;min-height:32px;padding:4px 7px;border-radius:6px;border:1px solid #5077a1;background:#223753;color:#eef9ff;text-align:center;font-weight:800;font-size:15px;font-variant-numeric:tabular-nums}
+.fm-admin-stat-field>input:focus{border-color:#99e8d1;outline:2px solid #61bfb954}
+.fm-admin-stat-field>small{font-size:10px;color:#7ba3bc}
+.fm-editor-footer{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-top:21px;border-top:1px solid #415a78;padding-top:18px}
+.fm-editor-footer p{font-size:12px;line-height:1.5;color:#a9c4dc;margin:0}
+.fm-editor-save{white-space:nowrap;padding:12px 21px!important;background:#247e7d!important;border-color:#5bc6bd!important}
+.fm-editor-save:disabled{opacity:.5}
+@media(max-width:700px){.fm-editor-footer{align-items:stretch;flex-direction:column}.fm-editor-save{width:100%}.fm-admin-stats-grid{grid-template-columns:1fr}.fm-editor-meta{gap:6px}}

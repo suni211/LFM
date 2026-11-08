@@ -2,6 +2,7 @@
 import hashlib
 import random
 import secrets
+import season_structure
 
 def init(db):
     db.execute("""CREATE TABLE IF NOT EXISTS league_games(
@@ -40,12 +41,18 @@ def create(db, career, season, first_week, opponents):
         raise ValueError('duplicate clubs')
     schedule = list(rounds(teams))
     schedule += [[(away,home) for home,away in games] for games in schedule]
-    if first_week < 1 or first_week+len(schedule)-1 > 150:
-        raise ValueError('league exceeds season')
+    if first_week < 1 or first_week > season_structure.REGIONAL_END:
+        raise ValueError('league exceeds regional season')
+    available=[week for week,_ in season_structure.round_slots(league_name)
+               if week>=max(season_structure.REGIONAL_START,first_week)]
+    if len(available)<len(schedule):
+        raise ValueError('not enough regional match weeks remain')
+    slots=[available[min(len(available)-1,int(i*len(available)/len(schedule)))]
+           for i in range(len(schedule))]
     if db.execute('SELECT 1 FROM league_games WHERE career_id=? AND season=?',(career,season)).fetchone():
         raise ValueError('league already exists')
     for offset, games in enumerate(schedule):
-        week = first_week+offset
+        week = slots[offset]
         for home,away in games:
             fixture = None
             if club in (home,away):

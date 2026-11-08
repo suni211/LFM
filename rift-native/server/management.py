@@ -66,7 +66,10 @@ def ensure(db,career):
     now=turn(db,career)
     for p in selected:
         salary=p.get('salary')
-        if type(salary) is not int or salary<1: salary=24000000 if p.get('kind')!='coach' else 18000000
+        if type(salary) is not int or salary<1:
+            import player_economy
+            estimate=p.get('economics') or player_economy.estimate(p)
+            salary=estimate['annual_salary'] if estimate else 18000000
         end=now+103
         if p.get('real_person') and not p.get('contract_estimated'):
             try: end=max(now,(date.fromisoformat(p['contract_end']).year-2026+1)*104)
@@ -74,6 +77,12 @@ def ensure(db,career):
         added=db.execute('INSERT OR IGNORE INTO club_contracts VALUES(?,?,?,?,1)',(career,p['id'],salary,end))
         if added.rowcount: db.execute('INSERT OR IGNORE INTO contract_signings VALUES(?,?,?)',(career,p['id'],now))
         db.execute('INSERT OR IGNORE INTO club_health(career_id,person_id) VALUES(?,?)',(career,p['id']))
+    # Existing signed salaries never change during a deployment. For newly
+    # started careers, budget room reflects game-evaluated salaries.
+    payroll=db.execute("""SELECT COALESCE(SUM(annual_salary),0) FROM club_contracts
+        WHERE career_id=? AND active=1""",(career,)).fetchone()[0]
+    db.execute("UPDATE club_finances SET wage_budget=MAX(wage_budget,?) WHERE career_id=?",
+        (int(payroll*1.15)+1000000,career))
     ids=sorted(p['id'] for p in selected if p['assignment']=='first')
     for i,first in enumerate(ids):
         for second in ids[i+1:]: db.execute('INSERT OR IGNORE INTO club_relationships(career_id,first_id,second_id) VALUES(?,?,?)',(career,first,second))

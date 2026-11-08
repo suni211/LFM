@@ -209,7 +209,9 @@ class Handler(BaseHTTPRequestHandler):
                 return self.reply(200,dict(total=len(records),with_code=coded,
                     missing_code=len(records)-coded,real_total=len(real),
                     real_missing=sum(not bool(p.get('nationality_code')) for p in real),
-                    by_league=by_league))
+                    source_backed_country_hints=sum(bool(p.get('country_hint')) for p in records),
+                    by_league=by_league,
+                    note='국가 단서는 출생국일 수 있으며 확인된 국적과 구분됩니다.'))
             if url.path=='/qualification':
                 season=int(parse_qs(url.query).get('season',[online_world.clock(db)['season']])[0])
                 if not 1<=season<=10000:raise ValueError('invalid season')

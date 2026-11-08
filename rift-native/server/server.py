@@ -65,6 +65,8 @@ def init():
         clubs.init(db)
         online_world.init(db)
         management.init(db)
+        import merchandise
+        merchandise.init(db)
         manager_identity.init(db)
         clubs.refresh_catalog(db)
         recruitment.repair_generated_handles(db)

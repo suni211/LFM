@@ -732,6 +732,8 @@ async function player(id, tab) {
   const development=(train.players||[]).find(row=>row.person.id===id)
   const contract=(manage.contracts||[]).find(row=>row.person.id===id)
   const tabs=[['overview','선수 개요'],['stats','시즌 성적'],['report','스카우트 보고'],['personal','개인 정보'],['contract','계약'],['history','이력'],['career','커리어'],['compare','선수 비교']]
+  const editEnabled=detail.can_edit_attributes===true&&person.kind==='player'
+  if(editEnabled)tabs.push(['edit','능력치 편집'])
   const links=`<div class="tabs player-tabs">${tabs.map(([k,l])=>`<a class="${tab===k?'on':''}" href="/app/player/${esc(id)}/${k}">${l}</a>`).join('')}</div>`
   const joined=person.team?logoImg(person.league,person.team)+esc(displayTeam(person.league,person.team))+' · '+esc(person.league||''):'FA · 무소속'
   const isPlayer=person.kind==='player'
@@ -752,6 +754,7 @@ async function player(id, tab) {
        '<div class="player-team-line">'+joinedText+'</div>'+
        (!isOperator?'<button class="act player-follow-btn" id="player-follow">'+
          (following?'★ 선수 뉴스 팔로우 중':'☆ 선수 뉴스 팔로우')+'</button>':'')+
+       (editEnabled?'<a class="act fm-editor-shortcut" href="/app/player/'+encodeURIComponent(id)+'/edit">⚙ 능력치 편집 · 운영자</a>':'')+
      '</div>'+
      '<div class="fm-player-head-stats">'+
        '<div><small>개인 솔로랭크</small><strong>'+esc(person.solo?.label||'기록 없음')+'</strong></div>'+
@@ -809,11 +812,55 @@ async function player(id, tab) {
   else if(tab==='compare') {
     const result=await api('/player-comparisons?id='+current.id+'&person='+encodeURIComponent(id))
     main=`<section class="panel"><h2>동일 포지션 선수 비교</h2><p>${esc(ROLE[person.role]||person.role||'')} 포지션 · 게임 내 능력 수치가 가까운 선수</p><div class="table-scroll"><table><thead><tr><th>선수</th><th>구단</th><th>종합</th><th>기준 선수 대비</th><th>상세 보기</th></tr></thead><tbody>${(result.comparisons||[]).map(p=>`<tr><td><b>${esc(p.nickname)}</b></td><td>${esc(p.team)}</td><td>${p.rating}</td><td class="${p.gap>=0?'positive-gap':'negative-gap'}">${p.gap>0?'+':''}${p.gap}</td><td><a href="/app/player/${encodeURIComponent(p.id)}/compare">비교 대상 열기</a></td></tr>`).join('')}</tbody></table></div></section><section class="panel"><h2>기준 선수 능력치</h2>${playerAttributePanel(analysis)}</section>`
-  } else return go('/app/player/'+encodeURIComponent(id)+'/overview')
+  }
+  else if(tab==='edit'&&editEnabled) {
+    const profile=detail.attributes
+    if(!profile?.groups?.length){
+      main='<section class="panel"><h2>선수 능력치 편집</h2><p class="err">능력치 자료를 불러오지 못했습니다.</p></section>'
+    } else {
+      const formSections=profile.groups.map(group=>
+        '<fieldset class="fm-admin-stat-group"><legend>'+esc(group.name)+'</legend>'+
+        group.keys.map(key=>'<label class="fm-admin-stat-field"><span>'+esc(key)+'</span>'+
+          '<input type="number" required inputmode="numeric" min="1" max="20" step="1" data-attribute="'+esc(key)+'" value="'+Number(profile.ratings[key])+'"/><small> / 20</small></label>').join('')+
+        '</fieldset>').join('')
+      main='<section class="panel fm-attribute-editor"><p class="eyebrow">LEAGUE OPERATOR · PLAYER DATABASE</p>'+
+        '<h2>'+esc(person.nickname||person.real_name||'선수')+' · 개별 능력치 수정</h2>'+
+        '<p>운영자만 변경할 수 있습니다. 저장한 수치는 다른 감독 계정에서도 조회되며 게임 내 스카우팅 기본 능력치에 적용됩니다.</p>'+
+        '<div class="fm-editor-meta"><span>수정 버전 '+profile.revision+'</span>'+
+          '<span>마지막 변경 '+esc(profile.updated_at||'아직 수정하지 않음')+'</span>'+
+          '<span>게임 능력치 / 최대 20</span></div>'+
+        '<form id="operator-attribute-form"><div class="fm-admin-stats-grid">'+formSections+'</div>'+
+        '<div class="fm-editor-footer"><p id="player-stat-editor-message" role="status">실존 선수의 공식 실력이 아닌 게임 내 능력치입니다.</p>'+
+        '<button class="act fm-editor-save" type="submit">30개 능력치 저장</button></div></form></section>'
+    }
+  }
+  else return go('/app/player/'+encodeURIComponent(id)+'/overview')
   shell(`<div class="player-profile">${top}${links}${main}<div class="player-footer"><a href="/app/players">선수 DB로 돌아가기</a>${person.team?`<a href="/app/team/${encodeURIComponent(person.league||'')}/${encodeURIComponent(person.team)}">구단 보기</a>`:''}</div></div>`,'/app/player/'+id)
   const fb=document.getElementById('player-follow')
   if(fb)fb.onclick=()=>api('/follows',{id:current.id,kind:'player',entity:person.nickname,enabled:!following})
     .then(()=>player(id,tab)).catch(e=>alert(e.message))
+  const editor=document.getElementById('operator-attribute-form')
+  if(editor)editor.onsubmit=async event=>{
+    event.preventDefault()
+    const msg=document.getElementById('player-stat-editor-message')
+    const button=editor.querySelector('button[type=submit]')
+    try{
+      const ratings={}
+      editor.querySelectorAll('input[data-attribute]').forEach(input=>{
+        const value=Number(input.value)
+        if(!Number.isInteger(value)||value<1||value>20)throw Error('모든 선수 능력치는 1~20의 정수여야 합니다.')
+        ratings[input.dataset.attribute]=value
+      })
+      if(Object.keys(ratings).length!==30)throw Error('30개 능력치를 모두 입력하세요.')
+      button.disabled=true
+      msg.textContent='선수별 능력치를 저장하는 중입니다.'
+      await api('/operator/person-attributes',{person:id,ratings})
+      go('/app/player/'+encodeURIComponent(id)+'/overview')
+    }catch(error){
+      msg.textContent=error.message
+      button.disabled=false
+    }
+  }
   await topbar()
 }
 function seasonStanding(row) {

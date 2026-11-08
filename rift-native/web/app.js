@@ -587,11 +587,11 @@ async function schedule() {
  const season=current.season
  const currentWeek=current.week
  const fixtures=all.filter(g=>g.season===season)
- const maxPage=7
+ const maxPage=Math.ceil(150/14)-1
  if(calendarPage<0||calendarPage>maxPage)calendarPage=Math.floor((currentWeek-1)/14)
  const start=calendarPage*14+1
  const cells=Array.from({length:14},(_,i)=>{
-   const week=start+i;if(week>104)return '<div class="calendar-cell calendar-unused"></div>'
+   const week=start+i;if(week>150)return '<div class="calendar-cell calendar-unused"></div>'
    const games=fixtures.filter(g=>g.week===week)
    const status=week===currentWeek?'current-week':week<currentWeek?'past-week':'future-week'
    return '<div class="calendar-cell '+status+'"><div class="calendar-cell-heading"><b>'+week+'주</b><small>'+
@@ -605,7 +605,7 @@ async function schedule() {
  const ended=fixtures.filter(g=>g.state==='finished').length
  shell('<div class="page-heading"><div><p class="eyebrow">SEASON PLANNER</p><h1>시즌 경기 캘린더</h1><p>'+season+'시즌 · 실제 날짜가 아닌 게임 주차 기준</p></div></div>'+
   '<div class="calendar-summary"><div><small>현재</small><strong>'+currentWeek+'주</strong></div><div><small>진행 경기</small><strong>'+ended+'경기</strong></div><div><small>다음 상대</small><strong>'+esc(nextGame?displayTeam(current.club_profile?.league||'',nextGame.opponent):'미정')+'</strong></div></div>'+
-  '<section class="panel calendar-panel"><div class="calendar-toolbar"><div><h2>시즌 일정 · '+start+'~'+Math.min(104,start+13)+'주</h2><small>승패·예정 경기와 휴식 주간을 카드로 확인합니다</small></div>'+
+  '<section class="panel calendar-panel"><div class="calendar-toolbar"><div><h2>시즌 일정 · '+start+'~'+Math.min(150,start+13)+'주</h2><small>승패·예정 경기와 휴식 주간을 카드로 확인합니다</small></div>'+
   '<div class="calendar-controls"><button data-calendar-prev '+(calendarPage===0?'disabled':'')+'>〈 이전</button><button data-calendar-now>이번 주</button><button data-calendar-next '+(calendarPage===maxPage?'disabled':'')+'>다음 〉</button></div></div>'+
   '<div class="calendar-weekheaders">'+['첫 번째','두 번째','세 번째','네 번째','다섯 번째','여섯 번째','일곱 번째'].map(day=>'<span>'+day+' 주차 칸</span>').join('')+'</div>'+
   '<div class="calendar-grid">'+cells+'</div>'+

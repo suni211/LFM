@@ -55,7 +55,7 @@ def active(db,career,at_turn=None):
     import recruitment
     if not db.execute("SELECT 1 FROM sqlite_master WHERE name='club_contracts'").fetchone():return []
     if at_turn is None:
-        season,week=db.execute('SELECT season,week FROM careers WHERE id=?',(career,)).fetchone();at_turn=(season-1)*104+week
+        season,week=db.execute('SELECT season,week FROM careers WHERE id=?',(career,)).fetchone();at_turn=(season-1)*150+week
     ids={row[0] for row in db.execute('SELECT person_id FROM club_contracts WHERE career_id=? AND active=1 AND end_turn>=?',(career,at_turn))}
     return [p for p in recruitment.view(db,career)['staff'] if p['id'] in ids]
 

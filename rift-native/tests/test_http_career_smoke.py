@@ -125,6 +125,62 @@ class HttpCareerSmokeTests(unittest.TestCase):
         status,data=self.call('/solo-ladder?id='+str(career)+'&region=NA',token=token)
         self.assertEqual(200,status,data)
         self.assertEqual(500,len(data['rows']))
+        # Existing prospects and pros may never fall below Master.
+        with sqlite3.connect(self.db) as db:
+            below=db.execute("""SELECT COUNT(*) FROM solo_ranks
+                WHERE path IN ('pro','prospect') AND mmr<2800""").fetchone()[0]
+            self.assertEqual(0,below)
+            pool=db.execute("""SELECT r.person_id,r.nickname,p.payload
+                FROM solo_ranks r JOIN solo_people p ON p.person_id=r.person_id""").fetchall()
+            names=[]
+            for pid,nick,raw in pool:
+                person=json.loads(raw)
+                if person.get('origin')=='solo-queue-only':
+                    self.assertRegex(nick,r'^[A-Za-z]{4,8}
+        self.assertEqual(200,status,data)
+        self.assertTrue(all(row.get('career_id')==career or row.get('club')=='Smoke Phoenix' for row in data['rows']))
+        status,data=self.call('/sponsor-offers?id='+str(career),token=token)
+        self.assertEqual(200,status,data)
+        secondary=[o for o in data['offers'] if o['tier']=='support' and o['status']=='offered']
+        self.assertGreaterEqual(len(secondary),2)
+        for o in secondary[:2]:
+            status,accepted=self.call('/sponsor-accept',dict(id=career,offer=o['id']),token)
+            self.assertEqual(200,status,accepted)
+            self.assertEqual('support',accepted['tier'])
+        status,logos=self.call('/media/league-logos.json',token=token)
+        self.assertEqual(200,status,logos)
+        self.assertIn('LCK',logos)
+        self.assertIn('LEC',logos)
+        status,data=self.call('/operator/club-identity',dict(
+            league='LCK CL',team='Smoke Phoenix',name='Unauthorized Name'),token)
+        self.assertEqual(403,status,data)
+        status,data=self.call('/careers',token=token)
+        self.assertEqual('Smoke Phoenix',data['careers'][0]['name'])
+        # Use a seeded fictional offer; no real company received contact.
+        with sqlite3.connect(self.db) as db:
+            db.execute("""INSERT INTO sponsor_offers
+                (career_id,season,company,region,amount)
+                VALUES(?,1,'삼성전자','KR',50000000)""",(career,))
+            offer=db.execute("SELECT id FROM sponsor_offers WHERE career_id=? AND company='삼성전자' AND tier='main'",(career,)).fetchone()[0]
+            initial=db.execute('SELECT cash FROM club_finances WHERE career_id=?',(career,)).fetchone()[0]
+        status,data=self.call('/sponsor-accept',dict(id=career,offer=offer),token)
+        self.assertEqual(200,status,data)
+        self.assertEqual('fictional-game-contract',data['source'])
+        with sqlite3.connect(self.db) as db:
+            after=db.execute('SELECT cash FROM club_finances WHERE career_id=?',(career,)).fetchone()[0]
+        self.assertEqual(50000000,after-initial)
+        status,data=self.call('/club-identity?league=LCK%20CL&team=Smoke%20Phoenix',token=token)
+        self.assertEqual(200,status,data)
+        self.assertIn('sponsor-change',{x['event'] for x in data['history']})
+        self.assertIn('club-founded',{x['event'] for x in data['history']})
+
+if __name__=='__main__':
+    unittest.main()
+)
+                    self.assertEqual(nick,person['nickname'])
+                    names.append(nick.casefold())
+            self.assertEqual(4160,len(names))
+            self.assertEqual(len(names),len(set(names)))
         status,data=self.call('/solo-ladder?id='+str(career)+'&region=KR&scope=mine',token=token)
         self.assertEqual(200,status,data)
         self.assertTrue(all(row.get('career_id')==career or row.get('club')=='Smoke Phoenix' for row in data['rows']))

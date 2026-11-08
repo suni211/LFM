@@ -22,6 +22,16 @@
       "identity_match": "exact competitive nickname + equivalent real-world name",
       "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
     },
+    "e05643da9e78bdf5b436": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Loki_%28Lee_Sang-min%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
     "e5e30c42e28ba257a4fe": {
       "code": "US",
       "name": "미국",
@@ -46,6 +56,16 @@
       "code": "US",
       "name": "미국",
       "source": "https://lol.fandom.com/wiki/IWDominate",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "ddf2fc60e6a576acb0ad": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Arrow",
       "country_data_source": "gptilt/Leaguepedia",
       "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
       "citizenship_verified": false,
@@ -202,6 +222,16 @@
       "identity_match": "exact competitive nickname + equivalent real-world name",
       "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
     },
+    "caf58a88b790ec599080": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Reignover",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
     "4dc4c13e65b1d8646c83": {
       "code": "KR",
       "name": "대한민국",
@@ -226,6 +256,16 @@
       "code": "US",
       "name": "미국",
       "source": "https://lol.fandom.com/wiki/DARKWINGS",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "b7350142ce4fab22a04c": {
+      "code": "US",
+      "name": "미국",
+      "source": "https://lol.fandom.com/wiki/Huhi",
       "country_data_source": "gptilt/Leaguepedia",
       "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
       "citizenship_verified": false,
@@ -266,6 +306,16 @@
       "code": "US",
       "name": "미국",
       "source": "https://lol.fandom.com/wiki/Damonte",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "f0f5fc40fd5334932fa2": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Morgan",
       "country_data_source": "gptilt/Leaguepedia",
       "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
       "citizenship_verified": false,
@@ -346,6 +396,16 @@
       "code": "CN",
       "name": "중국",
       "source": "https://lol.fandom.com/wiki/Spica",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "c80240f0293d208683d4": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Peach",
       "country_data_source": "gptilt/Leaguepedia",
       "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
       "citizenship_verified": false,
@@ -436,6 +496,16 @@
       "code": "BR",
       "name": "브라질",
       "source": "https://lol.fandom.com/wiki/Brand%C3%A3o",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "64062e06ae07b89eb374": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Raise",
       "country_data_source": "gptilt/Leaguepedia",
       "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
       "citizenship_verified": false,
@@ -682,10 +752,220 @@
       "identity_match": "exact competitive nickname + equivalent real-world name",
       "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
     },
+    "bdb726408c096bf83c5e": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Karis",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "152b135acc61449ac2a3": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/Monki",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "a2e2240a2121bca73b44": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/Dorian",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "e4932083ee8a92ef7f46": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/Erha",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
     "b190c6b8cec6d48e5846": {
       "code": "CN",
       "name": "중국",
       "source": "https://lol.fandom.com/wiki/Elk",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "7de23314c0fffa787f04": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/Xiaohu",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "72317c1c82b33c5c9cb9": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/Zika",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "bade4e3d90ca059ae8a9": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/Jiejie",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "02d4e7cba0794b13948c": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/Liangchen",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "88cc9fa74e0f113f437a": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/Climber",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "494e439f0e2d57af07ab": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/Saber_%28Song_Dai-Lin%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "533d45b70ac9ec2c423b": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/Xiaoxia",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "67694f41297e60ffe56c": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Hena",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "4f5b744990c95bdf7117": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/Keshi_%28Li_Qing-Hua%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "10a5683c5026756283a0": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/Junhao",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "2e8d3bc718d231cba935": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/Ryan3",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "0c2551c6489848f57b12": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/Feather",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "533adbb5709578fd6b73": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Heru",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "076c556709ef38501fac": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/Ahn",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "bdcbca93d236ee9cecfe": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/369",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "4f5af841a4a123292952": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/JackeyLove",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "d10a0a33f7d5b680da9f": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/Fengyue",
       "country_data_source": "gptilt/Leaguepedia",
       "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
       "citizenship_verified": false,
@@ -702,10 +982,80 @@
       "identity_match": "exact competitive nickname + equivalent real-world name",
       "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
     },
+    "68dc6335fe6f18e2acbc": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/Tian",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "b6bef60160a2c9c4ab6e": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/ZUIAN",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "b60e2d7c91df4a66ebe2": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Juhan",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "e9d6f8ea73e25170642d": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/Hery",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "213fe984ccaa5b512cf2": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Moham",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
     "0d497105eef439ed5e3b": {
       "code": "CN",
       "name": "중국",
       "source": "https://lol.fandom.com/wiki/Starry",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "470cf8aa5ed8dd9dca2e": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/Re0",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "295b37531e0f74bdff03": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/Zhuo",
       "country_data_source": "gptilt/Leaguepedia",
       "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
       "citizenship_verified": false,
@@ -742,10 +1092,110 @@
       "identity_match": "exact competitive nickname + equivalent real-world name",
       "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
     },
+    "80aa9b8b28082f99d141": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/MISSING",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "ea6aef5502dfc9871d28": {
+      "code": "HK",
+      "name": "홍콩",
+      "source": "https://lol.fandom.com/wiki/1xn",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "b34ef2fc4b10d37513e3": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/Sheer",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "7eb8670bc77feb5ababa": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/BuLLDoG_%28Lee_Tae-young%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "16aebc763dae9cc95089": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/Shaoye",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
     "b09e3afa2c99a7cba4f0": {
       "code": "CN",
       "name": "중국",
       "source": "https://lol.fandom.com/wiki/Sasi_%28Yan_Rui%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "4c780b6e8fd1fb100e3e": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/Ycx",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "5898713bedc1e1100581": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/Tangyuan",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "48a03d6f6e0d496bb8c0": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/Heng",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "8be1a3fe54cf126394dd": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/Xiaoxu",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "b52be9533e59b272b31b": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/Vampire",
       "country_data_source": "gptilt/Leaguepedia",
       "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
       "citizenship_verified": false,
@@ -762,10 +1212,50 @@
       "identity_match": "exact competitive nickname + equivalent real-world name",
       "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
     },
+    "38d4a06e03c4f070ea1d": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/Photic",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
     "2c8c5fb29cad2d47b77e": {
       "code": "CN",
       "name": "중국",
       "source": "https://lol.fandom.com/wiki/Meiko",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "d9a710d3a62fbe1b4ef4": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/Wei_%28Yan_Yang-Wei%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "f3b263c5c2f154c415a7": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/Jwei",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "4dc0dcca1d2067c0f612": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/Renard",
       "country_data_source": "gptilt/Leaguepedia",
       "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
       "citizenship_verified": false,
@@ -782,6 +1272,16 @@
       "identity_match": "exact competitive nickname + equivalent real-world name",
       "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
     },
+    "c2faec098d085fb5166d": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/Leave",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
     "e0c9699804e4f7bdef36": {
       "code": "CN",
       "name": "중국",
@@ -792,10 +1292,100 @@
       "identity_match": "exact competitive nickname + equivalent real-world name",
       "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
     },
+    "a7e93f19d672041889bc": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/Zdz",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "3d709830bef32826bd81": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/Xun",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
     "d7d61fea7b0b58cf1f2b": {
       "code": "CN",
       "name": "중국",
       "source": "https://lol.fandom.com/wiki/Knight_%28Zhuo_Ding%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "c3fcd603ac2ba9f2c039": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/ON",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "7f46f9dd9e91e7941b70": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Viper_%28Park_Do-hyeon%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "d227f403b4da1e52c948": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/Bin_%28Chen_Ze-Bin%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "98821420fab6e120cda3": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Tarzan_%28Lee_Seung-yong%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "9813b9dd2b427fae336b": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/Flandre",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "f988f019d29dec1fa01f": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Kael_%28Kim_Jin-hong%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "eae49baac848bc123d0a": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/Shanks",
       "country_data_source": "gptilt/Leaguepedia",
       "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
       "citizenship_verified": false,
@@ -816,6 +1406,16 @@
       "code": "CZ",
       "name": "체코",
       "source": "https://lol.fandom.com/wiki/Jackies",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "0b2428af8b5fa1d54d27": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Jun_%28Yoon_Se-jun%29",
       "country_data_source": "gptilt/Leaguepedia",
       "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
       "citizenship_verified": false,
@@ -1092,6 +1692,16 @@
       "identity_match": "exact competitive nickname + equivalent real-world name",
       "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
     },
+    "efccbaa1cae1fa7e4b36": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/SamD",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
     "c901f5c2516e8919a013": {
       "code": "TR",
       "name": "튀르키예",
@@ -1182,6 +1792,16 @@
       "identity_match": "exact competitive nickname + equivalent real-world name",
       "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
     },
+    "6ad34fe48c48cae391f6": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Canna",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
     "cc13b0b03453f06fba06": {
       "code": "FR",
       "name": "프랑스",
@@ -1196,6 +1816,16 @@
       "code": "US",
       "name": "미국",
       "source": "https://lol.fandom.com/wiki/Busio",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "89b7cdf3a3e8731c4433": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Reapered",
       "country_data_source": "gptilt/Leaguepedia",
       "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
       "citizenship_verified": false,
@@ -1282,10 +1912,30 @@
       "identity_match": "exact competitive nickname + equivalent real-world name",
       "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
     },
+    "855068c8deb875025c0b": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/SlowQ",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
     "35d4556567dd5ae4317e": {
       "code": "FR",
       "name": "프랑스",
       "source": "https://lol.fandom.com/wiki/Striker_%28Yanis_Kella%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "39be6b3d1ca0736a1927": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Rooster",
       "country_data_source": "gptilt/Leaguepedia",
       "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
       "citizenship_verified": false,
@@ -1306,6 +1956,16 @@
       "code": "FR",
       "name": "프랑스",
       "source": "https://lol.fandom.com/wiki/Boukada",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "2bca73914b2052bc5e4e": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Paduck",
       "country_data_source": "gptilt/Leaguepedia",
       "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
       "citizenship_verified": false,
@@ -1552,6 +2212,16 @@
       "identity_match": "exact competitive nickname + equivalent real-world name",
       "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
     },
+    "4c4c7ee14ad957106749": {
+      "code": "IT",
+      "name": "이탈리아",
+      "source": "https://lol.fandom.com/wiki/Tao_%28Xu_Hongtao_Alessandro%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
     "87eca09cb0f6a9bdf828": {
       "code": "FR",
       "name": "프랑스",
@@ -1766,6 +2436,16 @@
       "code": "GR",
       "name": "그리스",
       "source": "https://lol.fandom.com/wiki/Mersa",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "7245772810448a62fd1c": {
+      "code": "TR",
+      "name": "튀르키예",
+      "source": "https://lol.fandom.com/wiki/Ragner",
       "country_data_source": "gptilt/Leaguepedia",
       "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
       "citizenship_verified": false,
@@ -2722,6 +3402,16 @@
       "identity_match": "exact competitive nickname + equivalent real-world name",
       "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
     },
+    "f62b982b4392cee983f9": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/ORIZ0N",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
     "996271133b1ce26a2fbd": {
       "code": "DE",
       "name": "독일",
@@ -2736,6 +3426,16 @@
       "code": "TR",
       "name": "튀르키예",
       "source": "https://lol.fandom.com/wiki/Mercy9",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "d717eb94aa2f42145cca": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Lure_%28Shin_Jae-yoon%29",
       "country_data_source": "gptilt/Leaguepedia",
       "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
       "citizenship_verified": false,
@@ -3322,6 +4022,126 @@
       "identity_match": "exact competitive nickname + equivalent real-world name",
       "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
     },
+    "d88b36cc95aa05423be3": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Zeus",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "0b710cd5eb2a4f1da0aa": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Zeka_%28Kim_Geon-woo%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "17c962d24022a8c6c077": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Panther_%28Park_Ji-ho%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "db72d26aea16c03ba89f": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Jackal_%28Lee_Su-min%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "2d1a1ce3e1c9fe37f5ff": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Cracker_%28Lee_Jeong-wook%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "75e051bd789a3d009457": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Valiant_%28Han_Kang-hyun%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "bc9c158f7de60bb3c098": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Bluffing",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "705690e87bd6cb68be54": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Homme",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "fc94b7c3a38255ac2dc8": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Sin_%28Yeon_Hyeong-mo%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "50432d644f45c27459b0": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Mowgli",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "b0348c8673f3585c263b": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Siwoo",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "8da3a2d87620ff5950c6": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Lucid_%28Choi_Yong-hyeok%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
     "29cc95882955e4760c92": {
       "code": "KR",
       "name": "대한민국",
@@ -3332,10 +4152,50 @@
       "identity_match": "exact competitive nickname + equivalent real-world name",
       "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
     },
+    "ac8d91940c586acf9983": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Smash_%28Shin_Geum-jae%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "61bab7af5b261834a9d0": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Jaehyuk",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
     "0cc4ee8272100048e357": {
       "code": "KR",
       "name": "대한민국",
       "source": "https://lol.fandom.com/wiki/Nevid",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "41643631dd66d765124a": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Garden_%28Seol_Jeong-won%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "02c9777cf264c25aabbd": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Loopy",
       "country_data_source": "gptilt/Leaguepedia",
       "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
       "citizenship_verified": false,
@@ -3362,10 +4222,370 @@
       "identity_match": "exact competitive nickname + equivalent real-world name",
       "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
     },
+    "e4c1d30b3a373cf95a12": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Hachani",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
     "3a108e149c17b602d779": {
       "code": "KR",
       "name": "대한민국",
       "source": "https://lol.fandom.com/wiki/Woong_%28Kim_Sun-woong%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "d0e702a54ebc605828e9": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Sungmin",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "a6e454d7aa4e187b1641": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/PerfecT_%28Lee_Seung-min%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "4e4acd26c612488f7e3c": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Jiwoo",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "422eac1b142656e748a4": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Effort",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "8fcf4fb091d6e68526e7": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Sero",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "231203b8bffa23a4de63": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Sylvie",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "3873ced363cc5ca6b82c": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Hwichan",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "ddd8c7fdc2c4dbb5e87d": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/FenRir_%28Park_Kang-jun%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "7433efe17a456de41464": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Ghost_%28Jang_Yong-jun%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "bd1bbe18ee45468431da": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Pollu",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "c92b29ba6f1e8feaf393": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Sonstar",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "02f6c1f274ce05e2652c": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Spark_%28Kang_Byung-ryul%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "7902147ed4648afcbae5": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Lilac_%28Jeon_Ho-jin%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "f67512ebbc70117c9931": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Casting",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "9ab0fa5ee76b7f22b385": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Roamer",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "9464b23470ee1a1e0438": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Namgung",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "7d2b86cd45dfc9d1a9c8": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Tempester",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "a013d0734849be176fcc": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/PlanB",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "640f081f3280a0e785ef": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Duke_%28Lee_Ho-seong%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "e312679d0b1173dead63": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Ssumday",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "c004ef85b6da2da7563a": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Doran_%28Choi_Hyeon-jun%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "dda9497e943ab137ff7c": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Oner",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "6e80fae055257bdc12df": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Faker",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "bccf01dd1dd62c129c22": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Keria",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "91f53544b7d1a8bc82ab": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Haetae",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "7283932fb31efab8645f": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Guardian_%28Seong_Tae-hyo%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "607eba4dcfe22c1ec68d": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Carim",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "57233eb626fa6d764a07": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Eclipse_%28Kim_Min-jun%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "a29d936c4b285d03c997": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Cloud_%28Moon_Hyeon-ho%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "234c35c7832db8fe1347": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Jinbeom",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "b137aeb96c74e293d52f": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/KkOma",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "d207a7e74cc782f648fa": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Easyhoon",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "94a103be7e15ae370ec7": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/DooTi",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "f771ed7b8904e8742724": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Nagne",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "071737fe57aa0666ae9f": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Ripple",
       "country_data_source": "gptilt/Leaguepedia",
       "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
       "citizenship_verified": false,
@@ -3382,10 +4602,210 @@
       "identity_match": "exact competitive nickname + equivalent real-world name",
       "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
     },
+    "585130f610039e961f44": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Lumos",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "5a9aa3126e489c44043f": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Lyn",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "ec2188bd1ea38aaedc30": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Nova_%28Park_Chan-ho%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "655d7b83c07cdd596346": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Jerry_%28Kang_Sung-jun%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "d6cd803ebc8598797434": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/DuDu_%28Lee_Dong-ju%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "a349d6f51e830f1f3bed": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Sharvel",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "7c3f023297f606ea463d": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Pyosik",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "315f9f9d80d283430df8": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Clozer",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "121b5996d4f5c030d067": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Deokdam",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "48ee1525dad4da8c53fc": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Life",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "d6cea8b041ab37297779": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Lancer",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "ab8afc48bc391779b9c0": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Enosh",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "f0c86212b3d2de6e8239": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Ggoong",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "760d14b9f7e03d7f4264": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Millimas",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "2ba37da35b0ce58bf7c4": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/RapidStar",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
     "08ced023d89923813ffb": {
       "code": "KR",
       "name": "대한민국",
       "source": "https://lol.fandom.com/wiki/Frog_%28Lee_Min-hoi%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "5be8be177a99bb44aeb0": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Vincenzo_%28Ha_Seung-min%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "83ce567e99af7b1e43f5": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Aiming",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "39c938cc0aff1711feb2": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Rich_%28Lee_Jae-won%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "9f33023c41bbbc84d2b9": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Winner_%28Woo_Joo-sung%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "e7aa5da510265064ee45": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/AKaJe",
       "country_data_source": "gptilt/Leaguepedia",
       "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
       "citizenship_verified": false,
@@ -3402,10 +4822,240 @@
       "identity_match": "exact competitive nickname + equivalent real-world name",
       "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
     },
+    "ac0e2d3fffe60d03684c": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Minous",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "3ffbb6461d93da16f8ea": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Naehyun",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "e25bda3fe7859411fb89": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Saroo",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
     "9b3b63566f6eff24ca74": {
       "code": "KR",
       "name": "대한민국",
       "source": "https://lol.fandom.com/wiki/Frozen_%28Kim_Tae-il%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "b88921b58e931048a272": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Raise",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "ce2bf1f690216281ec6b": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Sponge",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "076d73b32fd36dd41d62": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Scout",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "16ceb6fce49d55d12158": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Diable",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "a8d8aa38d1839edd7e09": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Janus_%28Eom_Ye-jun%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "ba9574a9af6eaabaebe8": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/SeTab",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "f03e525588e784463595": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Pleata",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "19010d3e478a3edd8492": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Clear_%28Song_Hyeon-min%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "c9f67639f06bfbd826e5": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/VicLa",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "c5dc3cc5a6cfff7bcdc0": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Daystar",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "38fb249a30fefd02ee33": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Taeyoon_%28Kim_Tae-yoon%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "cde585d383207aa0299c": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Kellin",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "2ace886ae232a8ea9e72": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Kangin",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "37172685903e9f6da877": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Zephyr_%28Hwang_Hyeok-su%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "49047f66835bd3b915e9": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Grizzly",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "0d1ab43205151e0f87fa": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/MG_%28Lee_Ji-hoon%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "827d929b41457226e88c": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Slayer_%28Kim_Jin-young%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "9dfee3f2f02ac5cc8d26": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Luon",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "205a0941b836d66c118e": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Edo_%28Park_Jun-seok%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "744b5a9776ab15d4d96a": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Key",
       "country_data_source": "gptilt/Leaguepedia",
       "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
       "citizenship_verified": false,
@@ -3762,6 +5412,16 @@
       "identity_match": "exact competitive nickname + equivalent real-world name",
       "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
     },
+    "be5a507fe9503d4ac90f": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Fisher_%28Lee_Jeong-tae%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
     "c41bdaa922a4fa06f3a3": {
       "code": "JP",
       "name": "일본",
@@ -3902,6 +5562,16 @@
       "identity_match": "exact competitive nickname + equivalent real-world name",
       "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
     },
+    "a5216803b71b5f0923a9": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/JustFocus",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
     "7c515e53dfe6977c98e6": {
       "code": "JP",
       "name": "일본",
@@ -3936,6 +5606,16 @@
       "code": "JP",
       "name": "일본",
       "source": "https://lol.fandom.com/wiki/SaKi",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "536c2422f3102f1c6031": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/VicaL",
       "country_data_source": "gptilt/Leaguepedia",
       "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
       "citizenship_verified": false,
@@ -3982,6 +5662,16 @@
       "identity_match": "exact competitive nickname + equivalent real-world name",
       "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
     },
+    "3bb2866cb7b0f75e2fd6": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Patch_%28Han_Seung-min%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
     "e01a5121650ca4833cd2": {
       "code": "JP",
       "name": "일본",
@@ -4022,10 +5712,30 @@
       "identity_match": "exact competitive nickname + equivalent real-world name",
       "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
     },
+    "8c5df1b6ff07d78fc1bf": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Godot",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
     "f59667ee320106166508": {
       "code": "JP",
       "name": "일본",
       "source": "https://lol.fandom.com/wiki/Eria",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "1d24bd20af227edb2788": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Elative",
       "country_data_source": "gptilt/Leaguepedia",
       "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
       "citizenship_verified": false,
@@ -4092,6 +5802,26 @@
       "identity_match": "exact competitive nickname + equivalent real-world name",
       "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
     },
+    "1e97eedd66d09db629e2": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Gecko",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "0d5be1cf1ab05e6897de": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Kangkuk",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
     "0e50bc4ea99d10267a43": {
       "code": "JP",
       "name": "일본",
@@ -4142,6 +5872,16 @@
       "identity_match": "exact competitive nickname + equivalent real-world name",
       "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
     },
+    "c3a1cd1ad4ae0f9b8ee5": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Aquila",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
     "736e33839dc9896d7f56": {
       "code": "JP",
       "name": "일본",
@@ -4176,6 +5916,16 @@
       "code": "JP",
       "name": "일본",
       "source": "https://lol.fandom.com/wiki/Ravvy",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "14aba19d1a0322e056ad": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Damocles",
       "country_data_source": "gptilt/Leaguepedia",
       "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
       "citizenship_verified": false,
@@ -4252,6 +6002,16 @@
       "identity_match": "exact competitive nickname + equivalent real-world name",
       "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
     },
+    "2892b66493098a231287": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Ellim",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
     "98c68d45055e8833f427": {
       "code": "JP",
       "name": "일본",
@@ -4272,10 +6032,40 @@
       "identity_match": "matching IGN alias and real-name alias for one Leaguepedia person",
       "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
     },
+    "35a4b638cd17863dd105": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Son",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "0f1a279e3c33e01c0cf1": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Motive",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
     "86667e4169173bcc95ca": {
       "code": "KR",
       "name": "대한민국",
       "source": "https://lol.fandom.com/wiki/GukBo",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "40f78a683d5882035665": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Vox",
       "country_data_source": "gptilt/Leaguepedia",
       "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
       "citizenship_verified": false,
@@ -4296,6 +6086,16 @@
       "code": "JP",
       "name": "일본",
       "source": "https://lol.fandom.com/wiki/Claude",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "97296a9840da7990aba8": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Vapor",
       "country_data_source": "gptilt/Leaguepedia",
       "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
       "citizenship_verified": false,
@@ -4582,10 +6382,30 @@
       "identity_match": "exact competitive nickname + equivalent real-world name",
       "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
     },
+    "04eefe27ecf5c0d977ea": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/Yuji_%28Yang_Xi-Qi%29",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
     "52d5ed5b73c3ce178e42": {
       "code": "HK",
       "name": "홍콩",
       "source": "https://lol.fandom.com/wiki/Epic",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "248c24622db3585dec40": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/Lucifer_%28Kim_Jae-won%29",
       "country_data_source": "gptilt/Leaguepedia",
       "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
       "citizenship_verified": false,
@@ -4716,6 +6536,26 @@
       "code": "KR",
       "name": "대한민국",
       "source": "https://lol.fandom.com/wiki/Cid",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "1dc81e97bcbadfb1d717": {
+      "code": "TW",
+      "name": "대만",
+      "source": "https://lol.fandom.com/wiki/Weizhe",
+      "country_data_source": "gptilt/Leaguepedia",
+      "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
+      "citizenship_verified": false,
+      "identity_match": "exact competitive nickname + equivalent real-world name",
+      "dataset_snapshot": "2026-06 / GPTilt public figures snapshot"
+    },
+    "ce888517a01f22466383": {
+      "code": "TW",
+      "name": "대만",
+      "source": "https://lol.fandom.com/wiki/1116",
       "country_data_source": "gptilt/Leaguepedia",
       "source_field": "NationalityPrimary or Country (indistinguishable in published snapshot)",
       "citizenship_verified": false,

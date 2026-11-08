@@ -2,12 +2,12 @@
   "total": 1088,
   "source_rows": 20859,
   "alias_rows": 75995,
-  "matched_hints": 522,
-  "citizenship_explicit": 62,
-  "missing_country_hints": 566,
+  "matched_hints": 706,
+  "citizenship_explicit": 571,
+  "missing_country_hints": 382,
   "conflicts": [],
   "unmatched_source_breakdown": {
-    "name-mismatch": 798,
+    "name-mismatch": 614,
     "source-incomplete": 90,
     "country-unknown": 32
   },

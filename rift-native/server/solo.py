@@ -10,6 +10,7 @@ import json
 import uuid
 import catalog
 import club_messages
+import solo_handles
 
 PERSONALITIES=('독함','꾸준','조급')
 PATHS=('amateur','prospect','pro','retired')
@@ -18,8 +19,8 @@ PATH_NAME={'amateur':'일반인','prospect':'유망주','pro':'프로','retired'
 STALL_GAIN={'독함':1,'꾸준':2,'조급':3}
 STALL_LIMIT={'독함':24,'꾸준':12,'조급':6}
 TALK_CHANCE={'독함':0.30,'꾸준':0.52,'조급':0.70}
-DEBUT_MMR=1100
-PRO_MIN_MMR=2800  # Master 0 LP floor for all professional solo-queue records
+PRO_MIN_MMR=2800  # Master 0 LP: pro AND prospect minimum
+DEBUT_MMR=PRO_MIN_MMR  # Academy prospects must already be Master to debut
 PROSPECT_LIMIT=15
 MAJOR={'LCK','LPL','LEC','LCS'}
 
@@ -31,27 +32,6 @@ LEAGUE_SOLO={
  'LCS':'NA','NACL':'NA','CBLOL':'BR','Circuito Desafiante':'BR',
  'LCP':'APAC','PCS':'APAC','LJL':'JP','VCS':'VN'
 }
-# A varied English-language nickname lexicon; unique combinations per server.
-HANDLE_FIRST=('Amber','Arctic','Atlas','Azure','Basil','Beacon','Blitz','Bloom','Boreal','Brave',
- 'Canyon','Carbon','Cedar','Cipher','Cobalt','Comet','Coral','Cosmic','Crimson','Crystal',
- 'Daring','Delta','Drift','Dune','Eclipse','Echo','Ember','Falcon','Fable','Frost',
- 'Galaxy','Glacier','Glimmer','Gold','Granite','Harbor','Haven','Hawk','Horizon','Hydra',
- 'Indigo','Iron','Ivory','Jade','Jet','Jungle','Kite','Knight','Lunar','Lyric',
- 'Magma','Maple','Marble','Meteor','Mistral','Moon','Moss','Mystic','Neon','Nimbus',
- 'Ocean','Onyx','Orbit','Orchid','Otter','Panda','Pearl','Phoenix','Pixel','Polar',
- 'Quasar','Quartz','Raven','Rebel','River','Rocket','Ruby','Sage','Sapphire','Shadow',
- 'Silver','Solar','Spark','Spirit','Storm','Summit','Talon','Terra','Thunder','Titan',
- 'Vapor','Violet','Vortex','Wild','Willow','Winter','Wolf','Zephyr','Zenith','Zodiac')
-HANDLE_LAST=('Anchor','Arrow','Ash','Bear','Blade','Blossom','Bolt','Branch','Bridge','Brook',
- 'Chase','Claw','Cloud','Crest','Crown','Dash','Dawn','Dove','Dream','Edge',
- 'Feather','Field','Flame','Flash','Flight','Flow','Fox','Garden','Gate','Glide',
- 'Hammer','Heart','Hill','Hound','Hunt','Jewel','Leaf','Light','Lion','Lotus',
- 'Lynx','Mark','Mason','Maze','Meadow','Mirror','Mist','Mountain','Nectar','Nova',
- 'Oasis','Opal','Peak','Petal','Pine','Plume','Pulse','Rain','Ridge','Rider',
- 'Ripple','Roar','Root','Rune','Scale','Scout','Shine','Sky','Snow','Song',
- 'Stone','Strike','Swan','Sword','Tide','Torch','Trail','Vale','Wave','Wing',
- 'Whisper','Wind','Wish','Wisp','Wren','Yarrow','Zest','Zone','Zoom','Bloom')
-
 
 def init(db):
     db.executescript('''CREATE TABLE IF NOT EXISTS solo_ranks(
@@ -77,7 +57,11 @@ def init(db):
             db.execute("UPDATE solo_ranks SET region=? WHERE person_id=? AND region!=?",
                        (where,person['id'],where))
     seed_amateurs(db)
-    db.execute("UPDATE solo_ranks SET mmr=? WHERE path='pro' AND mmr<?",(PRO_MIN_MMR,PRO_MIN_MMR))
+    repair_short_handles(db)
+    # Live migration: imported academy players, pre-existing prospects and pros
+    # never appear in a lower solo rank, even in an older saved career.
+    db.execute("UPDATE solo_ranks SET mmr=? WHERE path IN ('pro','prospect') AND mmr<?",
+               (PRO_MIN_MMR,PRO_MIN_MMR))
 
 def _unit(key):
     return int.from_bytes(hashlib.sha256(key.encode()).digest()[:4],'big')/4294967295
@@ -104,6 +88,11 @@ def start_mmr(person, path):
         league=person.get('league') or ''
         base=3220 if league in MAJOR else 2950 if ('CL' in league or 'Academy' in league or 'Challengers' in league or 'LDL' in league) else 2850
         return max(PRO_MIN_MMR,base+spread//2)
+    if path=='prospect':
+        return PRO_MIN_MMR+int(_unit(person['id']+':prospect')*500)
+    # Amateur solo-only players can be below Master until they climb.
+    if person.get('origin')=='solo-queue-only':
+        return 2600+int(_unit(person['id']+':ranked-amateur')*830)
     return 280+int(_unit(person['id']+':amateur')*1050)
 
 def public_row(row, rank=None):
@@ -154,7 +143,7 @@ def seed_easter(db):
         if not person.get('easter_egg'): continue
         found+=1
         db.execute('INSERT OR REPLACE INTO solo_people(person_id,payload) VALUES(?,?)',(person['id'],json.dumps(person,ensure_ascii=False)))
-        mmr=1120+int(_unit(person['id']+':easter')*420)
+        mmr=PRO_MIN_MMR+int(_unit(person['id']+':easter')*420)
         nickname=person.get('nickname') or person.get('real_name') or '무명'
         real=person.get('display_name_ko') or person.get('real_name') or nickname
         role=person.get('role') if person.get('role') in ROLES else 'TOP'
@@ -170,28 +159,75 @@ def seed_easter(db):
         db.execute("INSERT OR REPLACE INTO solo_seed VALUES('easter-academy','1')")
 
 def seed_amateurs(db):
-    """Solo-only nonprofessional users, 520 per server, saved once.
-
-    These are fictional amateur profiles, never real players or memberships.
-    Only scouting and mutual agreement can add one to a professional academy.
-    """
+    """Create 520 fictional solo-only amateurs per region with natural short handles."""
     if db.execute("SELECT 1 FROM solo_seed WHERE key='regional-amateurs-v1'").fetchone():
         return
-    for rid,region in enumerate(SOLO_REGIONS):
+    reserved={str(p.get('nickname') or '').casefold() for p in catalog.load().get('people',[])}
+    reserved.update(str(n).casefold() for n, in db.execute("SELECT nickname FROM solo_ranks"))
+    short_signatures=solo_handles.signatures_for(reserved)
+    for region in SOLO_REGIONS:
         for i in range(520):
-            j=rid*520+i
-            handle=HANDLE_FIRST[j%len(HANDLE_FIRST)]+HANDLE_LAST[
-                ((j//len(HANDLE_FIRST))*17 + j*3) %len(HANDLE_LAST)]
             person_id=uuid.uuid5(uuid.NAMESPACE_URL,f'LFM:2026:solo:{region}:{i}').hex[:20]
+            handle=solo_handles.choose(person_id,reserved,short_signatures)
             role=ROLES[int(_unit(person_id+':role')*len(ROLES))]
             person=dict(id=person_id,nickname=handle,real_name=handle,kind='player',
                         role=role,team='',league='',region=region,real_person=False,
                         origin='solo-queue-only',nationality_pending=True,
                         game_evaluation={'ratings':{role:40+int(_unit(person_id)*28)}})
             db.execute('INSERT OR IGNORE INTO solo_people(person_id,payload) VALUES(?,?)',
-                (person_id,json.dumps(person,ensure_ascii=False)))
+                       (person_id,json.dumps(person,ensure_ascii=False)))
             _insert(db,person,'amateur')
     db.execute("INSERT OR IGNORE INTO solo_seed VALUES('regional-amateurs-v1','1')")
+
+
+def repair_short_handles(db):
+    """One-time upgrade of already-saved 4160 fictional solo aliases.
+
+    Renames only solo-only generated people, never real players, registered
+    rookies, managers, or a nickname a user manually supplied. Keeps IDs,
+    MMR, games, club assignments and relationship records unchanged.
+    """
+    revision='compact-solo-handles-v3'
+    if db.execute("SELECT 1 FROM solo_seed WHERE key=?",(revision,)).fetchone():
+        return
+    people=[]
+    for pid,raw in db.execute("SELECT person_id,payload FROM solo_people ORDER BY person_id"):
+        p=json.loads(raw)
+        if p.get('origin')=='solo-queue-only' or (
+            pid.startswith('amateur-') and p.get('real_person') is False
+            and p.get('kind')=='player'):
+            people.append((pid,p))
+    owned={pid for pid,_ in people}
+    used={str(n).casefold() for pid,n in db.execute("SELECT person_id,nickname FROM solo_ranks")
+          if pid not in owned}
+    used.update(str(p.get('nickname') or '').casefold() for p in catalog.load().get('people',[])
+                if p.get('nickname'))
+    if db.execute("SELECT 1 FROM sqlite_master WHERE name='generated_people'").fetchone():
+        for pid,raw in db.execute("SELECT id,payload FROM generated_people"):
+            if pid not in owned:
+                p=json.loads(raw)
+                used.add(str(p.get('nickname') or '').casefold())
+    signatures=solo_handles.signatures_for(used)
+    for pid,person in people:
+        nickname=solo_handles.choose(pid,used,signatures)
+        old=str(person.get('nickname') or '')
+        person['nickname']=nickname
+        if person.get('real_name')==old:
+            person['real_name']=nickname
+        db.execute("UPDATE solo_people SET payload=? WHERE person_id=?",
+                   (json.dumps(person,ensure_ascii=False),pid))
+        db.execute("UPDATE solo_ranks SET nickname=?,real_name=CASE WHEN real_name=? THEN ? ELSE real_name END WHERE person_id=?",
+                   (nickname,old,nickname,pid))
+        if db.execute("SELECT 1 FROM sqlite_master WHERE name='generated_people'").fetchone():
+            record=db.execute("SELECT payload FROM generated_people WHERE id=?",(pid,)).fetchone()
+            if record:
+                g=json.loads(record[0])
+                g['nickname']=nickname
+                if g.get('real_name')==old:g['real_name']=nickname
+                db.execute("UPDATE generated_people SET nickname_key=?,payload=? WHERE id=?",
+                           (nickname.casefold(),json.dumps(g,ensure_ascii=False),pid))
+    db.execute("INSERT OR REPLACE INTO solo_seed(key,value) VALUES(?,?)",
+               (revision,str(len(people))))
 
 def claim_club(db, career, team):
     if not isinstance(team,str) or not team: return
@@ -279,6 +315,7 @@ def talk(db, career, person_id):
         if owner==career: raise ValueError('already your prospect')
         raise ValueError('another club is developing this player')
     if owner not in (None,career): raise ValueError('this player is in another club tryout')
+    if row[1]<PRO_MIN_MMR:raise ValueError('유망주는 솔로랭크 마스터 이상만 영입할 수 있습니다.')
     held=db.execute("SELECT COUNT(*) FROM solo_ranks WHERE career_id=? AND path='prospect'",(career,)).fetchone()[0]
     if held>=PROSPECT_LIMIT: raise ValueError('prospect list is full')
     clock,turn=_turn(db)
@@ -296,7 +333,8 @@ def talk(db, career, person_id):
     person=_payload(db, person_id)
     league=db.execute('SELECT league FROM club_profiles WHERE career_id=?',(career,)).fetchone()
     person.update(kind='player',team=club,league=league[0] if league else 'LCK CL',real_person=False)
-    db.execute('UPDATE solo_ranks SET path=?,career_id=?,club_name=?,stall=0 WHERE person_id=?',('prospect',career,club,person_id))
+    db.execute('UPDATE solo_ranks SET path=?,mmr=MAX(mmr,?),career_id=?,club_name=?,stall=0 WHERE person_id=?',
+               ('prospect',PRO_MIN_MMR,career,club,person_id))
     if db.execute('SELECT 1 FROM generated_people WHERE id=?',(person_id,)).fetchone():
         db.execute("UPDATE generated_people SET career_id=?,assignment='academy',payload=? WHERE id=?",(career,json.dumps(person,ensure_ascii=False),person_id))
     else:
@@ -363,7 +401,7 @@ def weekly(db, season, week):
         if path!='pro' and stall>=STALL_LIMIT[personality]:
             _retire(db,row,season,week)
             continue
-        floor=PRO_MIN_MMR if path=='pro' else 0
+        floor=PRO_MIN_MMR if path in ('pro','prospect') else 0
         # These are independent weekly solo-queue simulations, not pro match results.
         db.execute('UPDATE solo_ranks SET mmr=?,games=games+1,stall=? WHERE person_id=?',(max(floor,mmr+delta),0 if path=='pro' else stall,person_id))
 

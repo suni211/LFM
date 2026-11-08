@@ -37,6 +37,7 @@ import club_history
 import sponsorship
 import series_state
 import manual_draft
+import draft_identity
 from highlight_recording import clip_path
 
 DB = Path(os.environ.get('RIFT_DB', Path(__file__).with_name('server.db')))
@@ -392,6 +393,13 @@ class Handler(BaseHTTPRequestHandler):
                     db.execute('BEGIN IMMEDIATE');management.ensure(db,cid);db.execute('COMMIT')
                     return self.reply(200,management.snapshot(db,cid))
                 except (ValueError,KeyError): return self.reply(400,{'error':'invalid management request'})
+            if url.path=='/draft-lineup':
+                try:
+                    fixture=int(parse_qs(url.query)['id'][0])
+                    if not 1<=fixture<=2**63-1:raise ValueError()
+                    view=draft_identity.lineup(db,fixture,uid)
+                    return self.reply(200,view) if view is not None else self.reply(404,{'error':'not found'})
+                except (KeyError,ValueError):return self.reply(400,{'error':'invalid draft lineup request'})
             if url.path=='/lineup-readiness':
                 try:
                     cid=int(parse_qs(url.query)['id'][0])
@@ -952,7 +960,7 @@ class Handler(BaseHTTPRequestHandler):
                 best_of=competition_rules.resolve(db,cid,competition,stage)
                 fixture = fixtures.add(db,cid,season,week,opponent,best_of,competition,stage)
                 return self.reply(201,{'id':fixture})
-            if self.path in ('/draft-choice','/set-feedback','/draft-swap','/draft-action','/draft-auto'):
+            if self.path in ('/draft-choice','/set-feedback','/draft-swap','/draft-ready','/draft-action','/draft-auto'):
                 fixture = data['id']
                 if type(fixture) is not int or not 1 <= fixture <= 2**63-1:
                     raise ValueError()
@@ -982,6 +990,9 @@ class Handler(BaseHTTPRequestHandler):
                         except ValueError as error:return self.reply(409,{'error':str(error)})
                 elif self.path=='/draft-swap':
                     try:series_state.swap(state,data['first'],data['second'],data['version'],time.time())
+                    except ValueError as error:return self.reply(409,{'error':str(error)})
+                elif self.path=='/draft-ready':
+                    try:series_state.complete_swap(state,time.time())
                     except ValueError as error:return self.reply(409,{'error':str(error)})
                 elif self.path == '/draft-choice':
                     game=db.execute('SELECT career_id,season,week FROM fixtures WHERE id=?',(fixture,)).fetchone()

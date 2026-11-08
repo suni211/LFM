@@ -62,7 +62,7 @@ def submit(state,name,kits,roles,now,version=None):
         if placed is None:raise ValueError('invalid final draft')
         blue=state['blue']
         roster=[[placed[t,r] for r in range(len(roles))] for t in (blue,1-blue)]
-        state.update(phase='swap',roster=roster,swap_until=now+(0 if state.get('autoplay') else 30),swap_version=0,
+        state.update(phase='swap',roster=roster,swap_until=now+(0 if state.get('autoplay') else 90),swap_version=0,
                      response_until=None,role_options={name:list(kits[name].roles) for row in roster for name in row})
 
 def bot(state,seed,kits,roles,now,all_teams=False):

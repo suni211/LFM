@@ -37,7 +37,7 @@ if missing and sys.argv[3]=='1':
 PY
 # Test imports and the quota rules before touching the live release.
 python3 -m compileall -q "$src/server"
-(cd "$src/server" && python3 -m unittest test_season_structure test_season_calendar test_player_economy test_renewal_access test_fan_variety test_lineup_readiness -v)
+(cd "$src/server" && python3 -m unittest test_season_structure test_season_calendar test_player_economy test_renewal_access test_fan_variety test_lineup_readiness test_draft_swap_identity -v)
 if ! id lfm >/dev/null 2>&1; then
   sudo useradd --system --home-dir "$DATA_ROOT" --shell /usr/sbin/nologin lfm
 fi

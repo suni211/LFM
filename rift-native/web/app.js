@@ -8,6 +8,7 @@ const NAV = [
   ['2군', '/app/academy', '선수단'],
   ['전술', '/app/tactics', '선수단'],
   ['밴픽', '/app/draft', '대회'],
+  ['매치 엔진', '/app/match-engine', '대회'],
   ['훈련', '/app/training', '선수단'],
   ['프런트', '/app/staff', '구단'],
   ['프런트 DB', '/app/front-database', '구단'],
@@ -178,7 +179,7 @@ async function career() {
   return careerCache
 }
 function shell(body,path) {
-  const categories=[['구단',['home','inbox','news','finance','vision','community','staff','front-database','sponsors']],['선수단',['squad','academy','medical','relations','players','solo']],['전술·훈련',['tactics','draft','training']],['영입',['transfers','shortlist']],['리그·경기',['schedule','leagues','history','data']],...(isOperator?[['운영',['operator','clubs']]]:[])]
+  const categories=[['구단',['home','inbox','news','finance','vision','community','staff','front-database','sponsors']],['선수단',['squad','academy','medical','relations','players','solo']],['전술·훈련',['tactics','draft','training']],['영입',['transfers','shortlist']],['리그·경기',['schedule','match-engine','leagues','history','data']],...(isOperator?[['운영',['operator','clubs']]]:[])]
   const selected=NAV.find(n=>n[1]===path)?.[0]||'구단 관리'
   const menu=categories.map(([label,keys])=>`<details class="nav-category"><summary>${label}<span>⌄</span></summary><div class="dropdown">${keys.map(key=>{const item=NAV.find(n=>n[1]==='/app/'+key)||[key==='clubs'?(isOperator?'구단 조회':'구단 선택'):key,'/app/'+key];return `<a href="${item[1]}" class="${path===item[1]?'on':''}">${item[0]}</a>`}).join('')}</div></details>`).join('')
   document.getElementById('app').innerHTML=`<div id="shell"><header id="masthead"><div id="top"></div><nav id="navigation"><a class="brand" href="/app/home">R/M<span>RIFT MANAGER</span></a>${menu}${isOperator?'<span class="account-link">운영자 · 관전 모드</span>':'<a class="account-link" href="/app/manager">감독 프로필</a>'}<button id="logout" aria-label="로그아웃">로그아웃</button></nav></header><main id="view" aria-label="${esc(selected)}">${body}</main></div>`
@@ -672,6 +673,31 @@ async function schedule() {
  document.querySelectorAll('.calendar-match').forEach(a=>a.onclick=e=>{e.preventDefault();go(a.getAttribute('href'))})
  await topbar()
 }
+async function matchEngineLobby(){
+  const current=await requireCareer();if(!current)return
+  const data=await api('/fixtures?id='+current.id)
+  const games=(data.fixtures||[]).filter(g=>['queued','finished','failed'].includes(g.state))
+  const statuses={queued:'진행 중',finished:'경기 완료',failed:'매치 엔진 오류'}
+  const rows=games.slice(0,50).map(g=>{
+    const draftActive=['choice','draft_pending','draft','swap'].includes(g.series?.phase)
+    const path=draftActive?'/app/draft/'+g.id:'/app/match/'+g.id
+    const score=g.result?.score||g.series?.score
+    return '<a class="row" href="'+path+'"><div><b>'+esc(g.opponent)+'</b>'+
+      '<small>'+esc(g.competition||'리그')+' · '+g.season+'시즌 '+g.week+'주차 · BO'+g.best_of+
+      ' · '+esc(statuses[g.state])+'</small></div>'+
+      '<span>'+esc(score?score.join(' : '):draftActive?'밴픽 진행':'경기 조회')+'</span></a>'
+  }).join('')
+  shell('<div class="page-heading"><div><p class="eyebrow">PYTHON MATCH ENGINE</p>'+
+    '<h1>매치 엔진</h1><p>Python 시뮬레이터의 실제 경기 결과, 선수 기록, 녹화된 하이라이트를 조회합니다.</p></div>'+
+    '<a class="act" href="/app/draft">밴픽 센터</a></div>'+
+    '<section class="panel"><h2>경기 엔진 연결</h2>'+
+    '<p>확정된 밴픽과 선수 능력치·전술은 서버 Python 매치 워커로 전달됩니다. 경기 결과는 저장 후 자동 반영됩니다.</p>'+
+    '<p class="muted-note">이 탭은 웹 경기 기록·하이라이트 화면입니다. 별도의 Python SDL 데스크톱 중계 프로그램 자체를 웹에서 실행하는 방식은 아닙니다.</p>'+
+    '</section><section class="panel"><h2>내 구단 매치 엔진 경기 · '+games.length+'건</h2>'+
+    (rows||'<p class="empty">현재 진행 중이거나 완료된 경기가 없습니다. 운영자가 주차를 진행하면 일정에 경기가 생성됩니다.</p>')+
+    '</section>','/app/match-engine')
+  await topbar()
+}
 async function draftLobby() {
   const current=await requireCareer();if(!current)return
   const [fixtureData,preflight]=await Promise.all([
@@ -761,6 +787,7 @@ async function draftMatch(id) {
   const game=(data.fixtures||[]).find(item=>item.id===id)
   if(!game){go('/app/draft');return}
   const series=game.series||{}
+  const lineup=series.phase==='swap'?await api('/draft-lineup?id='+id):null
   const isDraft=series.phase==='draft'
   const roster=isDraft?(await api('/champions')).champions||[]:[]
   const sequence=draftSequence(series.first)
@@ -849,12 +876,55 @@ async function draftMatch(id) {
       (turn?.action==='ban'?'밴 확정':'픽 확정')+'</button></div>'+
       '<button type="button" class="arena-auto" id="auto">남은 밴픽 자동 진행</button></div>')
   }else if(series.phase==='swap'){
-    const roles=[['TOP','탑'],['JUNGLE','정글'],['MID','미드'],['ADC','원딜'],['SUPPORT','서포터']]
-    panels.push('<div class="arena-choice-panel"><h2>픽 완료 · 포지션 교환</h2>'+
-      '<p>선수의 역할 숙련 조건이 맞으면 스왑할 수 있습니다. 30초 뒤 경기가 진행됩니다.</p>'+
-      '<div class="arena-swap-controls"><label>첫 번째 포지션<select id="swap-a">'+roles.map(([id,name])=>'<option value="'+id+'">'+name+'</option>').join('')+'</select></label>'+
-      '<label>두 번째 포지션<select id="swap-b">'+roles.map(([id,name],i)=>'<option value="'+id+'"'+(i===1?' selected':'')+'>'+name+'</option>').join('')+'</select></label>'+
-      '<button type="button" class="arena-submit" id="swap">포지션 교환</button></div></div>')
+    const roleNames=[['TOP','탑'],['JUNGLE','정글'],['MID','미드'],['ADC','원딜'],['SUPPORT','서포터']]
+    const ownChampions=(series.roster||[])[series.blue]||[]
+    const enemyChampions=(series.roster||[])[1-series.blue]||[]
+    const showPlayer=(team,role)=>(lineup?.teams?.[team]?.players?.[role])||'선수 정보 없음'
+    const roleLabels=Object.fromEntries(roleNames)
+    const canSwap=(a,b)=>{
+      const leftIndex=roleNames.findIndex(x=>x[0]===a)
+      const rightIndex=roleNames.findIndex(x=>x[0]===b)
+      if(leftIndex<0||rightIndex<0||leftIndex===rightIndex)return false
+      const left=ownChampions[leftIndex],right=ownChampions[rightIndex]
+      return !!(left&&right&&(series.role_options?.[left]||[]).includes(b)&&
+        (series.role_options?.[right]||[]).includes(a))
+    }
+    const validPairs=[]
+    for(let i=0;i<roleNames.length;i++){
+      for(let j=i+1;j<roleNames.length;j++){
+        const [left]=roleNames[i], [right]=roleNames[j]
+        if(canSwap(left,right))validPairs.push(roleLabels[left]+' ↔ '+roleLabels[right])
+      }
+    }
+    const card=(role,index,team,selectable)=>{
+      const champ=(selectable?ownChampions:enemyChampions)[index]
+      const title=champ?esc(championKo(champ)):'미배정'
+      const user=esc(showPlayer(team,role))
+      const roles=(series.role_options?.[champ]||[]).map(r=>roleLabels[r]||r).join(' · ')
+      const body='<span class="swap-role-label">'+esc(roleLabels[role])+'</span>'+
+        (champ?championIcon(champ):'<span class="swap-empty-champ">?</span>')+
+        '<span class="swap-role-info"><strong>'+title+'</strong><small>담당 선수 · '+user+'</small>'+
+        '<small>챔피언 가능 포지션 · '+esc(roles||roleLabels[role])+'</small></span>'+
+        (selectable?'<span class="swap-select-mark">선택</span>':'')
+      return selectable?
+        '<button type="button" class="swap-role-card" data-swap-role="'+role+'">'+body+'</button>':
+        '<div class="swap-role-card is-opponent">'+body+'</div>'
+    }
+    panels.push('<div class="arena-swap-stage">'+
+      '<div class="arena-swap-heading"><small>FINAL CHAMPION ASSIGNMENT</small><h2>선수 · 챔피언 스왑</h2>'+
+      '<p>선수는 각 포지션을 그대로 담당하고, 두 선수가 사용할 챔피언을 교환합니다. 우리 팀 카드 두 장을 선택하세요.</p></div>'+
+      '<div class="arena-swap-team-grid">'+
+      '<div class="arena-swap-column"><h3>우리 팀 <small>'+esc(clubName)+'</small></h3>'+
+      roleNames.map(([role],index)=>card(role,index,0,true)).join('')+'</div>'+
+      '<div class="arena-swap-column"><h3>상대 팀 <small>'+esc(enemyName)+'</small></h3>'+
+      roleNames.map(([role],index)=>card(role,index,1,false)).join('')+'</div></div>'+
+      '<div class="arena-swap-help"><p id="swap-guidance">'+
+      (validPairs.length?'스왑 가능한 조합: '+esc(validPairs.join(', ')):
+       '현재 챔피언 조합에는 상호 포지션 호환 스왑이 없습니다. 그대로 경기 시작이 가능합니다.')+
+      '</p><p class="muted-note">스왑 제한시간은 90초입니다. 완료 버튼을 누르면 즉시 서버의 Python 매치 엔진으로 넘어갑니다.</p></div>'+
+      '<div class="arena-swap-actions"><button type="button" class="arena-submit" id="swap" disabled>선택한 챔피언 교환</button>'+
+      '<button type="button" class="arena-submit swap-ready" id="swap-ready">스왑 완료 · 경기 시작</button></div>'+
+      '</div>')
   }else if(series.phase==='draft_pending'){
     panels.push('<div class="arena-choice-panel"><h2>밴픽 서버 준비 중</h2><p>상대 진영과 픽·밴 순서가 확정됐습니다. 자동으로 밴픽 화면으로 전환됩니다.</p></div>')
   }else {
@@ -947,10 +1017,52 @@ async function draftMatch(id) {
     submit('/draft-auto',{id,version:series.draft_version})
   }
   const swap=document.getElementById('swap')
-  if(swap)swap.onclick=()=>{
-    swap.disabled=true
-    submit('/draft-swap',{id,first:document.getElementById('swap-a').value,
-      second:document.getElementById('swap-b').value,version:series.swap_version})
+  if(swap){
+    const choices=[]
+    const roleNames=['TOP','JUNGLE','MID','ADC','SUPPORT']
+    const ownChampions=(series.roster||[])[series.blue]||[]
+    const options=series.role_options||{}
+    const roleKo={TOP:'탑',JUNGLE:'정글',MID:'미드',ADC:'원딜',SUPPORT:'서포터'}
+    const hint=document.getElementById('swap-guidance')
+    document.querySelectorAll('[data-swap-role]').forEach(button=>button.onclick=()=>{
+      const role=button.dataset.swapRole
+      const at=choices.indexOf(role)
+      if(at>=0)choices.splice(at,1)
+      else{
+        if(choices.length===2)choices.shift()
+        choices.push(role)
+      }
+      document.querySelectorAll('[data-swap-role]').forEach(item=>{
+        item.classList.toggle('is-selected',choices.includes(item.dataset.swapRole))
+      })
+      if(choices.length===2){
+        const [a,b]=choices
+        const left=ownChampions[roleNames.indexOf(a)]
+        const right=ownChampions[roleNames.indexOf(b)]
+        const valid=!!(left&&right&&(options[left]||[]).includes(b)&&
+          (options[right]||[]).includes(a))
+        swap.disabled=!valid
+        hint.textContent=valid?
+          roleKo[a]+' '+championKo(left)+' ↔ '+roleKo[b]+' '+championKo(right)+
+          ' 교환 가능 · 확정하면 두 선수의 챔피언이 바뀝니다.':
+          roleKo[a]+'의 '+championKo(left)+'와 '+roleKo[b]+'의 '+championKo(right)+
+          '는 서로의 포지션을 플레이할 수 없어 교환할 수 없습니다.'
+      }else{
+        swap.disabled=true
+        hint.textContent='우리 팀의 서로 다른 두 포지션을 선택하세요.'
+      }
+    })
+    swap.onclick=()=>{
+      if(choices.length!==2)return
+      swap.disabled=true
+      submit('/draft-swap',{id,first:choices[0],second:choices[1],version:series.swap_version})
+    }
+    const ready=document.getElementById('swap-ready')
+    if(ready)ready.onclick=()=>{
+      if(!confirm('현재 챔피언 배치를 확정하고 Python 매치 엔진에서 경기를 시작할까요?'))return
+      ready.disabled=true
+      submit('/draft-ready',{id})
+    }
   }
   await topbar()
 }
@@ -1848,6 +1960,7 @@ async function draw() {
     const leaguePath=path.match(/^\/app\/league\/(.+)$/)
     if(leaguePath)return await leagueOverview(decodeURIComponent(leaguePath[1]))
     if (path === '/app/data') return await dataHub()
+    if(path==='/app/match-engine')return await matchEngineLobby()
     if(path==='/app/draft')return await draftLobby()
     const draftPath=path.match(/^\/app\/draft\/(\d+)$/)
     if(draftPath)return await draftMatch(Number(draftPath[1]))

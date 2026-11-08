@@ -1,5 +1,6 @@
 """Generated season matchups and safe operator observation contracts."""
 import sqlite3
+import json
 import unittest
 from unittest.mock import patch
 
@@ -59,6 +60,27 @@ class CalendarAndOperatorTest(unittest.TestCase):
         self.db.execute("UPDATE careers SET season=2,week=1 WHERE id=10")
         self.assertEqual(season_calendar.ensure_career(self.db,10),6)
         self.assertEqual(self.db.execute("SELECT COUNT(*) FROM fixtures WHERE season=2").fetchone()[0],6)
+
+    def test_recipient_fixture_does_not_simulate_a_second_match(self):
+        self.db.execute("INSERT INTO careers VALUES(11,'Beta',1,1,1)")
+        self.db.execute("INSERT INTO club_profiles VALUES(11,'takeover','LCK','beta','test')")
+        season_calendar.ensure_career(self.db,10)
+        season_calendar.ensure_career(self.db,11)
+        week=next(g['week'] for g in season_calendar.build(self.db,1,'LCK')
+                  if {g['home'],g['away']}=={'Alpha','Beta'})
+        fixtures.enqueue(self.db,10,1,week)
+        fixtures.enqueue(self.db,11,1,week)
+        rows=self.db.execute("""SELECT id,state FROM fixtures
+            WHERE career_id IN (10,11) AND season=1 AND week=? ORDER BY id""",(week,)).fetchall()
+        self.assertEqual([r[1] for r in rows].count('queued'),1)
+        self.assertEqual([r[1] for r in rows].count('scheduled'),1)
+        active=next(fid for fid,status in rows if status=='queued')
+        with patch('management.record_match'),patch('solo.record_result'),patch('qualification.observe'):
+            self.assertTrue(fixtures.complete(self.db,active,{'winner':0,'score':[2,1]}))
+        results=[json.loads(r[0]) for r in self.db.execute("""SELECT result FROM fixtures
+            WHERE career_id IN (10,11) AND season=1 AND week=? ORDER BY id""",(week,))]
+        self.assertEqual({r['winner'] for r in results},{0,1})
+        self.assertEqual({tuple(r['score']) for r in results},{(2,1),(1,2)})
 
     def test_operator_can_observe_but_never_becomes_club_admin(self):
         self.assertEqual(clubs.grant(self.db,1,10,read_only=True),'viewer')

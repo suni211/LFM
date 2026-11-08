@@ -1,0 +1,26 @@
+name: LFM import rules and web syntax
+on:
+  push:
+    branches: [main, fix/nationality-audit-2026-11-08]
+  pull_request:
+    paths:
+      - 'rift-native/server/**'
+      - 'rift-native/web/**'
+      - 'rift-native/tools/audit_nationalities.py'
+      - '.github/workflows/import-rules.yml'
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile server Python
+        run: python -m compileall -q rift-native/server rift-native/tools/audit_nationalities.py
+      - name: Import quota unit tests
+        run: cd rift-native/server && python -m unittest test_import_rules -v
+      - name: Web JavaScript syntax
+        run: node --check rift-native/web/app.js

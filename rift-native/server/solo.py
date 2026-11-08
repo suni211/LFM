@@ -305,29 +305,12 @@ def _rating(player, won, team_damage):
     return max(1,min(9.9,6+min(1.4,kills*.18+assists*.08)-min(3.5,deaths*.38)+(0.5 if won else -0.3)+(share-expected)*2))
 
 def record_result(db, result):
-    if not isinstance(result,dict): return
-    games=result.get('sets') or [result]
-    for game in games:
-        players=game.get('players') or []
-        if not players: continue
-        by_team={}
-        for index,player in enumerate(players):
-            team=player.get('team',index//5)
-            by_team[team]=by_team.get(team,0)+player.get('damage',0)
-        for index,player in enumerate(players):
-            person_id=player.get('player_id')
-            if not person_id: continue
-            row=fetch(db, person_id)
-            if not row or row[3] not in ('pro','prospect'): continue
-            team=player.get('team',index//5)
-            won=team==game.get('winner')
-            rating=_rating(player,won,by_team.get(team,0))
-            delta=int(round((rating-5)*6+(16 if won else -14)))
-            delta=max(-30,min(28,delta))
-            stall=row[6]
-            if row[3]=='prospect':
-                stall=max(0,stall-2) if delta>=8 else stall+STALL_GAIN[row[4]]
-            db.execute('UPDATE solo_ranks SET mmr=?,games=games+1,stall=? WHERE person_id=?',(max(0,row[1]+delta),stall,person_id))
+    """Professional match results do not change individual solo queue ratings.
+
+    Team competition performance is recorded by management.record_match.
+    Solo queue MMR is advanced only by separate solo queue simulations.
+    """
+    return None
 
 
 def repair_legacy_handles(db):

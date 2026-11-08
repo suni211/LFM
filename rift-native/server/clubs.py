@@ -17,8 +17,14 @@ def key(league,team):
     return hashlib.sha256(json.dumps([league,team],ensure_ascii=False).encode()).hexdigest()[:24]
 
 def available(db):
+    import promotion
     claimed={row[0] for row in db.execute('SELECT team_key FROM club_profiles WHERE team_key IS NOT NULL')}
-    return [dict(team,team_key=key(team['league'],team['team']),claimed=key(team['league'],team['team']) in claimed) for team in catalog.teams()]
+    year=db.execute("SELECT season FROM online_clock WHERE id=1").fetchone()
+    season=year[0] if year else 1
+    return [dict(team,team_key=key(team['league'],team['team']),
+                 claimed=key(team['league'],team['team']) in claimed)
+            for team in catalog.teams()
+            if promotion.active(db,team['league'],team['team'],season)]
 
 def human_owner(db,career):
     row=db.execute('''SELECT u.name FROM members m JOIN users u ON u.id=m.user_id
@@ -40,6 +46,10 @@ def directory(db):
         current=owned.get(team['team_key'])
         board.append(current or dict(team,league=team.get('league') or '',team=team.get('team') or '',career_id=None,kind='ai',owner=''))
     board.extend(created)
+    # Keep renamed/relegated owned careers in directory even if their historic
+    # immutable team_key does not match the new competition's catalog.
+    seen={row['career_id'] for row in board if row.get('career_id') is not None}
+    board.extend(item for item in owned.values() if item['career_id'] not in seen)
     board.sort(key=lambda row:(row['league'],row['team']))
     return board
 

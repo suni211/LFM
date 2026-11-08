@@ -136,5 +136,27 @@ def season_performance(db,career,person):
     return summary
 
 def report(db,career,person):
-    return dict(attributes=attribute_profile(person),
-                season=season_performance(db,career,person))
+    """The operator-editable 30-stat profile is the single visible source.
+
+    Match history is kept separate; completed match facts never become
+    fabricated player attributes.
+    """
+    import player_attributes
+    compact=attribute_profile(person)
+    detailed=player_attributes.read(db,person)
+    if detailed:
+        ratings=detailed['ratings']
+        compact.update(
+            sections=[dict(key=str(i),title=group['name'],
+                           attributes=[dict(name=key,value=ratings[key]) for key in group['keys']])
+                      for i,group in enumerate(detailed['groups'])],
+            count=len(ratings),overall=detailed['overall'],
+            source=detailed['source'],
+            source_label='운영자 지정 게임 능력치' if detailed['source']=='operator-edited'
+                         else 'LFM 게임 내 개별 추정 능력치',
+            note=detailed['notice']+' · '+(
+                '운영자가 저장한 수치를 적용했습니다.' if detailed['source']=='operator-edited'
+                else '기본 게임 평가 모델에서 생성한 값입니다.'),
+            strengths=[k for k,_ in sorted(ratings.items(),key=lambda kv:(-kv[1],kv[0]))[:3]],
+            weaknesses=[k for k,_ in sorted(ratings.items(),key=lambda kv:(kv[1],kv[0]))[:3]])
+    return dict(attributes=compact,season=season_performance(db,career,person))

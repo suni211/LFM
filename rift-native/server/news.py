@@ -64,6 +64,7 @@ def _item(nid,season,week,headline,body,subjects,league,origin,club,follows,scop
     own=('team',club) in entities
     followed=bool(entities & follows)
     eligible=(own or followed or bool(competition and league==competition)) if scope=='home' else followed if scope=='following' else bool(competition and league==competition)
+    if scope=='operator': eligible=True
     if not eligible: return None
     label='스토브 유출' if origin=='leak' and 1<=week<=10 else '유출 기사' if origin=='leak' else '게임 내 가상 기사'
     return dict(id=nid,season=season,week=week,headline=headline,body=body,subjects=subjects,competition=league,
@@ -98,4 +99,48 @@ def feed(db,user,career,competition='',scope='home',before=None):
             if item: selected.append(item)
     selected.sort(key=lambda item:(-item['season'],-item['week'],-item['id']))
     if scope=='home': selected.sort(key=lambda item:(not item['own_team'],-item['season'],-item['week'],-item['id']))
+    return selected[:150]
+
+def operator_feed(db, user, competition='', before=None):
+    """All public league and rumour news across every club, without membership."""
+    import online_world
+    if not online_world.operator(db,user):
+        raise PermissionError()
+    if not isinstance(competition,str) or len(competition)>80:
+        raise ValueError('invalid league')
+    if before is not None and (type(before) is not int or before<1):
+        raise ValueError('invalid cursor')
+    where=[]
+    params=[]
+    if competition:
+        where.append('competition=?')
+        params.append(competition)
+    if before is not None:
+        where.append('id<?')
+        params.append(before)
+    query='SELECT id,season,week,headline,body,subjects,competition,origin FROM career_news'
+    if where: query+=' WHERE '+' AND '.join(where)
+    query+=' ORDER BY season DESC,week DESC,id DESC LIMIT 1000'
+    rows=db.execute(query,params)
+    selected=[]
+    for nid,season,week,headline,body,raw,league,origin in rows:
+        item=_item(nid,season,week,headline,body,json.loads(raw),league,origin,'',set(),'operator',competition)
+        if item: selected.append(item)
+    if db.execute("SELECT 1 FROM sqlite_master WHERE name='league_rumors'").fetchone():
+        query='SELECT id,season,week,headline,body,subjects,league FROM league_rumors'
+        where=[]
+        params=[]
+        if competition:
+            where.append('league=?')
+            params.append(competition)
+        if before is not None:
+            where.append('id<?')
+            params.append(before-10**12)
+        if where: query+=' WHERE '+' AND '.join(where)
+        query+=' ORDER BY season DESC,week DESC,id DESC LIMIT 1000'
+        for nid,season,week,headline,body,raw,league in db.execute(query,params):
+            if not headline: continue
+            item=_item(10**12+nid,season,week,headline,body,json.loads(raw),league,'leak','',set(),'operator',competition)
+            if item: selected.append(item)
+    selected.sort(key=lambda item:(-item['season'],-item['week'],-item['id']))
     return selected[:150]

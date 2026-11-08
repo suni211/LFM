@@ -111,6 +111,10 @@ def detail(db,career,person_id):
     person['catalog_retrieved']=data.get('retrieved')
     override=db.execute('SELECT value FROM person_overrides WHERE career_id=? AND person_id=?',(career,person_id)).fetchone()
     person['game_evaluation']=json.loads(override[0]) if override else person.get('game_evaluation')
+    # Global operator-edited detailed stats also update six core game/scout
+    # ratings across every career. Source roster files remain untouched.
+    import player_attributes
+    player_attributes.apply_to_game_evaluation(db,person)
     import solo
     solo.attach(db,person)
     return person

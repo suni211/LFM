@@ -156,7 +156,12 @@ class Handler(BaseHTTPRequestHandler):
                     if logo_data:current['logo_data']=logo_data
                     if short:current['short']=short
                     if color and color!='#17324d':current['color']=color
-                return self.reply(200,{'brandings':brandings})
+                import academy_clubs
+                parent_logos={
+                    item['league']+'\n'+item['team']:item['parent_league']+'\n'+item['parent_team']
+                    for item in academy_clubs.entries() if item['parent_team'] and item['parent_league']
+                }
+                return self.reply(200,{'brandings':brandings,'academy_parents':parent_logos})
             if url.path=='/club-identity':
                 query=parse_qs(url.query)
                 league_name=query.get('league',[''])[0]
@@ -472,7 +477,7 @@ class Handler(BaseHTTPRequestHandler):
         assets,web=self.roots()
         if path.startswith('/media/'):
             rel=path[len('/media/'):]
-            if '..' in rel.split('/') or not (rel.startswith(('portraits/','clubs/')) or rel in ('club-assets.json','club-colors.json')):
+            if '..' in rel.split('/') or not (rel.startswith(('portraits/','clubs/')) or rel in ('club-assets.json','club-colors.json','league-logos.json')):
                 self.reply(404,{'error':'not found'}); return True
             target=assets/rel
             if not target.is_file():

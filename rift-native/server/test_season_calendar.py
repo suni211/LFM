@@ -57,10 +57,11 @@ class CalendarAndOperatorTest(unittest.TestCase):
             {g['week'] for g in season_calendar.build(self.db,1,'LCK',team='Alpha')})])
 
     def test_manual_fixture_is_not_overwritten(self):
+        blocked=next(g['week'] for g in season_calendar.build(self.db,1,'LCK',team='Alpha'))
         self.db.execute("""INSERT INTO fixtures(career_id,season,week,opponent,seed,best_of,competition,stage)
-            VALUES(10,1,2,'Manual Rival',1,5,'Worlds','final')""")
+            VALUES(10,1,?,'Manual Rival',1,5,'Worlds','final')""",(blocked,))
         self.assertEqual(season_calendar.ensure_career(self.db,10),5)
-        row=self.db.execute("SELECT opponent,best_of,competition,stage FROM fixtures WHERE career_id=10 AND week=2").fetchone()
+        row=self.db.execute("SELECT opponent,best_of,competition,stage FROM fixtures WHERE career_id=10 AND week=?",(blocked,)).fetchone()
         self.assertEqual(row,('Manual Rival',5,'Worlds','final'))
 
     def test_next_season_is_generated_immediately(self):

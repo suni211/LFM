@@ -48,8 +48,18 @@ def enrich(person):
             p['nationality_name_ko']=row['name']
         if not p.get('nationality_code') and row.get('code'):
             p['nationality_code']=row['code']
-        p['nationality_verified_source']=row.get('source')
-        p['nationality_origin']='verified-source'
+        p['nationality_source']=row.get('source')
+        if row.get('citizenship_verified') is False:
+            # User explicitly accepts documented country of birth / origin as
+            # the in-game nationality. Keep the evidence type transparent.
+            p['nationality_origin']='leaguepedia-country-or-birthplace'
+            p['nationality_evidence_type']='country-or-birthplace'
+            p['nationality_citizenship_verified']=False
+        else:
+            p['nationality_verified_source']=row.get('source')
+            p['nationality_origin']='verified-source'
+            p['nationality_evidence_type']='citizenship-or-reported-nationality'
+            p['nationality_citizenship_verified']=True
         p.pop('country_hint',None)
         p.pop('nationality_pending',None)
     elif p.get('real_person') is False and p.get('nationality_name_ko'):

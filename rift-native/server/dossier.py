@@ -53,13 +53,10 @@ def front_office(staff,manager=None,owner=None):
     entries=[]
     if owner:
         entries.append(dict(name=owner['name'],role='구단주·운영 주체',role_key='OWNER',
-            source=owner['source'],nationality_name_ko=owner.get('nationality_name_ko'),
-            nationality_code=owner.get('nationality_code'),source_url=owner.get('source_url')))
+            source=owner['source'],source_url=owner.get('source_url'),show_nationality=False))
         if owner.get('representative'):
             entries.append(dict(name=owner['representative'],role=owner.get('representative_role') or '운영 대표',
-                role_key='EXECUTIVE',source=owner['source'],source_url=owner.get('source_url'),
-                nationality_name_ko=owner.get('nationality_name_ko'),
-                nationality_code=owner.get('nationality_code')))
+                role_key='EXECUTIVE',source=owner['source'],source_url=owner.get('source_url'),show_nationality=False))
     if manager:
         entries.append(dict(name=manager['name'],role='감독',role_key='MANAGER',
             source=manager.get('source','game'),person_id=manager.get('person_id'),

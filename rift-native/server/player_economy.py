@@ -22,9 +22,9 @@ VISIBILITY={
 }
 CRITERIA={
     'rating':'30개 게임 능력치 55% + 실제 프로 경기 성적 최대 30% + 게임 경기 성적 최대 15%',
-    'fame':'실제 경기 출전 수 + 대회 인지도 + 게임 수상 이력',
-    'salary':'능력 레이팅·인지도·출전 경험에 따른 게임 내 연봉 추정',
-    'market_value':'게임 연봉과 레이팅·인지도에 따른 이적 가치',
+    'fame':'경기 출전 수 + 리그 인지도 + 게임 수상 이력',
+    'salary':'경기 레이팅·인지도·실전 경험을 반영한 게임 연봉 추정',
+    'market_value':'게임 연봉·레이팅·인지도·굿즈 판매 기대수익에 따른 이적 가치',
     'note':'실제 선수의 공개 연봉이나 공식 능력치가 아닌 FM 게임 산정값',
 }
 @lru_cache(maxsize=1)
@@ -77,8 +77,17 @@ def estimate(person,ratings=None,played=None,awards=0):
         annual=_round100k(annual*.66)
     valuation=_round100k(clamp(annual*(2.3+rating/130+reputation/250),
                                 15000000,2500000000))
+    # Merchandise sales use a fictional games-only demand curve. The expected
+    # gross is not the same as club profit: manufacturing and logistics cost 55%.
+    merch_gross=_round100k(max(1000000,(reputation**2)*28000+(rating**2)*3000))
+    merch_profit=_round100k(merch_gross*.45)
+    # Year-one player valuation can be profitable through fan engagement even
+    # when immediate performance improvement is small.
+    marketing=round(reputation*.5+min(20,pro_games/5),1)
     return dict(rating=rating,ovr=rating,ability=round(base,1),
                 fame=reputation,annual_salary=annual,market_value=valuation,
+                merch_annual_sales=merch_gross,merch_annual_profit=merch_profit,
+                marketing_impact=marketing,
                 pro_games=pro_games,pro_performance=pro_score,
                 in_game_games=live_games,in_game_performance=live_score,
                 basis='game-estimate',criteria=CRITERIA)

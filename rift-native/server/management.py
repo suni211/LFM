@@ -104,6 +104,8 @@ def snapshot(db,career):
                               fatigue=fatigue,injury_turns=max(0,injury-now),treatment=treatment,morale=morale,growth=json.loads(growth)))
     state['contracts']=contracts
     state['annual_payroll']=sum(p['annual_salary'] for p in contracts if p['active'])
+    import merchandise
+    state['merchandise']=merchandise.snapshot(db,career)
     state['ledger']=[dict(zip(('id','season','week','amount','category','description'),row)) for row in db.execute(
         'SELECT id,season,week,amount,category,description FROM finance_ledger WHERE career_id=? ORDER BY id DESC LIMIT 150',(career,))]
     row=db.execute('SELECT name,stats,vision FROM manager_profiles WHERE career_id=?',(career,)).fetchone()
@@ -220,6 +222,8 @@ def advance(db,career,season,week):
     if payroll:
         ledger(db,career,'payroll:'+str(now),-payroll,'salary','선수·스탭 주간 급여 · 연봉 104턴 분할',season,week)
         club_messages.publish(db,career,'payroll:'+str(now),season,week,'급여 지급',format(payroll,',')+'원을 지급했습니다. 재정 원장에서 확인할 수 있습니다.')
+    import merchandise
+    merchandise.weekly(db,career,season,week,state['contracts'],state['fans'])
     import player_departures
     player_departures.weekly(db,career,season,week)
     if db.execute('SELECT cash FROM club_finances WHERE career_id=?',(career,)).fetchone()[0]<0:

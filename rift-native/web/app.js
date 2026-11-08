@@ -54,6 +54,14 @@ function logoImg(league, team) {
   if (!item || !item.logo) return `<span class="club-monogram" aria-label="${esc(team)}">${esc((team||'RM').slice(0,2))}</span>`
   return `<img class="logo" alt="" style="background:${esc(item.background || '#dce3ed')}" src="${BASE}/media/${esc(item.logo)}"/>`
 }
+function careerLogo(careerItem) {
+  const brand=careerItem?.branding
+  if(!brand)return logoImg(careerItem?.club_profile?.league||'',careerItem?.name||'')
+  const alt=esc(careerItem.name||'구단 로고')
+  if(brand.logo_data&&/^data:image\/(png|jpeg|webp);base64,[a-zA-Z0-9+/=]+$/.test(brand.logo_data))
+    return `<img class="logo" alt="${alt}" src="${esc(brand.logo_data)}"/>`
+  return `<span class="club-monogram" style="background:${esc(brand.color)};color:white">${esc(brand.short||'RM')}</span>`
+}
 function teamColor(league, team) { return media.colors[league + '\n' + team] || '#17324d' }
 function go(href) { history.pushState({}, '', BASE && !href.startsWith(BASE + '/') ? BASE + href : href); draw() }
 async function career() {
@@ -77,7 +85,7 @@ async function topbar() {
   document.documentElement.style.setProperty('--team',teamColor(league,name))
   const fixtures=current?(await api('/fixtures?id='+current.id)).fixtures:[]
   const due=(fixtures||[]).find(g=>g.state==='queued')
-  bar.innerHTML=`<div class="club-identity">${logoImg(league,name)}<div><b>${esc(name)}</b><small>${esc(league)} · 온라인 리그</small></div></div><div class="search-wrap"><label class="sr-only" for="global-search">통합 검색</label><input id="global-search" placeholder="선수, 스태프, 구단 검색" autocomplete="off"/><div id="search-results" hidden></div></div><div class="week"><small>현재 시즌</small><b>${world.season}시즌 ${world.week}주차</b></div>${isOperator?'':`<button class="continue" id="vote">${due?'경기 진행':world.ready?'준비 완료':'다음으로'} <span>❯❯</span></button>`}`
+  bar.innerHTML=`<div class="club-identity">${current?careerLogo(current):logoImg(league,name)}<div><b>${esc(name)}</b><small>${esc(league)} · 온라인 리그</small></div></div><div class="search-wrap"><label class="sr-only" for="global-search">통합 검색</label><input id="global-search" placeholder="선수, 스태프, 구단 검색" autocomplete="off"/><div id="search-results" hidden></div></div><div class="week"><small>현재 시즌</small><b>${world.season}시즌 ${world.week}주차</b></div>${isOperator?'':`<button class="continue" id="vote">${due?'경기 진행':world.ready?'준비 완료':'다음으로'} <span>❯❯</span></button>`}`
   if(!isOperator)document.getElementById('vote').onclick=async()=>{try{if(due)return go('/app/match/'+due.id);if(!current)return go('/app/clubs');careerCache=null;const fresh=await career();await api('/advance',{id:fresh.id,version:fresh.version});careerCache=null;draw()}catch(e){alert(e.message)}}
   const input=document.getElementById('global-search'),results=document.getElementById('search-results');let generation=0,timer
   input.oninput=()=>{const g=++generation;clearTimeout(timer);results.hidden=true;const q=input.value.trim();if(!q)return;timer=setTimeout(async()=>{try{const data=await api('/search?query='+encodeURIComponent(q));if(g!==generation||!results.isConnected)return;results.innerHTML=(data.results||[]).map(item=>{const href=item.kind==='team'?'/app/team/'+encodeURIComponent(item.league)+'/'+encodeURIComponent(item.team):item.kind==='manager'||item.kind==='owner'?'/app/entity/'+item.kind+'/'+encodeURIComponent(item.id):'/app/player/'+encodeURIComponent(item.id);return `<a href="${href}"><b>${esc(item.label)}</b><small>${esc(item.subtitle)}</small></a>`}).join('')||'<p>검색 결과가 없습니다.</p>';results.hidden=false}catch(e){if(g===generation){results.innerHTML='<p>검색을 다시 시도해 주세요.</p>';results.hidden=false}}},180)}
@@ -112,7 +120,7 @@ async function continueCareer() {
     const mineRow=(result.standings||[]).find(row=>row.team===selected.name)
     if(mineRow)position=mineRow.rank+'위'
   } catch(e) { /* Continue works even without completed standings. */ }
-  shell(`<div class="continue-landing"><p class="eyebrow">CONTINUE CAREER</p><div class="continue-club">${logoImg(league,selected.name)}<div><h1>${esc(selected.name)}</h1><p>${esc(league)} · ${selected.season}시즌 ${selected.week}주차</p><strong>리그 순위 · ${esc(position)}</strong></div></div><div class="continue-actions"><button class="act" id="resume">이어하기</button><a class="act" href="/app/manager">감독 프로필</a></div></div>`, '/app/home')
+  shell(`<div class="continue-landing"><p class="eyebrow">CONTINUE CAREER</p><div class="continue-club">${careerLogo(selected)}<div><h1>${esc(selected.name)}</h1><p>${esc(league)} · ${selected.season}시즌 ${selected.week}주차</p><strong>리그 순위 · ${esc(position)}</strong></div></div><div class="continue-actions"><button class="act" id="resume">이어하기</button><a class="act" href="/app/manager">감독 프로필</a></div></div>`, '/app/home')
   document.getElementById('resume').onclick=()=>go('/app/home')
   await topbar()
 }
@@ -132,21 +140,34 @@ async function managerSetup() {
   await topbar()
 }
 async function clubs() {
-  shell('<h1>구단</h1><div id="view2"></div>', '/app/clubs')
-  const [mine, board] = await Promise.all([api('/careers'), api('/clubs')])
-  if(mine.careers.length && !isOperator)return go('/app/home')
-  const open = mine.careers.map(item => `<div class="row"><button class="act" data-open="${item.id}">${esc(item.name)}</button><span>${esc(item.club_profile?.league || '')} · ${item.season}시즌 ${item.week}주 · ${item.role}</span></div>`).join('') || '<p>맡은 구단이 없습니다.</p>'
-  const take = board.clubs.filter(club=>isOperator || !club.claimed || club.kind==='ai').map(club => `<div class="row">${logoImg(club.league, club.team)}<span>${esc(club.league)} / ${esc(club.team)}</span>${isOperator?'':`<button class="act" data-team="${esc(club.team_key)}">감독 부임</button>`}<a href="/app/team/${encodeURIComponent(club.league)}/${encodeURIComponent(club.team)}">정보</a></div>`).join('')
-  document.getElementById('view').insertAdjacentHTML('beforeend', `${isOperator?'':`<div class="panel"><h2>내 구단</h2>${open}</div>`}<div class="panel"><h2>리그 구단</h2>${take}</div>`)
-  document.querySelectorAll('[data-open]').forEach(button => button.onclick = () => { localStorage.setItem('rift-career', button.dataset.open); careerCache = null; go('/app/home') })
-  document.querySelectorAll('[data-team]').forEach(button => button.onclick = async () => {
-    try {
-      const result = await api('/careers', {mode:isOperator?'enter':'takeover', team_key:button.dataset.team})
-      localStorage.setItem('rift-career', result.id); careerCache = null; go('/app/home')
-    } catch (error) { alert(error.message) }
-  })
-  document.querySelectorAll('#view a[href^="/app"]').forEach(link => link.addEventListener('click', event => { event.preventDefault(); go(link.getAttribute('href')) }))
-  if(!isOperator && !mine.careers.length){document.getElementById('view').insertAdjacentHTML('afterbegin',`<form class="panel" id="new-club"><h2>새 구단 창단</h2><label>구단 이름 <input name="clubName" required maxlength="40"/></label><label>참가 리그 <select name="league">${board.leagues.map(l=>`<option ${l==='LCK CL'?'selected':''}>${esc(l)}</option>`).join('')}</select></label><button class="act">창단하고 시작</button><p class="err"></p></form>`);document.getElementById('new-club').onsubmit=async e=>{e.preventDefault();const form=e.currentTarget;try{const r=await api('/careers',{mode:'create',name:form.elements.clubName.value.trim(),league:form.elements.league.value});localStorage.setItem('rift-career',r.id);careerCache=null;go('/app/squad')}catch(err){form.querySelector('.err').textContent=err.message}}}
+  const [mine,board]=await Promise.all([api('/careers'),api('/clubs')])
+  if(mine.careers.length&&!isOperator)return go('/app')
+  const clubs=board.clubs.filter(c=>isOperator||!c.claimed||c.kind==='ai')
+  const open=mine.careers.map(c=>`<div class="row">${careerLogo(c)}<b>${esc(c.name)}</b><span>${esc(c.club_profile?.league||'')} · ${c.season}시즌 ${c.week}주</span><button class="act" data-open="${c.id}">이어하기</button></div>`).join('')
+  const available=clubs.map(c=>`<div class="club-choice ${c.eligible?'':'club-locked'}">${logoImg(c.league,c.team)}<div><b>${esc(c.team)}</b><small>${esc(c.league)} · 팀 파워 ${c.power??'-'}</small>${!c.eligible?`<p>${esc(c.ineligible_reason||'경력 부족')}</p>`:''}</div><button class="act" data-team="${esc(c.team_key)}" ${c.eligible||isOperator?'':'disabled'}>${c.eligible||isOperator?'감독 부임':'부임 불가'}</button></div>`).join('')
+  const leagues=board.leagues||[]
+  shell(`<div class="page-heading"><div><p class="eyebrow">START YOUR CAREER</p><h1>감독 커리어 시작</h1><p>하위 리그 또는 파워랭킹이 낮은 구단에서 시작하세요. 최상위 강팀은 경력이 필요합니다.</p></div></div>${open?`<section class="panel"><h2>내 커리어</h2>${open}</section>`:''}<div class="career-choice-grid"><section class="panel club-creation"><h2>2부 리그 신생 구단 창단</h2><p>구단 이름, 3자 영문 약자, 전용 로고와 홈 컬러를 설정하세요.</p><form id="new-club"><label>구단 이름<input name="clubName" required minlength="2" maxlength="40" placeholder="예: Rising Phoenix"/></label><label>약자 (영문 대문자 3자)<input name="short" required maxlength="3" minlength="3" pattern="[A-Z]{3}" placeholder="RPH" style="text-transform:uppercase"/></label><label>참가할 2부 리그<select name="league">${leagues.map(l=>`<option value="${esc(l)}" ${l==='LCK CL'?'selected':''}>${esc(l)}</option>`).join('')}</select></label><label>홈 컬러<input name="color" type="color" value="#254a7a"/></label><label>엠블럼 모양<select name="emblem"><option value="shield">방패</option><option value="star">별</option><option value="crown">왕관</option><option value="bolt">번개</option><option value="diamond">다이아몬드</option></select></label><label>구단 로고 이미지 (선택, PNG/JPEG/WebP · 최대 80KB)<input name="logo" type="file" accept="image/png,image/jpeg,image/webp"/></label><p class="muted-note">로고 파일이 없으면 선택한 색상과 약자로 기본 엠블럼을 만듭니다.</p><button class="act" type="submit">신생 구단 창단 및 코치 영입</button><p class="err" id="club-err" role="alert"></p></form></section><section class="panel"><h2>기존 구단에 감독 부임</h2><p>CBLOL·LCP·2부 리그를 우선 선택할 수 있습니다.</p><div class="club-choice-list">${available}</div></section></div>`,'/app/clubs')
+  document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{localStorage.setItem('rift-career',b.dataset.open);careerCache=null;go('/app')})
+  document.querySelectorAll('[data-team]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{const result=await api('/careers',{mode:isOperator?'enter':'takeover',team_key:b.dataset.team});localStorage.setItem('rift-career',result.id);careerCache=null;go('/app')}catch(e){alert(e.message);b.disabled=false}})
+  const form=document.getElementById('new-club')
+  if(form) form.onsubmit=async e=>{e.preventDefault();const button=form.querySelector('button[type=submit]');button.disabled=true;const err=document.getElementById('club-err');try{
+    const file=form.elements.logo.files[0]
+    let logo_data=''
+    if(file){if(file.size>80000||!['image/png','image/jpeg','image/webp'].includes(file.type))throw Error('80KB 이하 PNG/JPEG/WebP 이미지만 사용할 수 있습니다.');logo_data=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(Error('로고 파일을 읽을 수 없습니다.'));reader.readAsDataURL(file)})}
+    const result=await api('/careers',{mode:'create',name:form.elements.clubName.value.trim(),short:form.elements.short.value.trim().toUpperCase(),league:form.elements.league.value,color:form.elements.color.value,emblem:form.elements.emblem.value,logo_data})
+    localStorage.setItem('rift-career',result.id);careerCache=null;go('/app/onboarding')
+  }catch(error){err.textContent=error.message;button.disabled=false}}
+  await topbar()
+}
+async function onboarding() {
+  const current=await requireCareer();if(!current)return
+  const state=await api('/recruitment?id='+current.id)
+  if(state.complete)return go('/app/home')
+  const coaches=(state.people||[]).filter(p=>p.kind==='coach'&&p.assignment==='candidate')
+  const chosen=(state.staff||[]).filter(p=>p.kind==='coach')
+  shell(`<div class="onboarding-wizard"><p class="eyebrow">CLUB FOUNDATION · STEP 1 / 2</p><h1>코치진부터 구성하세요</h1><p>감독으로서 먼저 코치 후보를 선임하세요. 이후 선수 영입과 주전 5인 구성을 진행합니다.</p><section class="panel"><h2>선임한 코치 · ${chosen.length}명</h2>${chosen.map(p=>`<div class="row"><b>${esc(p.nickname||p.real_name)}</b><button class="act" data-recruit="${esc(p.id)}" data-enabled="false">선임 취소</button></div>`).join('')||'<p>아직 선임한 코치가 없습니다.</p>'}</section><section class="panel"><h2>초기 FA·생성 코치 후보</h2>${coaches.map(p=>`<div class="row"><b>${esc(p.nickname||p.real_name)}</b><span>${esc(p.staff_role_name||'코치')} · ${money(p.salary)}</span><button class="act" data-recruit="${esc(p.id)}" data-enabled="true">선임</button></div>`).join('')||'<p>선임 가능한 코치가 없습니다.</p>'}</section><p class="err" id="coach-error"></p><button class="act" id="to-players" ${chosen.length?'':'disabled'}>2단계 · 선수단 구성</button></div>`,'/app/staff')
+  document.querySelectorAll('[data-recruit]').forEach(button=>button.onclick=async()=>{try{await api('/recruitment-select',{id:current.id,person:button.dataset.recruit,enabled:button.dataset.enabled==='true'});onboarding()}catch(e){document.getElementById('coach-error').textContent=e.message}})
+  document.getElementById('to-players').onclick=()=>go('/app/squad')
   await topbar()
 }
 async function requireCareer() {
@@ -477,6 +498,7 @@ async function draw() {
     const entityPath=path.match(/^\/app\/entity\/(manager|owner)\/(\d+)$/)
     if(entityPath){const item=await api('/entity?kind='+entityPath[1]+'&entity='+entityPath[2]);shell(`<div class="page-heading"><div><p class="eyebrow">${entityPath[1]==='owner'?'CLUB OWNER':'MANAGER'}</p><h1>${esc(item.name)}</h1></div></div><section class="panel"><h2>${esc(item.club||item.company||'인물 정보')}</h2>${Object.entries(item.stats||{}).map(([key,value])=>`<div class="metric-pair"><span>${esc(key)}</span><b>${value} / 20</b></div>`).join('')}</section>`,path);await topbar();return}
     if (path === '/app/clubs') return await clubs()
+    if (path === '/app/onboarding') return await onboarding()
     if (path === '/app/home') return await home()
     if (path === '/app/inbox') return await inbox()
     if (path === '/app/news') return await news()

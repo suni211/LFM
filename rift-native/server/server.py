@@ -86,7 +86,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('Content-Type','application/json; charset=utf-8'); self.send_header('Cache-Control','no-store'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body)
     def input(self):
         n=int(self.headers.get('Content-Length','0'))
-        limit=131072 if self.path in ('/community-create','/community-edit') else 16384
+        limit=131072 if self.path in ('/community-create','/community-edit','/careers') else 16384
         if n<=0 or n>limit: raise ValueError('invalid body')
         value=json.loads(self.rfile.read(n));
         if not isinstance(value,dict): raise ValueError('invalid body')
@@ -343,6 +343,7 @@ class Handler(BaseHTTPRequestHandler):
                     item = dict(zip(('id','name','week','season','version','role'),row))
                     item['settings'] = dict(db.execute('SELECT key,value FROM settings WHERE career_id=?',(item['id'],)))
                     item['club_profile']=clubs.profile(db,item['id'])
+                    item['branding']=career_rules.brand(db,item['id'])
                     item['league_operator']=online_world.operator(db,uid)
                     item['world']=online_world.status(db,uid)
                     manager=db.execute('SELECT name FROM manager_profiles WHERE career_id=?',(item['id'],)).fetchone()
@@ -526,7 +527,7 @@ class Handler(BaseHTTPRequestHandler):
                     color=data.get('color','#254A7A')
                     emblem=data.get('emblem','shield')
                     career_rules.valid_brand(name,short,color)
-                    career_rules.store_brand(db,cid,short,color,emblem)
+                    career_rules.store_brand(db,cid,short,color,emblem,data.get('logo_data',''))
                 clubs.create(db,cid,mode,data.get('team_key'),requested_league)
                 db.execute('INSERT INTO members VALUES(?,?,?)',(cid,uid,'admin'))
                 manager=manager_identity.view(db,uid)['name']

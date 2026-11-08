@@ -20,7 +20,6 @@ const NAV = [
   ['재정', '/app/finance', '구단'],
   ['데이터', '/app/data', '구단'],
   ['스폰서', '/app/sponsors', '구단'],
-  ['구단 로고', '/app/club-identity-settings', '구단'],
   ['비전', '/app/vision', '구단'],
   ['커뮤니티', '/app/community', '구단']
 ]
@@ -30,7 +29,7 @@ const WIDGETS = {cash:'현금 흐름',
   board: '구단주·팬', form: '최근 경기'
 }
 const ROLE = {TOP:'탑', JUNGLE:'정글', MID:'미드', ADC:'원딜', SUPPORT:'서포터'}
-let media = {colors:{}, logos:{}, brandings:null}
+let media = {colors:{}, logos:{}, brandings:null,academyParents:{},leagueLogos:{}}
 let careerCache = null
 let managerProfile = null
 let isOperator = false
@@ -98,7 +97,8 @@ async function api(path, body) {
 }
 function face(id, available=true) { if(!available)return '<span class="face-frame"><span class="face-placeholder" title="등록된 얼굴 없음">●</span></span>';return `<span class="face-frame"><img class="face" alt="선수 얼굴" src="${BASE}/media/portraits/${esc(id)}.png" onerror="this.style.display='none';this.nextElementSibling.hidden=false"/><span class="face-placeholder" hidden title="등록된 얼굴 없음">●</span></span>` }
 function logoImg(league, team, overrideBrand=null) {
-  const key=league+'\n'+team
+  const original=league+'\n'+team
+  const key=media.academyParents?.[original]||original
   const brand=overrideBrand||media.brandings?.[key]
   const alt=esc(team||'구단')
   // Uploaded or official club image is the representative identity.
@@ -132,7 +132,11 @@ const LEAGUE_INFO={
 function leagueInfo(league){return LEAGUE_INFO[league]||['🏆','지역 리그','리그','general']}
 function leagueIcon(league){
  const [flag,region,level,tone]=leagueInfo(league)
- return '<span class="league-emblem league-emblem-'+tone+'" title="'+esc(region+' '+level)+'"><span class="league-emblem-flag">'+flag+'</span><strong>'+esc(league.length>8?league.slice(0,3).toUpperCase():league)+'</strong></span>'
+ const item=media.leagueLogos?.[league]
+ const known=item&&/^https:\/\/commons\.wikimedia\.org\/wiki\/Special:FilePath\//.test(item.url)
+ const logo=known?'<img class="league-official-mark" loading="lazy" src="'+esc(item.url)+'" alt="'+esc(league)+' 대회 로고" onerror="this.hidden=true;this.nextElementSibling.hidden=false"/><span class="league-emblem-fallback" hidden>'+esc(league)+'</span>':
+  '<span class="league-emblem-flag">'+flag+'</span><strong>'+esc(league.length>8?league.slice(0,3).toUpperCase():league)+'</strong>'
+ return '<span class="league-emblem league-emblem-'+tone+'" title="'+esc(region+' '+level)+'">'+logo+'</span>'
 }
 function displayTeam(league,team){return media.brandings?.[league+'\n'+team]?.display_name||team}
 function teamColor(league, team) { return media.colors[league + '\n' + team] || '#17324d' }
@@ -146,7 +150,7 @@ async function career() {
   return careerCache
 }
 function shell(body,path) {
-  const categories=isOperator?[['리그 관리',['home','clubs','competition','schedule']],['인물 · 구단',['players']]]:[['구단',['home','inbox','news','finance','vision','community','staff','front-database']],['선수단',['squad','academy','medical','relations','players','solo']],['전술·훈련',['tactics','training']],['영입',['transfers','shortlist']],['대회·경기',['schedule','leagues','competition','data']],...(isOperator?[['운영',['clubs']]]:[])]
+  const categories=isOperator?[['리그 관리',['home','clubs','schedule','leagues']],['인물 · 구단',['players']]]:[['구단',['home','inbox','news','finance','vision','community','staff','front-database','sponsors']],['선수단',['squad','academy','medical','relations','players','solo']],['전술·훈련',['tactics','training']],['영입',['transfers','shortlist']],['리그·경기',['schedule','leagues','data']]]
   const selected=NAV.find(n=>n[1]===path)?.[0]||'구단 관리'
   const menu=categories.map(([label,keys])=>`<details class="nav-category"><summary>${label}<span>⌄</span></summary><div class="dropdown">${keys.map(key=>{const item=NAV.find(n=>n[1]==='/app/'+key)||[key==='clubs'?(isOperator?'구단 조회':'구단 선택'):key,'/app/'+key];return `<a href="${item[1]}" class="${path===item[1]?'on':''}">${item[0]}</a>`}).join('')}</div></details>`).join('')
   document.getElementById('app').innerHTML=`<div id="shell"><header id="masthead"><div id="top"></div><nav id="navigation"><a class="brand" href="/app/home">R/M<span>RIFT MANAGER</span></a>${menu}${isOperator?'<span class="account-link">운영자 · 구단 운영 불가</span>':'<a class="account-link" href="/app/manager">감독 프로필</a>'}<button id="logout" aria-label="로그아웃">로그아웃</button></nav></header><main id="view" aria-label="${esc(selected)}">${body}</main></div>`
@@ -606,20 +610,12 @@ async function sponsorsPage(){
   })
   await topbar()
 }
-async function clubLogoSettings(){
-  const current=await requireCareer();if(!current)return
-  const league=current.club_profile?.league||''
-  const team=current.name
-  const data=await api('/club-identity?league='+encodeURIComponent(league)+'&team='+encodeURIComponent(team))
-  const history=clubHistoryPanel(data.history)
-  shell('<div class="page-heading"><div><p class="eyebrow">CLUB IDENTITY</p><h1>구단 로고 설정</h1><p>구단을 선택하거나 창단한 후 팀명은 변경할 수 없습니다. 유저 감독은 본인 구단의 로고만 변경할 수 있습니다.</p></div></div><section class="panel club-brand-manager"><div>'+logoImg(league,team)+'</div><div><h2>'+esc(data.display_name)+'</h2><p>'+esc(league)+' · 확정된 구단명</p><form id="club-logo-form"><label>대표 구단 로고 선택 · 최대 80KB<input type="file" name="logo" accept="image/png,image/jpeg,image/webp" required/></label><button class="act" type="submit">구단 로고 저장</button></form><p id="club-brand-error" class="err"></p></div></section>'+history,'/app/club-identity-settings')
-  document.getElementById('club-logo-form').onsubmit=async e=>{e.preventDefault();try{
-    const logo_data=await readClubLogo(e.target.elements.logo.files[0])
-    if(!logo_data)throw Error('로고 이미지를 선택하세요.')
-    await api('/club-logo',{id:current.id,logo_data})
-    media.brandings=null;careerCache=null;draw()
-  }catch(error){document.getElementById('club-brand-error').textContent=error.message}}
-  await topbar()
+async function clubIdentityHistory(){
+ const current=await requireCareer();if(!current)return
+ const league=current.club_profile?.league||''
+ const data=await api('/club-identity?league='+encodeURIComponent(league)+'&team='+encodeURIComponent(current.name))
+ shell('<div class="page-heading"><h1>구단의 역사</h1><p>선택·창단 시 구단명과 로고가 영구 확정됩니다. 이후에는 운영자만 수정할 수 있습니다.</p></div>'+clubHistoryPanel(data.history),'/app/club-history')
+ await topbar()
 }
 async function leagueIndex() {
   const [board,current]=await Promise.all([api('/clubs'),isOperator?Promise.resolve(null):career()])
@@ -697,13 +693,15 @@ async function draw() {
   if (!token()) { login(); return }
   if (!Object.keys(media.colors).length) {
     const [colors, logos] = await Promise.all([fetch(BASE + '/media/club-colors.json').then(r => r.ok?r.json():{}).catch(()=>({})), fetch(BASE + '/media/club-assets.json').then(r => r.ok?r.json():{}).catch(()=>({}))])
-    media = {colors, logos, brandings:null}
+    media = {colors, logos, brandings:null,academyParents:{},leagueLogos:{}}
   }
   try {
     worldState=await api('/world');isOperator=worldState.operator===true
     if(media.brandings===null) {
       const visual=await api('/club-brandings')
       media.brandings=visual.brandings||{}
+      media.academyParents=visual.academy_parents||{}
+      media.leagueLogos=await fetch(BASE+'/media/league-logos.json').then(r=>r.ok?r.json():{}).catch(()=>({}))
     }
     if(isOperator){careerCache=null;localStorage.removeItem('rift-career');if(path==='/app/manager')return go('/app/home');if(path==='/app/home'||path==='/'||path==='/app/schedule')return await operatorDesk(path==='/app/schedule'?path:'/app/home');if(!['/app/clubs','/app/competition','/app/players'].includes(path)&&!/^\/app\/(player|team|entity)\//.test(path))return go('/app/home')}
     if(!managerProfile)managerProfile=await api('/manager-profile')
@@ -735,7 +733,8 @@ async function draw() {
     if (path === '/app/competition') return go('/app/leagues')
     if (path === '/app/leagues') return await leagueIndex()
     if (path === '/app/sponsors') return await sponsorsPage()
-    if (path === '/app/club-identity-settings') return await clubLogoSettings()
+    if (path === '/app/club-identity-settings') return go('/app/club-history')
+    if (path === '/app/club-history') return await clubIdentityHistory()
     const leaguePath=path.match(/^\/app\/league\/(.+)$/)
     if(leaguePath)return await leagueOverview(decodeURIComponent(leaguePath[1]))
     if (path === '/app/data') return await dataHub()

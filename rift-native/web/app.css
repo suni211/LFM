@@ -643,3 +643,36 @@ img.club-primary-image{object-fit:contain;object-position:center}
 .match-replay-viewer .row{justify-content:space-between;gap:12px;flex-wrap:wrap}
 .match-replay-viewer .row small{font-size:14px;font-variant-numeric:tabular-nums}
 @media(max-width:650px){.match-status-panel{padding:14px}.match-status-panel h2{font-size:17px}.match-score strong{font-size:26px}.match-highlight-button{align-items:start;flex-wrap:wrap;gap:7px}.match-highlight-button span{flex-basis:65%}}
+
+
+/* Final player/champion swap board: clear roles, real roster nicknames and safe compatible pairs. */
+.arena-swap-stage{display:flex;flex-direction:column;gap:14px;min-width:0}
+.arena-swap-heading{text-align:center;padding:0 4px}
+.arena-swap-heading>small{display:block;color:#ddc487;font-size:11px;letter-spacing:.14em}
+.arena-swap-heading h2{margin:3px 0 9px;color:#f5f1e7;font-size:23px}
+.arena-swap-heading p{font-size:12px;line-height:1.7;color:#aabdd4}
+.arena-swap-team-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.arena-swap-column{min-width:0}
+.arena-swap-column h3{font-size:13px;color:#c6e3fb;padding:11px 4px;border-bottom:1px solid #395873;margin:0 0 9px}
+.arena-swap-column h3 small{display:block;color:#8fa3bc;margin:5px 0 0;font-size:11px}
+.arena-swap-column:last-child h3{color:#ffc4d0;border-color:#6b3d51}
+.swap-role-card{display:flex;align-items:center;text-align:left;gap:9px;width:100%;min-width:0;min-height:67px;padding:8px 10px;margin:5px 0;border:1px solid #3d536d;border-radius:8px;background:#182a40;color:#e7effc;transition:border-color .12s,background .12s}
+button.swap-role-card:hover{border-color:#e9c783;background:#28435f}
+.swap-role-card.is-opponent{background:#29202d;border-color:#573d50;cursor:default}
+.swap-role-card.is-selected{background:#3a443d;border:2px solid #eac374}
+.swap-role-label{display:inline-grid;place-items:center;flex:0 0 39px;font-size:11px;color:#94bdd7}
+.swap-role-card .champion-icon,.swap-empty-champ{width:42px;height:42px;flex:0 0 42px;border-radius:6px}
+.swap-empty-champ{display:grid;place-items:center;background:#25364c;color:#8fa4b8}
+.swap-role-info{display:flex;flex:1;min-width:0;flex-direction:column;gap:2px}
+.swap-role-info strong{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.swap-role-info small{font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.swap-select-mark{font-size:10px;color:#e6c785;white-space:nowrap}
+.arena-swap-help{padding:10px 15px;border:1px solid #3d5669;background:#101f30;border-radius:7px;color:#deebf6}
+.arena-swap-help p{margin:4px 0;line-height:1.7;font-size:12px}
+.arena-swap-help .muted-note{color:#8da3b9;font-size:11px}
+.arena-swap-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.arena-swap-actions .arena-submit{min-width:185px}
+.arena-swap-actions .swap-ready{border-color:#568eb5;background:linear-gradient(115deg,#347aab,#60b0d0);color:#051522}
+@media(max-width:1420px){.arena-swap-team-grid{grid-template-columns:1fr}.arena-swap-column{margin-bottom:3px}}
+@media(max-width:820px){.arena-swap-team-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.swap-role-card{padding:6px;gap:5px}.swap-role-label{flex-basis:25px}.swap-role-card .champion-icon,.swap-empty-champ{width:32px;height:32px;flex-basis:32px}}
+@media(max-width:570px){.arena-swap-team-grid{grid-template-columns:1fr}.arena-swap-actions{flex-direction:column}.arena-swap-actions .arena-submit{width:100%}}

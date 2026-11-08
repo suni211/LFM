@@ -136,7 +136,12 @@ class HttpCareerSmokeTests(unittest.TestCase):
             for pid,nick,raw in pool:
                 person=json.loads(raw)
                 if person.get('origin')=='solo-queue-only':
-                    self.assertRegex(nick,r'^[A-Za-z]{4,8}
+                    self.assertTrue(nick.isascii() and nick.isalpha() and 4<=len(nick)<=8,nick)
+                    self.assertEqual(nick,person['nickname'])
+                    names.append(nick.casefold())
+            self.assertEqual(4160,len(names))
+            self.assertEqual(len(names),len(set(names)))
+        status,data=self.call('/solo-ladder?id='+str(career)+'&region=KR&scope=mine',token=token)
         self.assertEqual(200,status,data)
         self.assertTrue(all(row.get('career_id')==career or row.get('club')=='Smoke Phoenix' for row in data['rows']))
         status,data=self.call('/sponsor-offers?id='+str(career),token=token)

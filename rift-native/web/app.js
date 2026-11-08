@@ -37,6 +37,51 @@ let worldState = null
 function esc(value) {
   return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))
 }
+
+const FLAG_COUNTRIES={
+  '대한민국':['kr','대한민국'],'한국':['kr','대한민국'],'KR':['kr','대한민국'],'KOR':['kr','대한민국'],'Korea':['kr','대한민국'],'South Korea':['kr','대한민국'],
+  '중국':['cn','중국'],'CN':['cn','중국'],'CHN':['cn','중국'],'China':['cn','중국'],
+  '일본':['jp','일본'],'JP':['jp','일본'],'JPN':['jp','일본'],'Japan':['jp','일본'],
+  '대만':['tw','대만'],'TW':['tw','대만'],'Taiwan':['tw','대만'],
+  '베트남':['vn','베트남'],'VN':['vn','베트남'],'Vietnam':['vn','베트남'],
+  '홍콩':['hk','홍콩'],'HK':['hk','홍콩'],'Hong Kong':['hk','홍콩'],
+  '필리핀':['ph','필리핀'],'PH':['ph','필리핀'],'Philippines':['ph','필리핀'],
+  '태국':['th','태국'],'TH':['th','태국'],'Thailand':['th','태국'],
+  '인도네시아':['id','인도네시아'],'ID':['id','인도네시아'],'Indonesia':['id','인도네시아'],
+  '말레이시아':['my','말레이시아'],'MY':['my','말레이시아'],'Malaysia':['my','말레이시아'],
+  '싱가포르':['sg','싱가포르'],'SG':['sg','싱가포르'],'Singapore':['sg','싱가포르'],
+  '미국':['us','미국'],'US':['us','미국'],'USA':['us','미국'],'United States':['us','미국'],
+  '캐나다':['ca','캐나다'],'CA':['ca','캐나다'],'Canada':['ca','캐나다'],
+  '브라질':['br','브라질'],'BR':['br','브라질'],'Brazil':['br','브라질'],
+  '아르헨티나':['ar','아르헨티나'],'AR':['ar','아르헨티나'],'Argentina':['ar','아르헨티나'],
+  '멕시코':['mx','멕시코'],'MX':['mx','멕시코'],'Mexico':['mx','멕시코'],
+  '영국':['gb','영국'],'GB':['gb','영국'],'UK':['gb','영국'],'United Kingdom':['gb','영국'],
+  '프랑스':['fr','프랑스'],'FR':['fr','프랑스'],'France':['fr','프랑스'],
+  '독일':['de','독일'],'DE':['de','독일'],'Germany':['de','독일'],
+  '스페인':['es','스페인'],'ES':['es','스페인'],'Spain':['es','스페인'],
+  '이탈리아':['it','이탈리아'],'IT':['it','이탈리아'],'Italy':['it','이탈리아'],
+  '포르투갈':['pt','포르투갈'],'PT':['pt','포르투갈'],'Portugal':['pt','포르투갈'],
+  '덴마크':['dk','덴마크'],'DK':['dk','덴마크'],'Denmark':['dk','덴마크'],
+  '스웨덴':['se','스웨덴'],'SE':['se','스웨덴'],'Sweden':['se','스웨덴'],
+  '폴란드':['pl','폴란드'],'PL':['pl','폴란드'],'Poland':['pl','폴란드'],
+  '체코':['cz','체코'],'CZ':['cz','체코'],'Czechia':['cz','체코'],
+  '튀르키예':['tr','튀르키예'],'터키':['tr','튀르키예'],'TR':['tr','튀르키예'],'Turkey':['tr','튀르키예'],
+  '러시아':['ru','러시아'],'RU':['ru','러시아'],'Russia':['ru','러시아'],
+  '우크라이나':['ua','우크라이나'],'UA':['ua','우크라이나'],'Ukraine':['ua','우크라이나'],
+  '호주':['au','호주'],'AU':['au','호주'],'Australia':['au','호주'],
+  '뉴질랜드':['nz','뉴질랜드'],'NZ':['nz','뉴질랜드'],'New Zealand':['nz','뉴질랜드']
+}
+function flagAndCountry(person) {
+  const p=person||{}
+  const raw=String(p.nationality_name_ko||p.nationality_name||p.country_name_ko||p.country_name||p.nationality||'').trim()
+  const rawCode=String(p.nationality_code||p.country_code||p.iso2||'').trim()
+  const entry=FLAG_COUNTRIES[raw]||FLAG_COUNTRIES[rawCode]
+  const code=entry?.[0]||(/^[A-Za-z]{2}$/.test(rawCode)?rawCode.toLowerCase():null)
+  const name=raw||entry?.[1]||'국적 미등록'
+  const image=code?'<img class="country-flag" loading="lazy" width="24" height="16" src="https://flagcdn.com/w40/'+code+'.png" alt="'+esc(name)+' 국기" onerror="this.hidden=true"/>':''
+  return '<span class="country-badge">'+image+'<span>'+esc(name)+'</span></span>'
+}
+
 function money(value) { return value == null ? '기록 없음' : Number(value).toLocaleString('ko-KR') + '원' }
 function token() { return localStorage.getItem('rift-token') || '' }
 function careerId() { return Number(localStorage.getItem('rift-career') || 0) }
@@ -232,16 +277,16 @@ async function news() {
 }
 function nickname(person) {return person.nickname || person.nickname_ko || person.display_name || person.name || '이름 확인 중'}
 function personLink(person) {
-  return `<a href="/app/player/${esc(person.id)}">${face(person.id,Boolean(person.photo))}<span>${esc(nickname(person))}<small>${esc(person.real_name_ko || person.display_name_ko || person.real_name || '')}</small></span></a>`
+  return `<a href="/app/player/${esc(person.id)}">${face(person.id,Boolean(person.photo))}<span>${esc(nickname(person))}<small>${esc(person.real_name_ko || person.display_name_ko || person.real_name || '')}</small>${flagAndCountry(person)}</span></a>`
 }
 function rosterTable(people, records={}, development={}, contracts={}) {
   if(!people.length)return '<p class="empty">등록된 선수가 없습니다.</p>'
-  return `<div class="table-scroll"><table class="roster-table"><thead><tr>${['선수 얼굴 · 닉네임 / 이름','구분','소속 팀','레이팅','OVR','포지션','계약금액 (연봉)','계약년도','만료'].map(t=>`<th>${t}</th>`).join('')}</tr></thead><tbody>${people.map(p=>{
+  return `<div class="table-scroll"><table class="roster-table"><thead><tr>${['선수 얼굴 · 닉네임 / 이름','구분','소속 팀','레이팅','OVR','국적','포지션','계약금액 (연봉)','계약년도','만료'].map(t=>`<th>${t}</th>`).join('')}</tr></thead><tbody>${people.map(p=>{
     const c=contracts[p.id],d=development[p.id],r=records[p.id];const ratings=p.game_evaluation?.ratings||p.stats;const values=ratings?Object.values(ratings).filter(Number.isFinite):[];const ovr=d?.ovr??(values.length?Math.round(values.reduce((a,b)=>a+b,0)/values.length):null)
     const start=c?.start_turn?`${2026+Math.floor((c.start_turn-1)/104)}년 · ${Math.floor((c.start_turn-1)/104)+1}시즌`:'미기록'
     const expiry=c?`${2026+Math.floor((c.end_turn-1)/104)}년 · ${Math.floor((c.end_turn-1)/104)+1}시즌 ${((c.end_turn-1)%104)+1}주`:p.contract_end||'확인 중'
     const group=p.kind==='player'?(p.real_person?'실존 선수':'생성 선수'):(p.real_person?'실존 프런트':'생성 프런트');const assignment={first:'주전',reserve:'교체',academy:'2군',candidate:'영입 후보',unclassified:'분류 확인 중'}[p.assignment]||''
-    return `<tr><td>${personLink(p)}</td><td><span class="identity-tag ${p.real_person?'real':'generated'}">${group}</span><small>${esc(assignment)}</small></td><td>${logoImg(p.league,p.team)}${esc(p.team||'무소속')}</td><td>${r?.rating!=null?`<b class="rating">${Number(r.rating).toFixed(1)}</b><small>${r.games}경기</small>`:'기록 없음'}</td><td><b>${ovr??'미평가'}</b></td><td>${esc(ROLE[p.role]||'확인 중')}</td><td>${money(c?.annual_salary??p.salary)}${c||p.salary_estimated?'<small>게임 계약</small>':''}</td><td>${start}</td><td>${esc(expiry)}${!c&&p.contract_estimated?'<small>예상</small>':''}</td></tr>`
+    return `<tr><td>${personLink(p)}</td><td><span class="identity-tag ${p.real_person?'real':'generated'}">${group}</span><small>${esc(assignment)}</small></td><td>${logoImg(p.league,p.team)}${esc(p.team||'무소속')}</td><td>${r?.rating!=null?`<b class="rating">${Number(r.rating).toFixed(1)}</b><small>${r.games}경기</small>`:'기록 없음'}</td><td><b>${ovr??'미평가'}</b></td><td>${flagAndCountry(p)}</td><td>${esc(ROLE[p.role]||'확인 중')}</td><td>${money(c?.annual_salary??p.salary)}${c||p.salary_estimated?'<small>게임 계약</small>':''}</td><td>${start}</td><td>${esc(expiry)}${!c&&p.contract_estimated?'<small>예상</small>':''}</td></tr>`
   }).join('')}</tbody></table></div>`
 }
 async function squad(which) {
@@ -401,10 +446,10 @@ async function player(id, tab) {
   const links=`<div class="tabs player-tabs">${tabs.map(([k,l])=>`<a class="${tab===k?'on':''}" href="/app/player/${esc(id)}/${k}">${l}</a>`).join('')}</div>`
   const values=person.game_evaluation?.ratings||person.stats||{}
   const joined=person.team?`${logoImg(person.league,person.team)}${esc(person.team)} · ${esc(person.league||'')}`:'FA · 무소속'
-  const top=`<div class="player-profile-heading"><div class="player-profile-face">${face(person.id,Boolean(person.photo))}</div><div><p class="eyebrow">PLAYER DATABASE / ${esc(person.role||'')}</p><h1>${esc(person.nickname||person.display_name||person.real_name||'선수')}</h1><p>${esc(person.real_name||'이름 정보 없음')} · ${esc(ROLE[person.role]||person.role||'포지션 미상')}</p><p class="player-team-line">${joined}</p><div class="player-overview-stats"><span>솔로랭크 <strong>${esc(person.solo?.label||'기록 없음')}</strong></span><span>소속 <strong>${esc(person.assignment||person.squad||'미등록')}</strong></span>${development?`<span>OVR <strong>${development.ovr}</strong></span>`:''}</div></div></div>`
+  const top=`<div class="player-profile-heading"><div class="player-profile-face">${face(person.id,Boolean(person.photo))}</div><div><p class="eyebrow">PLAYER DATABASE / ${esc(person.role||'')}</p><h1>${esc(person.nickname||person.display_name||person.real_name||'선수')}</h1><p>${esc(person.real_name||'이름 정보 없음')} · ${esc(ROLE[person.role]||person.role||'포지션 미상')}</p><p>${flagAndCountry(person)}</p><p class="player-team-line">${joined}</p><div class="player-overview-stats"><span>솔로랭크 <strong>${esc(person.solo?.label||'기록 없음')}</strong></span><span>소속 <strong>${esc(person.assignment||person.squad||'미등록')}</strong></span>${development?`<span>OVR <strong>${development.ovr}</strong></span>`:''}</div></div></div>`
   let main=''
-  if(tab==='overview') main=`<div class="player-info-grid"><section class="panel"><h2>현재 능력</h2>${ratingGrid(values)}</section><section class="panel"><h2>구단 스카우팅 요약</h2><p>현재 실력</p>${scoutStars(scout?.current_stars)}<p>예상 잠재력</p>${scoutStars(scout?.potential_stars)}<p class="muted-note">${esc(scout?.summary||'스카우팅 기록 없음')}</p></section><section class="panel"><h2>커리어 정보</h2><p>역할: ${esc(ROLE[person.role]||person.role||'미상')}</p><p>구단: ${joined}</p><p>게임 내 소속: ${esc(person.assignment||'등록 정보 없음')}</p><p>계약: ${esc(person.contract_end||'기록 없음')}</p></section></div>`
-  else if(tab==='personal') main=`<section class="panel"><h2>개인 정보</h2><div class="info-pairs"><p>영문 닉네임 <b>${esc(person.nickname||'기록 없음')}</b></p><p>본명 <b>${esc(person.real_name||'기록 없음')}</b></p><p>리그 <b>${esc(person.league||'무소속')}</b></p><p>지역 <b>${esc(person.region||person.nationality_name_ko||'정보 없음')}</b></p><p>포지션 <b>${esc(ROLE[person.role]||person.role||'정보 없음')}</b></p><p>솔로랭크 <b>${esc(person.solo?.label||'정보 없음')}</b></p></div></section>`
+  if(tab==='overview') main=`<div class="player-info-grid"><section class="panel"><h2>현재 능력</h2>${ratingGrid(values)}</section><section class="panel"><h2>구단 스카우팅 요약</h2><p>현재 실력</p>${scoutStars(scout?.current_stars)}<p>예상 잠재력</p>${scoutStars(scout?.potential_stars)}<p class="muted-note">${esc(scout?.summary||'스카우팅 기록 없음')}</p></section><section class="panel"><h2>커리어 정보</h2><p>역할: ${esc(ROLE[person.role]||person.role||'미상')}</p><p>국적: ${flagAndCountry(person)}</p><p>구단: ${joined}</p><p>게임 내 소속: ${esc(person.assignment||'등록 정보 없음')}</p><p>계약: ${esc(person.contract_end||'기록 없음')}</p></section></div>`
+  else if(tab==='personal') main=`<section class="panel"><h2>개인 정보</h2><div class="info-pairs"><p>영문 닉네임 <b>${esc(person.nickname||'기록 없음')}</b></p><p>본명 <b>${esc(person.real_name||'기록 없음')}</b></p><p>국적 <b>${flagAndCountry(person)}</b></p><p>리그 <b>${esc(person.league||'무소속')}</b></p><p>지역 <b>${esc(person.region||person.nationality_name_ko||'정보 없음')}</b></p><p>포지션 <b>${esc(ROLE[person.role]||person.role||'정보 없음')}</b></p><p>솔로랭크 <b>${esc(person.solo?.label||'정보 없음')}</b></p></div></section>`
   else if(tab==='contract') main=`<section class="panel"><h2>계약 및 연봉</h2><div class="info-pairs"><p>계약 종료 <b>${esc(person.contract_end||'정보 없음')}</b></p><p>게임 내 연봉 <b>${contract?money(contract.annual_salary):money(person.salary)}</b></p><p>계약 기간 <b>${contract?contract.remaining_turns+'주 남음':'구단 계약 정보 없음'}</b></p><p>현재 상태 <b>${contract?(contract.active?'계약 중':'계약 종료'):'외부 구단 또는 FA'}</b></p></div></section>`
   else if(tab==='history') main=`<section class="panel"><h2>선수 이력</h2><p>현재 소속 ${joined}</p><p>최초 등록 구단: ${esc(person.registered_team||person.team||'정보 없음')}</p><p class="muted-note">내부 DB 출처 코드 대신 실제 경기 및 이적 기록을 표시할 예정입니다.</p></section>`
   else if(tab==='report') main=`<div class="report-grid"><section class="panel scout-report-card"><p class="eyebrow">PRIVATE SCOUTING</p><h2>내 구단 스카우터 보고서</h2><p>현재 능력</p>${scoutStars(scout?.current_stars)}<p>잠재력</p>${scoutStars(scout?.potential_stars)}<div class="info-pairs"><p>평가 시즌 <b>${scout?.season||'-'}시즌</b></p><p>평가 역량 <b>${scout?.scout_skill??'-'} / 20</b></p><p>보고 신뢰도 <b>${esc(scout?.confidence||'미평가')}</b></p></div><p class="muted-note">${esc(scout?.summary||'스카우팅 자료가 없습니다.')}</p></section><section class="panel"><p class="eyebrow">ANNUAL REPORT</p><h2>기관 연례 평가</h2><p>${esc(agency?.source||'게임 내 가상 평가 기관')}</p>${scoutStars(agency?.current_stars)}<p>${esc(agency?.season||'-')}시즌 · 연 1회 발표</p><p class="muted-note">${esc(agency?.summary||'아직 발표된 평가가 없습니다.')}</p></section></div><section class="panel"><h2>세부 능력치</h2>${ratingGrid(values)}<p class="muted-note">세부 수치는 게임 데이터입니다. 스카우트 별점은 관찰 능력에 따라 다르게 산출됩니다.</p></section>`
@@ -424,7 +469,8 @@ function leagueStandingsTable(rows,league,currentTeam='') {
   return `<div class="table-scroll"><table class="league-table"><thead><tr><th>순위</th><th>구단</th><th>경기</th><th>승</th><th>패</th><th>세트 득실</th><th>득실차</th></tr></thead><tbody>${(rows||[]).map((r,i)=>`<tr class="${r.team===currentTeam?'mine':''}"><td>${r.rank==null?'—':r.rank}</td><td>${logoImg(league,r.team)}<a href="/app/team/${encodeURIComponent(league)}/${encodeURIComponent(r.team)}">${esc(r.team)}</a></td><td>${r.played||0}</td><td>${r.wins||0}</td><td>${r.losses||0}</td><td>${r.sets_won||0}:${r.sets_lost||0}</td><td>${(r.sets_won||0)-(r.sets_lost||0)>0?'+':''}${(r.sets_won||0)-(r.sets_lost||0)}</td></tr>`).join('')}</tbody></table></div>${(rows||[]).every(r=>!r.played)?'<p class="muted-note">아직 완료된 경기가 없습니다. 첫 경기 이후 순위가 확정됩니다.</p>':''}`
 }
 function frontOfficeCard(p) {
-  return `<div class="front-person"><div class="front-role">${esc(p.role||'직책 미확인')}</div><strong>${esc(p.name||'정보 미등록')}</strong><small>${p.source==='real'?'등록된 실제 인물':p.source==='generated'?'게임 생성 인물':'게임 내 직책'}</small></div>`
+  const source=p.source==='real'?'실존 프런트·코칭스태프':p.source==='generated'?'생성 프런트·코칭스태프':'게임 내 직책'
+  return '<div class="front-person"><div class="front-role">'+esc(p.role||'직책 미확인')+'</div><strong>'+esc(p.name||'정보 미등록')+'</strong>'+flagAndCountry(p)+'<small>'+source+'</small></div>'
 }
 function frontOfficePanel(data) {
   const positions=[...(data.front_office||[])]

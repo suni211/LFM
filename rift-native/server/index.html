@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>R/M 온라인 커리어</title>
+<style>
+body{background:#101923;color:#eaf1f7;font:16px system-ui;margin:0}main{max-width:660px;margin:auto;padding:24px}section{background:#1b2837;padding:20px;border-radius:12px;margin:16px 0}input,button{font:inherit;padding:10px;margin:4px;max-width:100%;box-sizing:border-box}button{cursor:pointer;color:#101923;background:#92dac8;border:0;border-radius:5px}label{display:block}small{color:#b5c5d8}
+</style>
+<main>
+<small>RIFT MANAGER</small><h1>온라인 커리어</h1>
+<p id="status" role="status">계정으로 접속하세요.</p>
+<section id="login">
+<form id="account">
+<label>계정 <input id="name" autocomplete="username" required maxlength="30"></label>
+<label>비밀번호 <input id="password" type="password" autocomplete="current-password" required minlength="10" maxlength="128"></label>
+<button value="login">로그인</button><button value="register">계정 만들기</button>
+</form>
+</section>
+<section id="careers" hidden>
+<form id="create"><label>구단 이름 <input id="club" required maxlength="40"></label><button>온라인 커리어 만들기</button></form>
+<button id="refresh">새로고침</button><button id="logout">로그아웃</button>
+<div id="list"></div>
+</section>
+</main>
+<script src="client.js" defer></script>
+</html>

@@ -1,0 +1,10 @@
+{
+  "errors": [
+    {
+      "message": "This endpoint does not allow freeform GraphQL requests; operations must be sent by ID in the persisted queries GraphQL extension.",
+      "extensions": {
+        "code": "PERSISTED_QUERY_ID_REQUIRED"
+      }
+    }
+  ]
+}

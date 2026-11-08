@@ -1,0 +1,206 @@
+<rml><head><title>R/M</title><style>
+body { width:100%; height:100%; }
+header, main, div, p, h1, h2, label { display:block; }
+button, input, select { display:inline-block; }
+p { margin:14px 0; }
+body { font-family: "SUITE"; font-size:15px; font-weight:700; color:#eef1f6; background:#101720; margin:0; }
+header { height:48px; background:#064573; padding:6px 20px; }
+header img { width:40px; height:40px; vertical-align:middle; margin-right:20px; }
+header button { float:right; margin-top:0px; }
+main { margin:16px auto; width:96%; max-width:1840px; }
+h1 { font-size:20px; color:#dfc286; } h2 { font-size:16px; color:#c4a6ec; }
+.card { background:#171923; border:1px #363044; padding:14px; margin-bottom:12px; border-radius:5px; }
+label { display:block; margin:12px 0 6px; }
+input,select { width:96%; height:26px; padding:5px 8px; background:#101c26; color:#ffffff; border:1px #536877; border-radius:3px; }
+input:focus,select:focus { border-color:#e7c478; }
+button { padding:7px 14px; margin:4px; background:#2e4352; color:#ffffff; border:1px #73888c; border-radius:4px; font-weight:700; }
+button:hover { background:#3c5c64; } button:active { background:#8e7450; }
+small { font-size:14px; color:#a6b7c7; } #notice { color:#f3cf86; margin:12px 0; }
+#directory,#career { display:none; }
+.row { padding:12px; border-bottom:1px #3b4858; } .row:hover { background:#304353; }
+#rows { height:58vh; overflow-y:auto; } #setup { max-width:900px; margin:auto; }
+#existing-club { display:none; }
+select { position:relative; padding:0; height:36px; }
+select selectvalue { display:block; padding:8px; margin-right:30px; white-space:nowrap; overflow:hidden; }
+select selectarrow { position:absolute; right:8px; top:13px; width:0; height:0; border-top:8px #dfc286; border-left:7px transparent; border-right:7px transparent; }
+select selectbox { position:absolute; top:100%; left:0; z-index:20; width:100%; max-height:250px; overflow-y:auto; background:#142330; border:1px #d5bd88; padding:4px; }
+select selectbox option { display:block; width:100%; white-space:nowrap; padding:8px; background:#142330; color:#e4e9ec; }
+select selectbox option:hover, select selectbox option:checked { background:#365e60; }
+button.selected { border-color:#e6c78b; background:#365e60; }
+#mode { display:none; }
+#setup { margin-top:24px; }
+#career { background:transparent; padding:0; }
+.dashboard { display:flex; flex-direction:column; width:100%; }
+.main-nav { display:flex; flex-wrap:wrap; width:100%; box-sizing:border-box; background:#17232d; padding:6px; margin-bottom:12px; }
+.main-nav button { height:19px; width:auto; flex-shrink:0; text-align:center; padding:6px 10px; margin:2px; border-color:#2e414e; }
+.content { flex:1; }
+.columns { display:flex; }
+.columns .card { flex:1; margin-right:12px; }
+.columns .card:last-child { margin-right:0; }
+#roster { height:260px; overflow-y:auto; }
+#calendar { height:140px; overflow-y:auto; }
+#club-title { margin:8px 0; }
+#career-state { margin:8px 0 20px; color:#c7d3e1; }
+#roster,#calendar { width:100%; }
+.row { width:100%; white-space:nowrap; box-sizing:border-box; }
+.nav-group { color:#8299a6; font-size:11px; margin:10px 4px 4px; }
+.main-nav button.active { background:#31584e; border-color:#cfb277; color:#f0d69d; }
+#page-pane { display:none; }
+#page-body { min-height:400px; }
+#page-body .row { padding:9px 4px; }
+#page-subtitle { color:#c1cfdd; margin:4px 0 18px; }
+#overview-page { display:block; }
+#roster { height:310px; }
+#calendar { height:230px; }
+.content { min-width:0; }
+#rows { height:66vh; }
+h1,h2 { font-weight:700; }
+.nav-group { font-weight:700; }
+.main-nav .nav-group { display:none; }
+#lobby { position:absolute; top:0; left:0; width:100%; height:100%; }
+#lobby-bg { position:absolute; left:0; top:0; width:100%; height:100%; }
+#lobby-shade { position:absolute; left:0; top:0; width:43%; height:100%; background:#0b1223c9; }
+#lobby-content { position:absolute; left:3%; top:5%; width:31%; }
+#lobby-content h1 { font-size:30px; margin:12px 0 38px; }
+.lobby-tile { display:block; width:100%; padding:20px; margin:12px 0; text-align:left; background:#1d2835da; border:1px #73808e; border-radius:6px; }
+.lobby-tile:hover { background:#354c59ee; border-color:#d9c089; }
+#resume { height:180px; }
+#resume-title { font-size:24px; display:block; margin:20px 0; color:#f4dfaf; }
+#lobby-new { height:94px; }
+#lobby-load,#lobby-online { height:66px; }
+#lobby-info { color:#ffe08a; font-size:16px; font-weight:700; }
+.schedule-grid { display:flex; flex-wrap:wrap; }
+.week-cell { width:128px; height:84px; margin:4px; text-align:left; vertical-align:top; }
+.week-cell.selected { border-color:#e6c78b; background:#365e60; }
+.page-toolbar { display:flex; align-items:center; }
+.page-toolbar h2 { margin:0 12px; }
+.data-row { display:flex; align-items:center; padding:8px 0; border-bottom:1px #3b4858; }
+.data-row span,.data-row button { width:72px; margin:0; }
+.data-row .cell-name { width:220px; text-align:left; }
+.data-row .cell-small { width:48px; }
+.own-row { background:#243044; }
+.face { margin-right:8px; }
+.logo { margin-right:6px; }
+.profile-columns { display:flex; }
+.profile-id { width:240px; flex-shrink:0; margin-right:18px; }
+.profile-stats { flex:1; margin-right:18px; }
+.profile-summary { width:300px; }
+.profile-table .row { display:flex; justify-content:space-between; }
+.stat-number { color:#dfc286; font-weight:700; }
+.person { cursor:pointer; }
+.person:hover { color:#e7d299; background:#2c424c; }
+.community { background:#fff; color:#253b53; padding:14px 18px; font-size:14px; min-height:560px; }
+.community h2 { color:#253b53; font-size:18px; margin:8px 0; }
+.community button { background:#fff; color:#19446d; border:1px solid #d5d9df; padding:5px 10px; margin:2px; font-size:13px; }
+.community input,.community textarea,.community select { background:#fff; color:#26394d; border:1px solid #ccd2d8; }
+.community textarea { width:98%; height:260px; }
+.community .board-tabs { border:1px solid #d7dade; padding:5px; margin-bottom:10px; }
+.community .board-row { display:flex; align-items:center; border-bottom:1px solid #eceef0; min-height:34px; }
+.community .board-row.notice { background:#f5f5f5; }
+.community .board-heading { border-top:1px solid #cbd0d7; border-bottom:1px solid #bdc5cf; color:#26374c; }
+.community .board-category { width:80px; flex-shrink:0; color:#89939d; font-size:13px; }
+.community .board-title { flex:1; text-align:left; border:0px; margin:0; background:transparent; overflow:hidden; }
+.community .board-author { width:180px; flex-shrink:0; display:flex; align-items:center; }
+.community .board-author img { width:24px; height:24px; margin-right:5px; }
+.community .board-name { color:#e9edf7; font-size:15px; font-weight:700; }
+.community textarea { background:#f8fafc; border:1px solid #cbd2da; }
+.community .board-date { width:72px; flex-shrink:0; font-size:13px; font-weight:700; text-align:center; }
+.community .board-count { width:56px; flex-shrink:0; font-size:13px; font-weight:700; text-align:center; }
+.community .board-meta { display:flex; justify-content:space-between; align-items:center; border-top:1px solid #cbd0d7; border-bottom:1px solid #e6e9ec; padding:9px 0; }
+.community .board-body { min-height:260px; padding:30px 8px; line-height:1.8; }
+.community .board-votes { text-align:center; padding:12px; }
+.community .upvote { border:2px solid #6685cf; color:#4d74c7; font-weight:bold; }
+.community .downvote { border:2px solid #ee5d70; color:#db344d; font-weight:bold; }
+.community .board-comment { border-top:1px solid #e6e9ec; padding:10px 6px; }
+.community .board-muted { color:#8b969f; font-size:12px; }
+#global-search { float:right; width:330px; margin:3px 12px; height:25px; background:#092d4b; border-color:#52738c; }
+#global-results { display:none; position:absolute; top:57px; right:20px; z-index:100; width:470px; padding:6px; background:#142237; border:1px #798aab; }
+#global-results button { display:block; width:94%; text-align:left; margin:2px; padding:8px; background:#172b45; border-color:#2c4566; }
+#global-results small { font-size:12px; color:#aebed2; }
+.fm-dashboard { display:flex; width:100%; }
+.fm-column { box-sizing:border-box; padding-right:10px; }
+.fm-column:last-child { padding-right:0; }
+.fm-panel { background:#14151f; border:1px #3d3549; border-radius:4px; padding:11px; margin-bottom:10px; }
+.fm-panel h2 { color:#efc8f4; font-size:16px; margin:2px 0 12px; }
+.fm-panel p { margin:7px 0; font-size:14px; font-weight:700; }
+.fm-panel small { font-size:13px; color:#c0cada; font-weight:700; }
+.fm-panel button { background:transparent; border:0px; border-bottom:1px #2d293c; border-radius:0px; padding:9px 3px; margin:0; text-align:left; width:100%; font-size:13px; }
+.fm-panel button:hover { background:#262039; }
+.fm-inbox { min-height:610px; max-height:690px; overflow-y:auto; }
+.fm-inbox .unread { border-left:3px #d63ad7; padding-left:7px; }
+.fm-news-item { padding:8px 0; border-bottom:1px #30283c; }
+.fm-table-row { display:flex; align-items:center; min-height:30px; border-bottom:1px #242536; font-size:14px; font-weight:700; }
+.fm-table-row .position { width:28px; }
+.fm-table-row .team-name { flex:1; overflow:hidden; }
+.fm-table-row button.team-name { width:auto; flex:1; padding:3px 0; font-size:14px; font-weight:700; min-width:0; }
+.fm-table-row .record { width:32px; text-align:center; }
+.fm-table-row.self { color:#f3aff3; background:#33213d; }
+.fm-player { display:flex; align-items:center; border-bottom:1px #2c293a; padding:10px 0; }
+.fm-player .player-line { flex:1; }
+.fm-rating { width:40px; text-align:center; background:#21593f; color:#d9f8e6; font-size:18px; padding:5px; }
+.fm-money { font-size:22px; color:#f078ed; margin:9px 0; }
+.fm-form { display:inline-block; margin:3px; padding:5px 7px; color:#f5f5f8; }
+.fm-form.win { background:#257443; } .fm-form.loss { background:#9b2b46; }
+.fm-chart { width:100%; height:135px; }
+#league-advance { background:#bc148a; border-color:#e641bf; min-width:110px; }
+.community { background:#171923; color:#edf1f8; font-size:15px; font-weight:700; }
+.community h2 { color:#f1e4f6; font-size:20px; font-weight:700; }
+.community button { background:#222c40; color:#e0e9ff; border-color:#43516e; font-size:14px; font-weight:700; }
+.community input,.community textarea,.community select { background:#111622; color:#eef1f6; border-color:#48546f; font-weight:700; }
+.community .board-tabs { border-color:#343b50; }
+.community .board-row { border-color:#31374b; min-height:37px; }
+.community .board-row.notice { background:#252638; }
+.community .board-heading { color:#e1e8f6; border-color:#48516c; }
+.community .board-category { color:#a8b6ce; font-size:14px; }
+.community .board-name { color:#e9edf7; font-size:15px; font-weight:700; }
+.community .board-meta,.community .board-comment { border-color:#343b50; }
+.community .board-muted { color:#a4b1c7; font-size:13px; font-weight:700; }
+.swap-controls { display:flex; align-items:center; margin:12px 0; }
+.swap-controls select { width:auto; flex:1; min-width:0; margin-right:10px; }
+.swap-controls button { width:180px; flex-shrink:0; }
+.main-nav { flex-wrap:nowrap; }
+.nav-category { width:165px; flex-shrink:0; margin:2px 8px 2px 0; height:38px; font-size:15px; font-weight:700; }
+.nav-category.active { background:#30253f; border-color:#d85ccf; }
+</style></head><body>
+<div id="lobby"><img id="lobby-bg" src="lobby.png"/><div id="lobby-shade"></div>
+<div id="lobby-content"><h1>R/M · RIFT MANAGER</h1>
+<div style="display:none"><button id="resume"><span id="resume-title"></span><span id="resume-description"></span></button>
+<button id="lobby-new"></button><button id="lobby-load"></button></div>
+<button id="lobby-online" class="lobby-tile">온라인 리그 접속<p><small>로그인 후 실제 구단에 부임하거나 새 구단을 창단하세요.</small></p></button>
+<div id="online-panel" class="card" style="display:none">
+<h2>온라인 리그 · 구단 관리</h2>
+<div id="online-auth"><label>감독 계정</label><input id="online-name" type="text" maxlength="30"/>
+<label>비밀번호 · 10~128자</label><input id="online-password" type="password" maxlength="128"/>
+<button id="online-login">로그인</button><button id="online-register">계정 만들기</button><button id="online-update">업데이트 확인</button></div>
+<div id="online-careers" style="display:none"><div id="online-user-start"><label>내 온라인 구단</label><select id="online-list"></select>
+<button id="online-open">열기</button>
+<label>새 구단명</label><input id="online-club" type="text" maxlength="40"/>
+<button id="online-create">새 구단 창단 · LCK CL</button></div>
+<label id="online-team-label">부임 가능한 실제 구단</label><select id="online-team"></select><button id="online-takeover">실제 구단 감독 부임</button>
+<button id="online-refresh">새로고침</button><button id="online-logout">로그아웃</button></div>
+<button id="online-community">AI 팬 커뮤니티</button>
+</div><p id="lobby-info"></p><button id="lobby-quit">종료</button>
+</div></div>
+<header id="app-header"><img src="rm-logo.png"/> RIFT MANAGER <button id="quit">종료</button><button id="league-advance">준비 완료</button><button id="lobby-home">로비</button><button id="home">구단</button><input id="global-search" type="text" maxlength="120"/><button id="database">선수 DB</button></header>
+<div id="global-results"></div>
+<main id="app-main"><div id="notice">구단을 설정하세요. F11 전체 화면 / 창 모드</div>
+<div id="setup" class="card"><h1>감독 커리어 시작</h1>
+<label>감독 이름</label><input id="manager" type="text" maxlength="30"/>
+<label>시작 방식</label><div class="modes"><button id="new-mode">새 구단 창단</button><button id="existing-mode">기존 구단 부임</button></div><input id="mode" type="hidden" value="create"/>
+<div id="new-club"><label>구단명</label><input id="club" type="text" maxlength="40"/><p><small>LCK CL에서 시작합니다.</small></p></div>
+<div id="existing-club"><label>부임할 구단</label><select id="team"></select></div>
+<button id="create">커리어 시작</button></div>
+<div id="career">
+<div class="dashboard"><div class="main-nav"><select class="nav-category" id="nav-select-club"><option value="">구단</option><option value="overview">대시보드</option><option value="mail">우편함</option><option value="news">뉴스</option><option value="vision">구단 비전</option><option value="profile">감독 프로필</option><option value="community">팬 커뮤니티</option></select><select class="nav-category" id="nav-select-squad"><option value="">선수단</option><option value="first">1군</option><option value="academy">2군·유소년</option><option value="staff">스태프</option><option value="relations">선수 관계</option><option value="medical">의료센터</option><option value="people">선수 DB</option><option value="solo">솔로랭크</option></select><select class="nav-category" id="nav-select-preparation"><option value="">전술·훈련</option><option value="tactics">전술</option><option value="training">훈련</option></select><select class="nav-category" id="nav-select-recruitment"><option value="">영입</option><option value="transfers">이적 활동</option><option value="shortlist">영입 명단</option><option value="transfer-budget">영입 예산</option><option value="staff-search">스태프 검색</option><option value="staff-transfers">스태프 이적</option></select><select class="nav-category" id="nav-select-competition"><option value="">대회·경기</option><option value="calendar">일정 달력</option><option value="competition">대회·리그 순위</option><option value="data">데이터 허브</option><option value="match">경기 진행</option></select><select class="nav-category" id="nav-select-operations"><option value="">운영</option><option value="finance">재정</option><option value="admin">운영자</option></select></div><div class="content">
+<h1 id="club-title"></h1><p id="career-state"></p>
+<div id="overview-page"><div id="online-dashboard" style="display:none"></div><div id="legacy-overview"><div class="columns"><div class="card"><h2>우편함</h2><p id="inbox">새 커리어가 시작됐습니다.</p></div>
+<div class="card"><h2>이번 주</h2><p id="week-plan"></p><button id="advance">다음 주</button></div>
+<div class="card"><h2>구단 정보</h2><p id="club-info"></p></div></div>
+<div class="columns"><div class="card"><h2>등록 명단</h2><div id="roster"></div></div>
+<div class="card"><h2>시즌 일정</h2><div id="calendar"></div><p><small>공식 경기 일정은 연결되지 않았습니다.</small></p></div></div>
+</div></div>
+<div id="page-pane" class="card"><h2 id="page-title"></h2><p id="page-subtitle"></p><div id="page-body"></div></div>
+<div id="directory" class="card"><h2>라이엇 계약 데이터베이스</h2><p id="page-label"></p>
+<input id="people-query" type="text" maxlength="120"/><button id="people-search">본명 · 닉네임 · 구단 검색</button>
+<button id="previous">이전 150명</button><button id="next">다음 150명</button><div id="rows"></div></div></div></div></div></main>
+</body></rml>

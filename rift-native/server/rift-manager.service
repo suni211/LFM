@@ -1,0 +1,19 @@
+[Unit]
+Description=Rift Manager local API
+After=network.target
+[Service]
+Type=simple
+User=riftmanager
+Group=riftmanager
+WorkingDirectory=/opt/rift-manager
+Environment=RIFT_DB=/var/lib/rift-manager/server.db
+Environment=RIFT_PORT=8770
+ExecStart=/usr/bin/python3 /opt/rift-manager/server.py
+Restart=on-failure
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/rift-manager
+[Install]
+WantedBy=multi-user.target

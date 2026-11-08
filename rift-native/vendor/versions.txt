@@ -1,0 +1,5 @@
+libsdl-org/SDL release-3.4.20
+mikke89/RmlUi 6.3
+freetype/freetype VER-2-13-3
+libsdl-org/SDL_image release-3.4.8
+nlohmann/json v3.12.0

@@ -1,0 +1,192 @@
+{
+  "result": {
+    "seed": 3,
+    "time": 3060.4,
+    "winner": 1,
+    "finished": true,
+    "events": {
+      "start": 1,
+      "cast": 2931,
+      "respawn": 128,
+      "attack": 61950,
+      "death": 3867,
+      "camp_clear": 14,
+      "smite": 20,
+      "kill": 67,
+      "purchase": 39,
+      "fight": 57,
+      "structure": 18,
+      "block": 1,
+      "objective": 1,
+      "victory": 1
+    },
+    "players": [
+      {
+        "name": "Jax",
+        "role": "TOP",
+        "kda": [
+          4,
+          13,
+          1
+        ],
+        "cs": 131,
+        "items": [
+          3047,
+          3078,
+          3153,
+          3053
+        ]
+      },
+      {
+        "name": "Nunu",
+        "role": "JUNGLE",
+        "kda": [
+          1,
+          8,
+          12
+        ],
+        "cs": 100,
+        "items": [
+          3111,
+          3118,
+          3083,
+          3075
+        ]
+      },
+      {
+        "name": "Annie",
+        "role": "MID",
+        "kda": [
+          7,
+          3,
+          10
+        ],
+        "cs": 149,
+        "items": [
+          3020,
+          6655,
+          3089,
+          3157
+        ]
+      },
+      {
+        "name": "Ashe",
+        "role": "ADC",
+        "kda": [
+          13,
+          3,
+          4
+        ],
+        "cs": 176,
+        "items": [
+          3006,
+          3153,
+          3031,
+          3035
+        ]
+      },
+      {
+        "name": "Alistar",
+        "role": "SUPPORT",
+        "kda": [
+          4,
+          13,
+          10
+        ],
+        "cs": 5,
+        "items": [
+          3117,
+          3190,
+          3107,
+          3083
+        ]
+      },
+      {
+        "name": "Sion",
+        "role": "TOP",
+        "kda": [
+          9,
+          6,
+          4
+        ],
+        "cs": 116,
+        "items": [
+          3047,
+          3118,
+          3083,
+          3075
+        ]
+      },
+      {
+        "name": "Warwick",
+        "role": "JUNGLE",
+        "kda": [
+          1,
+          5,
+          7
+        ],
+        "cs": 69,
+        "items": [
+          3047,
+          3153,
+          3078
+        ]
+      },
+      {
+        "name": "Ryze",
+        "role": "MID",
+        "kda": [
+          9,
+          7,
+          16
+        ],
+        "cs": 90,
+        "items": [
+          3020,
+          6655,
+          3089,
+          3157
+        ]
+      },
+      {
+        "name": "Sivir",
+        "role": "ADC",
+        "kda": [
+          9,
+          5,
+          15
+        ],
+        "cs": 113,
+        "items": [
+          3006,
+          3031,
+          3033,
+          3035
+        ]
+      },
+      {
+        "name": "Soraka",
+        "role": "SUPPORT",
+        "kda": [
+          10,
+          8,
+          7
+        ],
+        "cs": 39,
+        "items": [
+          3117,
+          4005,
+          3504,
+          3107
+        ]
+      }
+    ],
+    "compute_seconds": 145.86
+  },
+  "clips": 49,
+  "watch_seconds": 929.1999999999991,
+  "audit": {
+    "count": 61950,
+    "violations": 0
+  }
+}

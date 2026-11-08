@@ -1,0 +1,119 @@
+3819 INFO: PyInstaller: 6.15.0, contrib hooks: 2025.8
+3820 INFO: Python: 3.12.9
+4165 INFO: Platform: Windows-11-10.0.26200-SP0
+4165 INFO: Python environment: C:\Users\hisam\AppData\Local\Programs\Python\Python312
+4166 INFO: wrote C:\Users\hisam\OneDrive\���� ȭ��\432\rift-rebuild\RiftManager-Rebuild.spec
+4186 INFO: Module search paths (PYTHONPATH):
+['C:\\Users\\hisam\\OneDrive\\���� ȭ��\\432\\rift-rebuild',
+ 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\python312.zip',
+ 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\DLLs',
+ 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib',
+ 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312',
+ 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages',
+ 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\win32',
+ 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\win32\\lib',
+ 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\Pythonwin',
+ 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\setuptools\\_vendor',
+ 'C:\\Users\\hisam\\OneDrive\\���� ȭ��\\432\\rift-rebuild']
+pygame 2.6.1 (SDL 2.28.4, Python 3.12.9)
+Hello from the pygame community. https://www.pygame.org/contribute.html
+7048 INFO: Appending 'datas' from .spec
+7060 INFO: checking Analysis
+7082 INFO: Building because _input_datas changed
+7082 INFO: Running Analysis Analysis-00.toc
+7082 INFO: Target bytecode optimization level: 0
+7082 INFO: Initializing module dependency graph...
+7087 INFO: Initializing module graph hook caches...
+7158 INFO: Analyzing modules for base_library.zip ...
+13677 INFO: Processing standard module hook 'hook-encodings.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks'
+16845 INFO: Processing standard module hook 'hook-pickle.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks'
+17555 INFO: Processing standard module hook 'hook-heapq.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks'
+17994 INFO: Caching module dependency graph...
+18083 INFO: Looking for Python shared library...
+18097 INFO: Using Python shared library: C:\Users\hisam\AppData\Local\Programs\Python\Python312\python312.dll
+18097 INFO: Analyzing C:\Users\hisam\OneDrive\���� ȭ��\432\rift-rebuild\app.py
+18146 INFO: Processing standard module hook 'hook-pygame.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\pygame\\__pyinstaller'
+18394 INFO: Processing pre-safe-import-module hook 'hook-typing_extensions.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+18399 INFO: SetuptoolsInfo: initializing cached setuptools info...
+25102 INFO: Processing standard module hook 'hook-multiprocessing.util.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks'
+25259 INFO: Processing standard module hook 'hook-xml.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks'
+25457 INFO: Processing standard module hook 'hook-_ctypes.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks'
+25875 INFO: Processing standard module hook 'hook-numpy.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks'
+26622 INFO: Processing standard module hook 'hook-difflib.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks'
+26765 INFO: Processing standard module hook 'hook-platform.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks'
+26802 INFO: Processing standard module hook 'hook-sysconfig.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks'
+27956 INFO: Processing standard module hook 'hook-psutil.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+29312 INFO: Processing standard module hook 'hook-pkg_resources.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks'
+31479 INFO: Processing pre-safe-import-module hook 'hook-packaging.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+31622 INFO: Processing pre-safe-import-module hook 'hook-jaraco.text.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+31624 INFO: Setuptools: 'jaraco.text' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.jaraco.text'!
+31629 INFO: Processing standard module hook 'hook-setuptools.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks'
+31645 INFO: Processing pre-safe-import-module hook 'hook-distutils.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+31677 INFO: Processing pre-safe-import-module hook 'hook-jaraco.functools.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+31679 INFO: Setuptools: 'jaraco.functools' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.jaraco.functools'!
+31690 INFO: Processing pre-safe-import-module hook 'hook-more_itertools.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+31972 INFO: Processing pre-safe-import-module hook 'hook-importlib_metadata.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+32000 INFO: Processing standard module hook 'hook-importlib_metadata.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks'
+32034 INFO: Processing pre-safe-import-module hook 'hook-zipp.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+32291 INFO: Processing pre-safe-import-module hook 'hook-tomli.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+32293 INFO: Setuptools: 'tomli' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.tomli'!
+32732 INFO: Processing pre-safe-import-module hook 'hook-wheel.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+32924 INFO: Processing standard module hook 'hook-setuptools._vendor.jaraco.text.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks'
+32927 INFO: Processing pre-safe-import-module hook 'hook-importlib_resources.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+32932 INFO: Processing standard module hook 'hook-importlib_resources.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks'
+32981 INFO: Processing pre-safe-import-module hook 'hook-jaraco.context.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+32984 INFO: Setuptools: 'jaraco.context' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.jaraco.context'!
+32993 INFO: Processing pre-safe-import-module hook 'hook-backports.tarfile.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+32994 INFO: Setuptools: 'backports.tarfile' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.backports.tarfile'!
+33068 INFO: Processing standard module hook 'hook-backports.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+33072 INFO: Processing pre-safe-import-module hook 'hook-platformdirs.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+33082 INFO: Processing standard module hook 'hook-platformdirs.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+33238 INFO: Processing standard module hook 'hook-PIL.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks'
+33317 INFO: Processing standard module hook 'hook-PIL.Image.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks'
+35720 INFO: Processing standard module hook 'hook-pycparser.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+36703 INFO: Processing standard module hook 'hook-PIL.ImageFilter.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks'
+36737 INFO: Processing module hooks (post-graph stage)...
+36745 WARNING: Hidden import "importlib_resources.trees" not found!
+36955 INFO: Processing standard module hook 'hook-PIL.SpiderImagePlugin.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks'
+37080 INFO: Performing binary vs. data reclassification (95 entries)
+37143 INFO: Looking for ctypes DLLs
+37182 INFO: Analyzing run-time hooks ...
+37185 INFO: Including run-time hook 'pyi_rth_inspect.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+37189 INFO: Including run-time hook 'pyi_rth_pkgutil.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+37193 INFO: Including run-time hook 'pyi_rth_setuptools.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+37195 INFO: Including run-time hook 'pyi_rth_multiprocessing.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+37197 INFO: Including run-time hook 'pyi_rth_pkgres.py' from 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+37212 INFO: Creating base_library.zip...
+37271 INFO: Looking for dynamic libraries
+C:\Users\hisam\AppData\Local\Programs\Python\Python312\Lib\site-packages\PyInstaller\building\build_main.py:227: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  __import__(package)
+C:\Users\hisam\AppData\Local\Programs\Python\Python312\Lib\site-packages\PyInstaller\building\build_main.py:227: UserWarning: The numpy.array_api submodule is still experimental. See NEP 47.
+  __import__(package)
+pygame 2.6.1 (SDL 2.28.4, Python 3.12.9)
+Hello from the pygame community. https://www.pygame.org/contribute.html
+39902 INFO: Extra DLL search directories (AddDllDirectory): ['C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\numpy.libs', 'C:\\Users\\hisam\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\pygame']
+39903 INFO: Extra DLL search directories (PATH): []
+41877 INFO: Warnings written to C:\Users\hisam\OneDrive\���� ȭ��\432\rift-rebuild\build\RiftManager-Rebuild\warn-RiftManager-Rebuild.txt
+41932 INFO: Graph cross-reference written to C:\Users\hisam\OneDrive\���� ȭ��\432\rift-rebuild\build\RiftManager-Rebuild\xref-RiftManager-Rebuild.html
+41967 INFO: checking PYZ
+42015 INFO: Building because C:\Users\hisam\OneDrive\���� ȭ��\432\rift-rebuild\data.py changed
+42015 INFO: Building PYZ (ZlibArchive) C:\Users\hisam\OneDrive\���� ȭ��\432\rift-rebuild\build\RiftManager-Rebuild\PYZ-00.pyz
+43037 INFO: Building PYZ (ZlibArchive) C:\Users\hisam\OneDrive\���� ȭ��\432\rift-rebuild\build\RiftManager-Rebuild\PYZ-00.pyz completed successfully.
+43071 INFO: checking PKG
+43085 INFO: Building because toc changed
+43085 INFO: Building PKG (CArchive) RiftManager-Rebuild.pkg
+53100 INFO: Building PKG (CArchive) RiftManager-Rebuild.pkg completed successfully.
+53106 INFO: Bootloader C:\Users\hisam\AppData\Local\Programs\Python\Python312\Lib\site-packages\PyInstaller\bootloader\Windows-64bit-intel\runw.exe
+53106 INFO: checking EXE
+53118 INFO: Building because toc changed
+53118 INFO: Building EXE from EXE-00.toc
+53123 INFO: Copying bootloader EXE to C:\Users\hisam\OneDrive\���� ȭ��\432\rift-rebuild\dist\RiftManager-Rebuild.exe
+53178 INFO: Copying icon to EXE
+53217 INFO: Copying 0 resources to EXE
+53217 INFO: Embedding manifest in EXE
+53265 INFO: Appending PKG archive to EXE
+53354 INFO: Fixing EXE headers
+53685 INFO: Building EXE from EXE-00.toc completed successfully.
+53690 INFO: Build complete! The results are available in: C:\Users\hisam\OneDrive\���� ȭ��\432\rift-rebuild\dist
+pygame 2.6.1 (SDL 2.28.4, Python 3.12.9)
+Hello from the pygame community. https://www.pygame.org/contribute.html

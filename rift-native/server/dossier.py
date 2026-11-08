@@ -4,6 +4,7 @@ from pathlib import Path
 import catalog
 import clubs
 import dashboard
+import staffing
 
 def roots():
     here = Path(__file__).resolve().parent
@@ -46,6 +47,35 @@ def find_career(db, league, team):
         return None
     return dict(id=row[0], name=row[1], season=row[2], week=row[3])
 
+def front_office(staff,manager=None,owner=None):
+    """Public roles are not player records. Unknown identities stay unfilled."""
+    entries=[]
+    if owner:
+        entries.append(dict(name=owner,role='구단주',role_key='OWNER',source='game'))
+    if manager:
+        entries.append(dict(name=manager,role='감독',role_key='MANAGER',source='game'))
+    for person in staff:
+        raw=str(person.get('raw_role') or '').casefold()
+        assigned=str(person.get('staff_role') or '')
+        if 'head coach' in raw or '수석' in raw or assigned=='HEAD_COACH':
+            key,label='HEAD_COACH','수석코치'
+        elif 'manager' in raw and 'general' not in raw or '감독' in raw:
+            key,label='MANAGER','감독'
+        elif assigned=='GM' or 'general manager' in raw or '단장' in raw:
+            key,label='GM','단장'
+        elif assigned=='ANALYST' or 'analyst' in raw or '분석' in raw:
+            key,label='ANALYST','분석관'
+        elif assigned=='DOCTOR' or 'doctor' in raw or '닥터' in raw:
+            key,label='DOCTOR','팀 닥터'
+        elif assigned=='COMMUNITY':
+            key,label='COMMUNITY','홍보 담당'
+        else:
+            key,label='COACH','코치'
+        entries.append(dict(id=person.get('id'),name=catalog.display(person),
+            role=label,role_key=key,source='real' if person.get('real_person') else 'generated'))
+    order={'OWNER':0,'MANAGER':1,'HEAD_COACH':2,'COACH':3,'GM':4,'ANALYST':5,'DOCTOR':6,'COMMUNITY':7}
+    return sorted(entries,key=lambda item:(order.get(item['role_key'],9),item['name']))
+
 def view(db, user, league, team):
     import online_world
     rows = people_for(db, league, team)
@@ -62,9 +92,10 @@ def view(db, user, league, team):
     season=online_world.clock(db)['season']
     standings=dashboard.league_table(db,league,season)
     ranking=next((row for row in standings if row['team']==team),None)
-    manager_name=next((catalog.display(p) for p in staff if p.get('kind')=='coach'),None)
+    # A head coach is not automatically the club manager.
+    manager_name=None
     body=dict(identity=identity(league,team),players=players,academy=academy,staff=staff,other=other,
-              manager=manager_name,season=season,standing=ranking,news=[],cash_history=[],
+              manager=manager_name,owner=None,front_office=front_office(staff),season=season,standing=ranking,news=[],cash_history=[],
               career=None,finances=None,standings=standings,recent=dashboard.last_five(db,team))
     if not career:
         return body
@@ -74,6 +105,7 @@ def view(db, user, league, team):
     body['career'] = career
     manager_row=db.execute('SELECT name FROM manager_profiles WHERE career_id=?',(career['id'],)).fetchone()
     if manager_row:body['manager']=manager_row[0]
+    body['front_office']=front_office(staff,body['manager'])
     body['news']=[dict(season=sn,week=wk,headline=headline,body=summary)
         for sn,wk,headline,summary in db.execute(
             'SELECT season,week,headline,body FROM career_news WHERE career_id=? ORDER BY season DESC,week DESC,id DESC LIMIT 8',(career['id'],))]

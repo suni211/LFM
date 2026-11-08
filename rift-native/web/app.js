@@ -315,8 +315,9 @@ function widget(id,dash) {
 }
 async function inbox() {
   const current = await requireCareer(); if (!current) return
-  const data = await api('/inbox?id=' + current.id)
-  shell(`<div class="panel"><h2>우편</h2>${data.messages.map(mail => `<div class="row"><div><b>${esc(mail.subject)}</b><p>${esc(mail.body || '')}</p></div><button class="act" data-mail="${mail.id}">읽음</button></div>`).join('') || '<p>우편이 없습니다.</p>'}</div>`, '/app/inbox')
+  const [data,follows]=await Promise.all([api('/inbox?id='+current.id),api('/follows?id='+current.id)])
+  const favorites=(follows.follows||[]).map(x=>'<span class="mail-follow-chip">'+esc(x.entity)+' · '+(x.kind==='competition'?'리그':x.kind==='player'?'선수':'구단')+'</span>').join('')
+  shell(`<div class="page-heading"><h1>구단 우편함</h1><a class="act" href="/app/news">팔로우·리그 뉴스 열기</a></div><section class="panel"><h2>팔로우 중인 소식</h2><div class="mail-follow-list">${favorites||'<p class="empty">아직 팔로우한 대상이 없습니다. 리그·선수·구단에서 팔로우하세요.</p>'}</div></section><div class="panel"><h2>우편</h2>${data.messages.map(mail => `<div class="row"><div><b>${esc(mail.subject)}</b><p>${esc(mail.body || '')}</p></div><button class="act" data-mail="${mail.id}">읽음</button></div>`).join('') || '<p>우편이 없습니다.</p>'}</div>`, '/app/inbox')
   document.querySelectorAll('[data-mail]').forEach(button => button.onclick = () => api('/read-mail', {id:current.id, mail:Number(button.dataset.mail)}).then(() => inbox()))
   await topbar()
 }
@@ -732,6 +733,9 @@ function latestTeamNews(data) {
 async function team(league,name,tab) {
   const data=await api('/club-dossier?league='+encodeURIComponent(league)+'&team='+encodeURIComponent(name))
   const idn=data.identity,s=seasonStanding(data.standing)
+  const myCareer=isOperator?null:await career()
+  const follows=myCareer?await api('/follows?id='+myCareer.id):{follows:[]}
+  const isFollowed=(follows.follows||[]).some(f=>f.kind==='team'&&f.entity===name)
   const active=tab==='staff'?'front':tab
   const tabs=[['overview','구단 개요'],['roster','1군·2군'],['front','프런트'],['finance','재정'],['matches','경기'],['news','뉴스'],['history','구단 역사'],...(isOperator?[['editor','운영자 수정']]:[])]
   const links=`<div class="tabs team-tabs">${tabs.map(([k,l])=>`<a class="${active===k?'on':''}" href="/app/team/${encodeURIComponent(league)}/${encodeURIComponent(name)}/${k}">${l}</a>`).join('')}</div>`
@@ -750,7 +754,7 @@ async function team(league,name,tab) {
   else if(active==='history')main=clubHistoryPanel(data.history)
   else if(active==='editor'&&isOperator)main='<section class="panel"><h2>운영자 구단 정보 수정</h2><p>구단의 원래 식별자는 유지되며, 새 이름과 로고가 화면과 향후 역사에 반영됩니다.</p><form id="operator-club-editor"><label>새 구단명<input type="text" name="name" minlength="2" maxlength="48" value="'+esc(data.display_name||name)+'" required/></label><label>대표 로고 변경(선택)<input type="file" name="logo" accept="image/png,image/jpeg,image/webp"/></label><button class="act" type="submit">구단 변경 사항 저장</button><p class="err" id="editor-error"></p></form></section>'+clubHistoryPanel(data.history)
   else return go('/app/team/'+encodeURIComponent(league)+'/'+encodeURIComponent(name)+'/overview')
-  shell(`<div class="fm-team-page"><header class="fm-team-header">${logoImg(idn.league,idn.team)}<div><p class="eyebrow">CLUB INFORMATION · ${esc(idn.league)}</p><h1>${esc(data.display_name||idn.team)}</h1><p>${esc(data.season||'현재')}시즌 · 1군 ${teamPlayers.length}명 · 2군 ${(data.academy||[]).length}명 · 프런트 ${(data.front_office||[]).length}명</p></div><a href="/app/league/${encodeURIComponent(league)}" class="act">${esc(league)} 리그 보기</a></header>${rowNotes}${links}${main}</div>`,'/app/team/'+encodeURIComponent(league)+'/'+encodeURIComponent(name))
+  shell(`<div class="fm-team-page"><header class="fm-team-header">${logoImg(idn.league,idn.team)}<div><p class="eyebrow">CLUB INFORMATION · ${esc(idn.league)}</p><h1>${esc(data.display_name||idn.team)}</h1>${myCareer?'<button class="act" id="follow-this-team">'+(isFollowed?'★ 구단 뉴스 팔로우 중':'☆ 구단 뉴스 팔로우')+'</button>':''}<p>${esc(data.season||'현재')}시즌 · 1군 ${teamPlayers.length}명 · 2군 ${(data.academy||[]).length}명 · 프런트 ${(data.front_office||[]).length}명</p></div><a href="/app/league/${encodeURIComponent(league)}" class="act">${esc(league)} 리그 보기</a></header>${rowNotes}${links}${main}</div>`,'/app/team/'+encodeURIComponent(league)+'/'+encodeURIComponent(name))
   document.documentElement.style.setProperty('--team',idn.color||'#17324d')
   const editor=document.getElementById('operator-club-editor')
   if(editor)editor.onsubmit=async e=>{e.preventDefault();try{
@@ -761,6 +765,9 @@ async function team(league,name,tab) {
     await api('/operator/club-identity',update)
     media.brandings=null;careerCache=null;draw()
   }catch(error){document.getElementById('editor-error').textContent=error.message}}
+  const followButton=document.getElementById('follow-this-team')
+  if(followButton)followButton.onclick=()=>api('/follows',{id:myCareer.id,kind:'team',entity:name,enabled:!isFollowed})
+    .then(()=>team(league,name,tab)).catch(e=>alert(e.message))
   if(token()&&careerId())await topbar()
 }
 async function readClubLogo(file) {

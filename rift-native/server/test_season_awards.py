@@ -14,10 +14,10 @@ import tier2_leagues
 ROLES=('TOP','JUNGLE','MID','ADC','SUPPORT')
 
 
-def played(team, victory=True):
+def played(team, side, victory=True):
     roster=[]
     for role in ROLES:
-        roster.append(dict(team=team,role=role,name='Ahri',player_id=f'{team}-{role}',
+        roster.append(dict(team=side,role=role,name='Ahri',player_id=f'{team}-{role}',
                            player_name=f'{team}-{role}',kda=[4 if victory else 1,1,5],
                            cs=200,gold=15000,damage=20000))
     return roster
@@ -61,7 +61,7 @@ class AwardsTest(unittest.TestCase):
     def result(self,home,away,blue=0,final=False):
         a=('Alpha','Beta','Gamma').index(home)
         b=('Alpha','Beta','Gamma').index(away)
-        sets=[dict(blue=blue,winner=0,players=played(a,True)+played(b,False))]
+        sets=[dict(blue=blue,winner=0,players=played(a,0,True)+played(b,1,False))]
         return {'winner':0,'score':[3,0] if final else [2,0],'sets':sets}
 
     def insert(self,cid,opponent,week=2,competition='LCK',stage='regular',final=False):

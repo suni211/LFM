@@ -428,14 +428,66 @@ async function managementPage(kind) {
   let body = ''
   if (!data.initialized) body = '<p>재정과 계약이 아직 열리지 않았습니다.</p>'
   else if (kind === 'finance') {
-    body = `<div class="panel"><h2>재정</h2><p>보유 ${money(data.cash)}</p><p>이적 예산 ${money(data.transfer_budget)}</p><p>급여 예산 ${money(data.wage_budget)}</p><p>연봉 합계 ${money(data.annual_payroll)}</p><p>구단주 ${data.board} / 팬 ${data.fans}</p><label>이적 예산</label><input id="budget-transfer" value="${data.transfer_budget}"/><label>급여 예산</label><input id="budget-wage" value="${data.wage_budget}"/><button class="act" id="save-budget">예산 저장</button></div><div class="panel"><h2>원장</h2>${(data.ledger || []).map(row => `<div class="row">${row.season}시즌 ${row.week}주 ${esc(row.description)} ${money(row.amount)}</div>`).join('')}</div>`
+    const ledger=(data.ledger||[])
+    let balance=Number(data.cash)||0
+    const history=[{cash:balance}]
+    for(const l of ledger){balance-=Number(l.amount)||0;history.unshift({cash:balance})}
+    const cash=Math.max(1,Number(data.cash)||1),budget=Math.max(0,Number(data.transfer_budget)||0)
+    const payroll=Number(data.annual_payroll)||0
+    body='<div class="page-heading"><h1>재정 센터</h1><p>이적 자금·현금·연봉·스폰서 수입을 시각화한 이번 시즌 회계</p></div>'+
+      '<div class="finance-dash"><section class="panel"><h2>구단 유동성</h2><div class="finance-hero">'+money(data.cash)+'</div>'+
+       cashGraph(history)+'<p class="muted-note">원장에 기록된 실제 게임 내 수입·지출만 사용</p></section>'+
+      '<section class="panel"><h2>예산 배분</h2><div class="fm-finance-totals">'+
+      [['이적 예산',budget],['연봉 약정',payroll],['현금',cash]].map(([label,value])=>
+       '<div class="finance-budget-row"><span>'+label+'</span><strong>'+money(value)+'</strong>'+
+       '<div class="bar-track"><span style="width:'+Math.max(0,Math.min(100,value/cash*100))+'%"></span></div></div>').join('')+
+      '</div><div class="budget-editor"><label>이적 예산 조정<input id="budget-transfer" type="number" min="0" value="'+budget+'"/></label>'+
+       '<label>급여 예산<input id="budget-wage" type="number" min="0" value="'+Number(data.wage_budget||0)+'"/></label>'+
+       '<button class="act" id="save-budget">예산 저장</button></div></section></div>'+
+      '<section class="panel"><h2>회계 내역 · '+ledger.length+'건</h2>'+
+       ledger.map(row=>'<div class="finance-ledger-line"><span>'+row.season+'시즌 '+row.week+'주 · '+esc(row.description)+'</span>'+
+       '<b class="'+(row.amount>=0?'positive':'negative')+'">'+(row.amount>=0?'+':'')+money(row.amount)+'</b></div>').join('')+'</section>'
   } else if (kind === 'medical') {
-    body = `<div class="panel"><h2>의료</h2>${(data.contracts || []).filter(item => item.person.kind === 'player').map(item => `<div class="row">${personLink(item.person)}<span>피로 ${item.fatigue} 사기 ${item.morale} 부상 ${item.injury_turns}</span><button class="act" data-treat="${esc(item.person.id)}" data-mode="rest">휴식</button><button class="act" data-treat="${esc(item.person.id)}" data-mode="rehab">재활</button><button class="act" data-treat="${esc(item.person.id)}" data-mode="normal">일반</button></div>`).join('')}</div>`
-    body += `<div class="panel"><h2>선수 면담 · FA 방출 요청</h2><p>출전 기회를 원하는 후보·2군 선수의 요청입니다. 감독이 방출에 동의하면 FA로 전환됩니다.</p>${departures.requests.map(r=>`<div class="row"><b>${esc(r.person_id)}</b><span>${esc(r.reason)} · 사기 ${r.morale ?? '-'}</span><button class="act" data-release="${esc(r.person_id)}" data-approve="true">합의 방출</button><button class="act" data-release="${esc(r.person_id)}" data-approve="false">요청 거절</button></div>`).join('')||'<p class="empty">현재 방출을 요청한 선수가 없습니다.</p>'}</div>`
+    const players=(data.contracts||[]).filter(item=>item.person.kind==='player')
+    const names=Object.fromEntries(players.map(x=>[x.person.id,nickname(x.person)]))
+    const bar=(title,value,bad)=>'<div class="health-stat"><span>'+title+'</span><strong>'+value+'%</strong><div class="bar-track '+(bad?'warning':'')+'"><span style="width:'+Math.min(100,Math.max(0,value))+'%"></span></div></div>'
+    body='<div class="page-heading"><h1>의료 센터</h1><p>피로·사기·부상 회복과 선발 기회에 관한 선수 면담을 한 화면에서 관리합니다.</p></div>'+
+      '<div class="medical-board">'+players.map(item=>{
+       const p=item.person
+       return '<div class="panel medical-player-card"><div class="medical-player-head">'+personLink(p)+
+         '<span class="health-status '+(item.injury_turns?'injured':'available')+'">'+(item.injury_turns?'부상 '+item.injury_turns+'주':'출전 가능')+'</span></div>'+
+         bar('피로도',Number(item.fatigue)||0,Number(item.fatigue)>70)+bar('기분·사기',Number(item.morale)||0,Number(item.morale)<40)+
+         '<div class="medical-actions">'+[['rest','휴식'],['rehab','재활'],['normal','일반 훈련']].map(([key,label])=>
+         '<button class="act '+(item.treatment===key?'selected':'')+'" data-treat="'+esc(p.id)+'" data-mode="'+key+'">'+label+'</button>').join('')+'</div></div>'
+       }).join('')+'</div><section class="panel"><h2>2군·후보 선수와의 면담</h2>'+
+       departures.requests.map(r=>'<div class="medical-departure"><b>'+esc(names[r.person_id]||'선수 정보 확인 중')+'</b>'+
+        '<span>'+esc(r.reason)+' · 사기 '+(r.morale??'-')+'</span>'+
+        '<button class="act" data-release="'+esc(r.person_id)+'" data-approve="true">FA 합의 방출</button>'+
+        '<button class="act" data-release="'+esc(r.person_id)+'" data-approve="false">거절</button></div>').join('')||
+         '<p class="empty">선수 방출 요청 없음</p>'+'</section>'
   } else if (kind === 'relations') {
-    body = `<div class="panel"><h2>관계</h2>${(data.relationships || []).map(item => `<div class="row">${esc(item.first)} · ${esc(item.second)} 신뢰 ${item.trust}<button class="act" data-a="${esc(item.first)}" data-b="${esc(item.second)}" data-way="listen">대화</button></div>`).join('') || '<p>관계가 없습니다.</p>'}</div>`
+    const contracts=data.contracts||[],pmap=Object.fromEntries(contracts.map(x=>[x.person.id,x.person]))
+    const bonds=(data.relationships||[]).map(item=>{
+      const a=pmap[item.first],b=pmap[item.second],trust=Number(item.trust)||0
+      return '<div class="relation-card"><div class="relation-pair">'+
+       (a?personLink(a):'<span>이전 소속 선수</span>')+
+       '<span class="relation-connection">↔</span>'+
+       (b?personLink(b):'<span>이전 소속 선수</span>')+'</div>'+
+       '<div class="relation-trust"><span>상호 신뢰</span><strong>'+trust+'/100</strong>'+
+       '<div class="bar-track '+(trust<40?'warning':'')+'"><span style="width:'+trust+'%"></span></div></div>'+
+       '<div class="relation-actions">'+[['listen','대화·경청'],['roles','역할 조정'],['demand','강경 지시']].map(([way,label])=>
+         '<button class="act" data-a="'+esc(item.first)+'" data-b="'+esc(item.second)+'" data-way="'+way+'">'+label+'</button>').join('')+
+        '</div></div>'
+    }).join('')
+    body='<div class="page-heading"><h1>선수단 관계</h1><p>선수 사진·이름·신뢰도·갈등 조정 기능을 확인합니다.</p></div>'+
+      '<div class="relation-grid">'+(bonds||'<p class="empty">기록된 관계가 없습니다.</p>')+'</div>'
   } else if (kind === 'staff') {
-    body = `<div class="panel"><h2>스태프 정원</h2>${(data.staff_limits || []).map(item => `<div class="row">${esc(item.name)} ${item.count}/${item.limit}</div>`).join('')}<button class="act" id="staff-find">후보 생성</button></div>`
+    const limits=(data.staff_limits||[])
+    body='<div class="page-heading"><h1>프런트·코칭스태프 정원</h1><p>감독·수석코치·코치·분석관·의료 인력의 현재 인원과 허용 정원</p></div>'+
+      '<div class="staff-grid">'+limits.map(x=>'<div class="panel staff-position-card"><h2>'+esc(x.name)+'</h2>'+
+       '<div class="staff-number">'+x.count+'<small> / '+x.limit+'명</small></div>'+
+       '<div class="bar-track"><span style="width:'+Math.min(100,x.count/Math.max(1,x.limit)*100)+'%"></span></div></div>').join('')+
+      '</div><section class="panel"><h2>스태프 충원</h2><button class="act" id="staff-find">스태프 후보 찾기</button></section>'
   } else {
     const v=data.vision;const goalList=audience=>(v.goals[audience]||[]).map(g=>`<div class="vision-goal"><div><b>${esc(g.title)}</b><small>${esc(g.deadline)}</small></div><span>${esc(g.progress)}</span><strong class="${g.met?'goal-met':'goal-pending'}">${esc(g.status)}</strong></div>`).join('')
     body=`<div class="page-heading"><div><p class="eyebrow">CLUB VISION & SUPPORT</p><h1>구단 비전 · 민심</h1><p>${v.season}시즌 · 구단주와 팬이 감독에게 바라는 목표</p></div></div><div class="grid3"><section class="panel"><h2>구단주 신임</h2><strong class="money-value">${v.board} / 100</strong><p>${esc(v.board_mood)}</p></section><section class="panel"><h2>팬 민심</h2><strong class="money-value">${v.fans} / 100</strong><p>${esc(v.fan_mood)}</p></section></div><section class="panel"><h2>구단주 요구사항</h2>${goalList('board')}</section><section class="panel"><h2>팬 요구사항</h2>${goalList('fans')}</section><section class="panel"><h2>민심 변화와 이유</h2>${v.history.length?v.history.map(h=>`<div class="row"><small>${h.season}시즌 ${h.week}주</small><b>${esc(h.reason)}</b><span>구단주 ${h.board_delta>0?'+':''}${h.board_delta} · 팬 ${h.fan_delta>0?'+':''}${h.fan_delta}</span></div>`).join(''):'<p class="empty">아직 기록된 민심 변화가 없습니다.</p>'}</section>`
@@ -454,7 +506,7 @@ async function managementPage(kind) {
     } catch(error) {alert(error.message)}
   })
   document.querySelectorAll('[data-treat]').forEach(button => button.onclick = () => api('/management', {id:current.id, action:'treatment', person:button.dataset.treat, treatment:button.dataset.mode}).then(() => draw()).catch(error => alert(error.message)))
-  document.querySelectorAll('[data-way]').forEach(button => button.onclick = () => api('/management', {id:current.id, action:'mediate', first:button.dataset.a, second:button.dataset.b, approach:'listen'}).then(() => draw()).catch(error => alert(error.message)))
+  document.querySelectorAll('[data-way]').forEach(button => button.onclick = () => api('/management', {id:current.id, action:'mediate', first:button.dataset.a, second:button.dataset.b, approach:button.dataset.way}).then(() => draw()).catch(error => alert(error.message)))
   const find = document.getElementById('staff-find')
   if (find) find.onclick = () => api('/staff-candidates', {id:current.id}).then(() => alert('스태프 후보를 만들었습니다.')).catch(error => alert(error.message))
   await topbar()

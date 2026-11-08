@@ -101,11 +101,14 @@ def accept(db,career,offer_id):
     db.execute("""INSERT OR REPLACE INTO sponsor_contracts
         (career_id,company,region,start_season,end_season,amount)
         VALUES(?,?,?,?,?,?)""",(career,company,region,season,season+1,amount))
-    db.execute('UPDATE club_finances SET cash=cash+?,transfer_budget=transfer_budget+? WHERE career_id=?',
-               (amount,amount//2,career))
     import management
+    management.ensure(db,career)
+    # ledger() is the authoritative cash mutation. Do not add the fee twice.
     management.ledger(db,career,'sponsor:'+str(offer_id),amount,'sponsorship',
                       '게임 내 가상 스폰서 계약: '+company,now[0],now[1])
+    db.execute("""UPDATE club_finances
+        SET transfer_budget=MIN(MAX(0,cash),transfer_budget+?)
+        WHERE career_id=?""",(amount//2,career))
     club_history.record(db,league,team,now[0],now[1],'sponsor-change',
                         '새 스폰서 계약… '+company+' 합류',DISCLAIMER)
     return dict(company=company,amount=amount,source='fictional-game-contract',

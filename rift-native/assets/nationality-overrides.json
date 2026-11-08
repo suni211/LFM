@@ -1,0 +1,167 @@
+{
+  "description": "Country mappings verified against individual esports roster sources; keyed by stable person ID, never inferred from league/team.",
+  "people": {
+    "d8ed4888303f2ee0b020": {
+      "code": "JP",
+      "name": "일본",
+      "source": "https://liquipedia.net/leagueoflegends/DetonatioN_FocusMe",
+      "verified_on": "2026-11-08"
+    },
+    "431d9212c17eccf46273": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://liquipedia.net/leagueoflegends/DetonatioN_FocusMe",
+      "verified_on": "2026-11-08"
+    },
+    "be5a507fe9503d4ac90f": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://liquipedia.net/leagueoflegends/DetonatioN_FocusMe",
+      "verified_on": "2026-11-08"
+    },
+    "c41bdaa922a4fa06f3a3": {
+      "code": "JP",
+      "name": "일본",
+      "source": "https://liquipedia.net/leagueoflegends/DetonatioN_FocusMe",
+      "verified_on": "2026-11-08"
+    },
+    "f52ca9d56ad89085891d": {
+      "code": "TW",
+      "name": "대만",
+      "source": "https://liquipedia.net/leagueoflegends/DetonatioN_FocusMe",
+      "verified_on": "2026-11-08"
+    },
+    "3876985d93780be1469b": {
+      "code": "JP",
+      "name": "일본",
+      "source": "https://liquipedia.net/leagueoflegends/DetonatioN_FocusMe",
+      "verified_on": "2026-11-08"
+    },
+    "8e67a57214bc445deed8": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://liquipedia.net/leagueoflegends/DetonatioN_FocusMe",
+      "verified_on": "2026-11-08"
+    },
+    "0f8fa382b016be54dd09": {
+      "code": "JP",
+      "name": "일본",
+      "source": "https://liquipedia.net/leagueoflegends/DetonatioN_FocusMe",
+      "verified_on": "2026-11-08"
+    },
+    "c3948a61b9ffe2ae168f": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://liquipedia.net/leagueoflegends/Cloud9",
+      "verified_on": "2026-11-08"
+    },
+    "fb1c6de1eef82dfedac9": {
+      "code": "US",
+      "name": "미국",
+      "source": "https://liquipedia.net/leagueoflegends/Cloud9",
+      "verified_on": "2026-11-08"
+    },
+    "e05643da9e78bdf5b436": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://liquipedia.net/leagueoflegends/Cloud9",
+      "verified_on": "2026-11-08"
+    },
+    "e5e30c42e28ba257a4fe": {
+      "code": "US",
+      "name": "미국",
+      "source": "https://liquipedia.net/leagueoflegends/Cloud9",
+      "verified_on": "2026-11-08"
+    },
+    "58ac7e4d91d84b783e0a": {
+      "code": "CA",
+      "name": "캐나다",
+      "source": "https://liquipedia.net/leagueoflegends/Cloud9",
+      "verified_on": "2026-11-08"
+    },
+    "b77ad595b4843371c19c": {
+      "code": "US",
+      "name": "미국",
+      "source": "https://liquipedia.net/leagueoflegends/Cloud9",
+      "verified_on": "2026-11-08"
+    },
+    "ddf2fc60e6a576acb0ad": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://liquipedia.net/leagueoflegends/Cloud9",
+      "verified_on": "2026-11-08"
+    },
+    "1ebd99528f23e2903128": {
+      "code": "SE",
+      "name": "스웨덴",
+      "source": "https://liquipedia.net/leagueoflegends/Cloud9",
+      "verified_on": "2026-11-08"
+    },
+    "e3f04e3dff7a5ee12905": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://en.wikipedia.org/wiki/Gen.G",
+      "verified_on": "2026-11-08"
+    },
+    "173aca727f27de3dbc68": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://en.wikipedia.org/wiki/Gen.G",
+      "verified_on": "2026-11-08"
+    },
+    "272d9c64929e87469ccb": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://en.wikipedia.org/wiki/Gen.G",
+      "verified_on": "2026-11-08"
+    },
+    "f69d5b5929516ede1eb2": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://en.wikipedia.org/wiki/Gen.G",
+      "verified_on": "2026-11-08"
+    },
+    "c918b476715c274d049f": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://en.wikipedia.org/wiki/Gen.G",
+      "verified_on": "2026-11-08"
+    },
+    "071737fe57aa0666ae0f": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://en.wikipedia.org/wiki/Gen.G",
+      "verified_on": "2026-11-08"
+    },
+    "b98a06c0d837edf6ba7d": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://en.wikipedia.org/wiki/Gen.G",
+      "verified_on": "2026-11-08"
+    },
+    "14661b8918a1f5214b4e": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://en.wikipedia.org/wiki/Gen.G",
+      "verified_on": "2026-11-08"
+    },
+    "f3b0181658d4053298b3": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://en.wikipedia.org/wiki/Gen.G",
+      "verified_on": "2026-11-08"
+    },
+    "585130f610039e961f44": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://en.wikipedia.org/wiki/Gen.G",
+      "verified_on": "2026-11-08"
+    },
+    "ebe99648acc7622e2af6": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://en.wikipedia.org/wiki/Gen.G",
+      "verified_on": "2026-11-08"
+    }
+  }
+}

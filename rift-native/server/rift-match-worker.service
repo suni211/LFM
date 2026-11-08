@@ -1,11 +1,12 @@
 [Unit]
 Description=Rift Manager match simulation worker
-After=rift-manager.service
+After=network.target rift-manager.service
 [Service]
 User=riftmanager
 Group=riftmanager
 Environment=RIFT_DB=/var/lib/rift-manager/server.db
-ExecStart=/usr/bin/python3 /opt/rift-manager/match_worker.py --engine /opt/rift-manager/engine
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/rift-manager/.venv/bin/python /opt/rift-manager/server/match_worker.py --engine /opt/rift-manager/engine
 Restart=on-failure
 RestartSec=3
 Nice=8

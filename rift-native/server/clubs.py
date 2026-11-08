@@ -42,10 +42,14 @@ def directory(db):
     board.sort(key=lambda row:(row['league'],row['team']))
     return board
 
-def grant(db,user,career):
-    role='viewer' if human_owner(db,career) else 'admin'
+def grant(db,user,career,read_only=False):
+    # League operators observe clubs without silently taking ownership.
+    role='viewer' if read_only or human_owner(db,career) else 'admin'
     current=db.execute('SELECT role FROM members WHERE career_id=? AND user_id=?',(career,user)).fetchone()
     if current:
+        if read_only and current[0]!='viewer':
+            db.execute("UPDATE members SET role='viewer' WHERE career_id=? AND user_id=?",(career,user))
+            return 'viewer'
         if current[0]=='admin' or role=='viewer': return current[0]
         db.execute("UPDATE members SET role='admin' WHERE career_id=? AND user_id=?",(career,user))
         return 'admin'
@@ -63,7 +67,9 @@ def create(db,career,mode,team_key=None,league='LCK CL'):
     db.execute('INSERT INTO club_profiles VALUES(?,?,?,?,?)',(career,mode,team['league'],team_key,catalog.load().get('source','GCD')))
     occupied=set()
     academy_players=0
-    for person in catalog.load()['people']:
+    roster_changes=catalog.game_clubs(db)
+    for original in catalog.load()['people']:
+        person=catalog.apply_game_club(original,roster_changes)
         if (person.get('league'),person.get('team'))!=(team['league'],team['team']): continue
         if db.execute("SELECT 1 FROM sqlite_master WHERE name='person_ownership'").fetchone():
             moved=db.execute('SELECT career_id FROM person_ownership WHERE person_id=?',(person['id'],)).fetchone()
@@ -90,7 +96,8 @@ def profile(db,career):
 
 def roster(db,career):
     people=[]
-    latest={p['id']:p for p in catalog.load()['people']}
+    changes=catalog.game_clubs(db)
+    latest={p['id']:catalog.apply_game_club(p,changes) for p in catalog.load()['people']}
     for raw,assignment,role in db.execute("SELECT payload,assignment,role FROM club_roster WHERE career_id=? AND assignment!='departed' ORDER BY person_id",(career,)):
         saved=json.loads(raw)
         source=dict(saved,**latest.get(saved['id'],{}))
@@ -147,3 +154,6 @@ def assign(db,career,person_id,assignment,role):
     if generated:
         raw=json.loads(db.execute('SELECT payload FROM generated_people WHERE id=?',(person_id,)).fetchone()[0]);raw['role']=role
         db.execute('UPDATE generated_people SET assignment=?,payload=? WHERE id=?',(assignment,json.dumps(raw,ensure_ascii=False),person_id))
+    if assignment=='first':
+        import import_rules
+        import_rules.for_career(db,career)

@@ -31,6 +31,11 @@ def game_clubs(db):
         for pid,team,league in db.execute('''SELECT o.person_id,c.name,p.league FROM person_ownership o
             JOIN careers c ON c.id=o.career_id JOIN club_profiles p ON p.career_id=c.id'''):
             if pid not in changes: changes[pid]=(team,league,None,None)
+    # Completed AI deals update the same person IDs used by all profile views.
+    if db.execute("SELECT 1 FROM sqlite_master WHERE name='ai_player_clubs'").fetchone():
+        for pid,league,team in db.execute("SELECT person_id,league,team FROM ai_player_clubs"):
+            if pid not in changes:
+                changes[pid]=(team,league,None,None)
     return changes
 
 def apply_game_club(person,changes):
@@ -89,12 +94,16 @@ def search(db,career,page=0,query='',team='',kind='',league='',origin='all'):
 
 def teams():
     groups={}
-    for p in load()['people']:
+    catalog_people=load()['people']
+    for p in catalog_people:
         if not p.get('real_person'): continue
         key=(p.get('league',''),p.get('team',''))
         if not key[1]: continue
         group=groups.setdefault(key,dict(league=key[0],team=key[1],players=0,staff=0,unclassified=0))
         group['players' if p.get('kind')=='player' else 'staff' if p.get('kind')=='coach' else 'unclassified']+=1
+    import tier2_leagues
+    for club in tier2_leagues.additional(catalog_people):
+        groups.setdefault((club['league'],club['team']),club)
     return list(sorted(groups.values(),key=lambda row:(row['league'],row['team'])))
 
 def evaluate(db,career,person_id,ratings,form,note):

@@ -85,13 +85,10 @@ def interest(db,career,person):
             [dict(kind='player',entity=person['id'])])
 
 def _teams(db):
-    grouped={}
-    for person in catalog.load().get('people',[]):
-        if person.get('kind')!='player' or not person.get('team') or not person.get('league'): continue
-        grouped.setdefault(person['league'],{}).setdefault(person['team'],[]).append(person)
-    for name,league in db.execute('SELECT c.name,p.league FROM careers c JOIN club_profiles p ON p.career_id=c.id'):
-        grouped.setdefault(league,{}).setdefault(name,grouped.get(league,{}).get(name,[]))
-    return grouped
+    # AI-to-AI rumors must be generated from CURRENT unclaimed rosters rather
+    # than the original import sheet, especially after completed AI deals.
+    import world_transfers
+    return world_transfers.rosters(db)
 
 def weekly(db,season,week):
     if not 1<=week<=10: prune(db); return
@@ -127,3 +124,25 @@ def weekly(db,season,week):
                         [dict(kind='team',entity=host),dict(kind='player',entity=person['id'])])
     db.execute('INSERT OR IGNORE INTO stove_weeks VALUES(?,?)',(season,week))
     prune(db)
+
+
+def feed(db,league='',limit=150):
+    """Rumors are always unconfirmed; never mix with completed signings."""
+    if not isinstance(league,str) or len(league)>100:
+        raise ValueError('invalid league')
+    if type(limit) is not int or not 1<=limit<=500:
+        raise ValueError('invalid page size')
+    sql='''SELECT id,league,event_key,season,week,headline,body,subjects
+        FROM league_rumors WHERE headline!='' '''
+    params=[]
+    if league:
+        sql+='AND league=? '
+        params.append(league)
+    sql+='ORDER BY season DESC,week DESC,id DESC LIMIT ?'
+    params.append(limit)
+    return [dict(zip(('id','league','event_key','season','week','headline','body','subjects'),row),
+                 status='rumor',confirmed=False)
+            for row in (
+                (id_,comp,key,season,week,headline,body,json.loads(subjects))
+                for id_,comp,key,season,week,headline,body,subjects in db.execute(sql,params)
+            )]

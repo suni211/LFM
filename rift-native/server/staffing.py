@@ -81,6 +81,6 @@ def generate_candidates(db,career):
         person=dict(id=pid,real_name=names[i],display_name_ko=names[i],display_name=names[i],nickname=nicks[i],
             team=club,league='LCK CL',kind='staff',role='STAFF',raw_role=ROLES[position]['name'],staff_role=position,staff_role_name=ROLES[position]['name'],
             real_person=False,source='game-generated',source_updated='게임 생성',contract_end='시즌 '+str(season)+' 종료',contract_estimated=True,
-            salary=salary,salary_estimated=True,nationality_name_ko='대한민국',game_evaluation=None)
+            salary=salary,salary_estimated=True,nationality_code='KR',nationality_name_ko='대한민국',game_evaluation=None)
         db.execute('INSERT INTO generated_people(id,real_name,nickname_key,career_id,payload) VALUES(?,?,?,?,?)',(pid,names[i],nicks[i].casefold(),career,json.dumps(person,ensure_ascii=False)))
     db.execute('INSERT INTO staff_candidate_batches VALUES(?)',(career,))

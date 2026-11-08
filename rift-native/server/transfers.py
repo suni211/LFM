@@ -22,6 +22,11 @@ def init(db):
         CREATE TABLE IF NOT EXISTS agent_relations(
         career_id INTEGER NOT NULL REFERENCES careers(id),person_id TEXT NOT NULL,trust INTEGER NOT NULL,
         PRIMARY KEY(career_id,person_id));''')
+    # Retain original club names as signed: a later transfer must not rewrite history.
+    columns={row[1] for row in db.execute("PRAGMA table_info(transfer_events)")}
+    for column in ('from_team','to_team','league','player_name'):
+        if column not in columns:
+            db.execute('ALTER TABLE transfer_events ADD COLUMN '+column+' TEXT')
 
 def owner(db,p):
     row=db.execute('SELECT career_id,club_key FROM person_ownership WHERE person_id=?',(p['id'],)).fetchone()
@@ -152,17 +157,58 @@ def respond(db,user,career,offer_id,choice,counter_fee=None):
     management.ledger(db,buyer,'transfer-buy:'+str(offer_id),-fee,'transfer','선수·스탭 영입 이적료')
     db.execute('UPDATE club_finances SET transfer_budget=MAX(0,MIN(?,cash)) WHERE career_id=?',(state['transfer_budget']-fee,buyer))
     db.execute("UPDATE transfer_offers SET state='completed',annual_salary=?,fee=? WHERE id=?",(salary,fee,offer_id))
-    db.execute('INSERT INTO transfer_events(offer_id,buyer,seller,person_id,fee,season,week,kind) VALUES(?,?,?,?,?,?,?,?)',
-               (offer_id,buyer,seller,pid,fee,(now-1)//104+1,(now-1)%104+1,person['kind']))
+    previous_team=(db.execute('SELECT name FROM careers WHERE id=?',(seller,)).fetchone()[0]
+                   if seller is not None else person.get('team') or '자유계약')
+    destination_league=clubs.profile(db,buyer)['league']
+    db.execute('''INSERT INTO transfer_events
+        (offer_id,buyer,seller,person_id,fee,season,week,kind,from_team,to_team,league,player_name)
+        VALUES(?,?,?,?,?,?,?,?,?,?,?,?)''',
+        (offer_id,buyer,seller,pid,fee,(now-1)//104+1,(now-1)%104+1,person['kind'],
+         previous_team,club_name,destination_league,catalog.display(person)))
     db.execute('''INSERT INTO agent_relations VALUES(?,?,55) ON CONFLICT(career_id,person_id) DO UPDATE SET trust=MIN(100,trust+5)''',(buyer,pid))
     import fan_community
     fan_community.transfer(db,buyer,offer_id,person)
     rumors.step(db,buyer,offer_id,'accept',person)
     club_messages.publish(db,buyer,'signed:'+str(offer_id),(now-1)//104+1,(now-1)%104+1,'영입 완료',catalog.display(person)+' 영입과 게임용 계약이 확정됐습니다. 선수단 배치에서 선발·후보·유소년을 지정하세요.')
 
-def activity(db,kind=''):
+def activity(db,kind='',league='',limit=150):
+    """Worldwide confirmed signings, including autonomous AI club deals.
+
+    The feed excludes all contact/rumor stories and unfinished human offers.
+    """
     if kind not in ('','player','coach','staff'): raise ValueError('invalid transfer kind')
-    rows=db.execute('''SELECT e.id,e.buyer,e.seller,e.person_id,e.fee,e.season,e.week,e.kind,b.name,s.name
-        FROM transfer_events e JOIN careers b ON b.id=e.buyer LEFT JOIN careers s ON s.id=e.seller
-        WHERE (?='' OR e.kind=? OR ?='staff' AND e.kind='coach') ORDER BY e.id DESC LIMIT 150''',(kind,kind,kind))
-    return [dict(zip(('id','buyer','seller','person_id','fee','season','week','kind','buyer_name','seller_name'),row)) for row in rows]
+    if not isinstance(league,str) or len(league)>100: raise ValueError('invalid league')
+    if type(limit) is not int or not 1<=limit<=500: raise ValueError('invalid limit')
+    import world_transfers
+    catalog_people={p['id']:p for p in catalog.load()['people']}
+    if db.execute("SELECT 1 FROM sqlite_master WHERE name='generated_people'").fetchone():
+        for pid,raw in db.execute("SELECT id,payload FROM generated_people"):
+            if pid not in catalog_people:
+                catalog_people[pid]=json.loads(raw)
+    sql='''SELECT e.id,e.buyer,e.seller,e.person_id,e.fee,e.season,e.week,e.kind,
+        b.name,s.name,p.league,e.from_team,e.to_team,e.league,e.player_name
+        FROM transfer_events e JOIN careers b ON b.id=e.buyer
+        LEFT JOIN careers s ON s.id=e.seller
+        LEFT JOIN club_profiles p ON p.career_id=e.buyer
+        WHERE (?='' OR e.kind=? OR ?='staff' AND e.kind='coach')
+        AND (?='' OR p.league=?)
+        ORDER BY e.season DESC,e.week DESC,e.id DESC LIMIT ?'''
+    events=[]
+    for row in db.execute(sql,(kind,kind,kind,league,league,limit)):
+        eid,buyer,seller,pid,fee,season,week,k,to_team,from_team,comp,saved_from,saved_to,saved_league,saved_name=row
+        person=catalog_people.get(pid,{})
+        events.append(dict(id=eid,buyer=buyer,seller=seller,person_id=pid,fee=fee,
+                           season=season,week=week,kind=k,buyer_name=to_team,
+                           seller_name=saved_from or from_team,
+                           from_team=saved_from or from_team or person.get('team') or '자유계약',
+                           to_team=saved_to or to_team,
+                           league=saved_league or comp or person.get('league') or '',
+                           player_name=saved_name or (catalog.display(person) if person else '선수 정보 확인 중'),
+                           origin='user',status='official'))
+    for event in world_transfers.official(db,league,limit):
+        if kind and kind!='staff' and event['kind']!=kind: continue
+        if kind=='staff' and event['kind'] not in ('coach','staff'): continue
+        event['buyer_name']=event['to_team']
+        event['seller_name']=event['from_team']
+        events.append(event)
+    return sorted(events,key=lambda e:(e['season'],e['week'],e['id']),reverse=True)[:limit]

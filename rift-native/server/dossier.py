@@ -35,6 +35,12 @@ def people_for(db, league, team):
         current = catalog.apply_game_club(person, changes)
         if current.get('league') == league and current.get('team') == team:
             rows.append(dict(current, display_name=catalog.display(current)))
+    if league=='LCK CL':
+        import tier2_leagues
+        linked=tier2_leagues.academy_people(catalog.load()['people'],league,team)
+        if linked:
+            # A development-league view is not an ownership transfer.
+            rows=[dict(p,display_name=catalog.display(p)) for p in linked]
     return rows
 
 def find_career(db, league, team):
@@ -52,8 +58,11 @@ def view(db, user, league, team):
     career = find_career(db, league, team)
     if career:
         import recruitment
-        rows=recruitment.view(db,career['id'])['people']
-        rows=[dict(p,display_name=catalog.display(p)) for p in rows if p.get('assignment') not in ('candidate','departed')]
+        owned=recruitment.view(db,career['id'])['people']
+        owned=[dict(p,display_name=catalog.display(p)) for p in owned if p.get('assignment') not in ('candidate','departed')]
+        # Keep the verified parent-academy roster visible until this club
+        # receives its own independently imported player contracts.
+        if owned:rows=owned
     def academy_player(p):return p.get('assignment')=='academy' if p.get('assignment') else p.get('squad')=='academy'
     players=[p for p in rows if p.get('kind')=='player' and not academy_player(p)]
     academy=[p for p in rows if p.get('kind')=='player' and academy_player(p)]

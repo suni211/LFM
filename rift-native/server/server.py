@@ -5,11 +5,14 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit, parse_qs
 import fixtures
+import season_calendar
+import season_awards
 import league
 import news
 import competition_rules
 import qualification
 import catalog
+import import_rules
 import club_messages
 import recruitment
 import clubs
@@ -18,6 +21,7 @@ import management
 import manager_identity
 import analytics
 import transfers
+import world_transfers
 import fan_community as community
 import staffing
 import search
@@ -46,16 +50,22 @@ def init():
         news.init(db)
         competition_rules.init(db)
         qualification.init(db)
+        season_awards.init(db)
         catalog.init(db)
         club_messages.init(db)
         recruitment.init(db)
+        import_rules.init(db)
         clubs.init(db)
         online_world.init(db)
         management.init(db)
         manager_identity.init(db)
         clubs.refresh_catalog(db)
+        # Show future fixtures immediately on existing and newly created clubs.
+        for (career_id,) in db.execute('SELECT id FROM careers').fetchall():
+            season_calendar.ensure_career(db,career_id)
         recruitment.repair_generated_handles(db)
         transfers.init(db)
+        world_transfers.init(db)
         community.init(db)
         staffing.init(db)
         search.init(db)
@@ -68,6 +78,36 @@ def init():
             user_id INTEGER PRIMARY KEY REFERENCES users(id), dashboard TEXT NOT NULL)''')
         import rumors
         rumors.init(db)
+
+def advance_clock(db):
+    """Single canonical weekly transition used by operators and readiness quorum."""
+    now=online_world.clock(db)
+    if db.execute("SELECT 1 FROM fixtures WHERE state='queued'").fetchone():
+        raise ValueError('finish the current series before advancing')
+    old_season=now['season']
+    if now['week']==104:
+        # Permanent honors are locked from actual results BEFORE the next season.
+        season_awards.finalize(db,old_season)
+        season,week=old_season+1,1
+    else:
+        season,week=old_season,now['week']+1
+    version=now['version']+1
+    for (club_id,) in db.execute('SELECT id FROM careers').fetchall():
+        management.advance(db,club_id,season,week)
+        fixtures.enqueue(db,club_id,season,week)
+        league.simulate_ai(db,club_id,season,week)
+        club_messages.publish(db,club_id,'week:'+str(version),season,week,
+            '온라인 리그 주차 진행',str(season)+'시즌 '+str(week)+'주차로 함께 진행했습니다.')
+    db.execute('UPDATE careers SET week=?,season=?,version=?',(week,season,version))
+    db.execute('UPDATE online_clock SET season=?,week=?,version=? WHERE id=1',(season,week,version))
+    if week==1:
+        for (career_id,) in db.execute('SELECT id FROM careers').fetchall():
+            season_calendar.ensure_career(db,career_id)
+    solo.weekly(db,season,week)
+    import rumors
+    rumors.weekly(db,season,week)
+    world_transfers.weekly(db,season,week)
+    return dict(week=week,season=season,version=version)
 
 def derive(password, salt): return hashlib.scrypt(password.encode(), salt=salt, n=16384, r=8, p=1)
 class Handler(BaseHTTPRequestHandler):
@@ -107,17 +147,50 @@ class Handler(BaseHTTPRequestHandler):
     def get(self):
         with closing(connect()) as db:
             uid=self.user(db)
-            if urlsplit(self.path).path=='/health': return self.reply(200,{'status':'ok','revision':'web-rosters-manager-20261105','capabilities':['clubs','dashboard','search','community','draft-swap','management','fearless','response-timeout-180','manual-draft','fountain-defense','backdoor-protection','six-slot-builds','competitions','account-errors','tactics','phase-orders','personal-training','champion-pool','solo-ladder','prospect-debut','operator-desk','stove-leaks','easter-academy','client-updates','web'],'champion_abilities':'partial'})
+            if urlsplit(self.path).path=='/health': return self.reply(200,{'status':'ok','revision':'tier2-awards-operator-turn-20261108','capabilities':['clubs','dashboard','search','community','draft-swap','management','fearless','response-timeout-180','manual-draft','fountain-defense','backdoor-protection','six-slot-builds','competitions','account-errors','tactics','phase-orders','personal-training','champion-pool','solo-ladder','prospect-debut','operator-desk','stove-leaks','easter-academy','client-updates','web','import-quotas','residency-year-3'],'champion_abilities':'partial'})
             if urlsplit(self.path).path.startswith('/updates/'):
                 import updates
                 return updates.serve(self, urlsplit(self.path).path)
             if not uid: return self.reply(401,{'error':'unauthorized'})
             url = urlsplit(self.path)
+            if url.path=='/operator/nationality-audit':
+                if not online_world.operator(db,uid):
+                    return self.reply(403,{'error':'forbidden'})
+                people=catalog.load()['people']
+                real=[p for p in people if p.get('real_person')]
+                missing=[p for p in real if not p.get('nationality_code')]
+                by_league={}
+                for p in real:
+                    league_name=p.get('league') or '리그 미확인'
+                    row=by_league.setdefault(league_name,{'total':0,'verified':0,'missing':0})
+                    row['total']+=1
+                    row['verified']+=bool(p.get('nationality_code'))
+                    row['missing']+=not bool(p.get('nationality_code'))
+                return self.reply(200,dict(total=len(people),with_code=sum(bool(p.get('nationality_code')) for p in people),
+                    missing_code=sum(not bool(p.get('nationality_code')) for p in people),
+                    real_total=len(real),real_missing=len(missing),
+                    by_league=by_league,verified=False,
+                    note='국적 미확인 선수의 국가를 리그/이름으로 임의 추정하지 않았습니다.'))
             if url.path=='/operator/world':
                 if not online_world.operator(db,uid):return self.reply(403,{'error':'forbidden'})
                 world=online_world.clock(db)
                 games=[dict(zip(('id','season','week','team','opponent','state','competition','stage','best_of'),r)) for r in db.execute('SELECT f.id,f.season,f.week,c.name,f.opponent,f.state,f.competition,f.stage,f.best_of FROM fixtures f JOIN careers c ON c.id=f.career_id WHERE f.season=? ORDER BY f.week,f.id',(world['season'],))]
                 return self.reply(200,dict(world=world,clubs=clubs.directory(db),fixtures=games,accounts=db.execute('SELECT COUNT(*) FROM users').fetchone()[0],qualification=qualification.snapshot(db,world['season'])))
+            if url.path=='/honors':
+                query=parse_qs(url.query)
+                season=int(query['season'][0]) if 'season' in query else None
+                league_name=query.get('league',[''])[0]
+                return self.reply(200,season_awards.history(db,season,league_name or None))
+            if url.path=='/season-calendar':
+                query=parse_qs(url.query)
+                world=online_world.clock(db)
+                season=int(query.get('season',[world['season']])[0])
+                league_name=query.get('league',[''])[0]
+                team_name=query.get('team',[''])[0]
+                games=season_calendar.build(db,season,league=league_name,team=team_name)
+                return self.reply(200,dict(season=season,week=world['week'],
+                    leagues=season_calendar.leagues(db),league=league_name,
+                    team=team_name,fixtures=games))
             if url.path=='/qualification':
                 season=int(parse_qs(url.query).get('season',[online_world.clock(db)['season']])[0])
                 if not 1<=season<=10000:raise ValueError('invalid season')
@@ -171,13 +244,18 @@ class Handler(BaseHTTPRequestHandler):
                     return self.reply(200,{'post':community.get(db,uid,int(query['post'][0])),'user_id':0,'operator':False,'read_only':True})
                 except KeyError:return self.reply(404,{'error':'post not found'})
                 except ValueError:return self.reply(400,{'error':'invalid community request'})
-            if url.path in ('/transfer-offers','/transfer-activity'):
+            if url.path in ('/transfer-offers','/transfer-activity','/transfer-rumors'):
                 query=parse_qs(url.query)
                 try:
                     cid=int(query['id'][0])
                     if not 1<=cid<=2**63-1: raise ValueError()
                     if not news.member(db,uid,cid): return self.reply(404,{'error':'not found'})
-                    if url.path=='/transfer-activity': return self.reply(200,{'events':transfers.activity(db,query.get('kind',[''])[0])})
+                    if url.path=='/transfer-activity':
+                        return self.reply(200,{'events':transfers.activity(db,
+                            query.get('kind',[''])[0],query.get('league',[''])[0])})
+                    if url.path=='/transfer-rumors':
+                        import rumors
+                        return self.reply(200,{'events':rumors.feed(db,query.get('league',[''])[0])})
                     return self.reply(200,{'offers':transfers.offers(db,cid)})
                 except (KeyError,ValueError): return self.reply(400,{'error':'invalid transfer request'})
             if url.path=='/analytics':
@@ -201,7 +279,10 @@ class Handler(BaseHTTPRequestHandler):
                     cid=int(parse_qs(url.query)['id'][0])
                     if not 1<=cid<=2**63-1: raise ValueError()
                     if not news.member(db,uid,cid): return self.reply(404,{'error':'not found'})
-                    return self.reply(200,recruitment.view(db,cid))
+                    state=recruitment.view(db,cid)
+                    state['import_quota']=import_rules.summary(db,clubs.profile(db,cid)['league'],
+                        2025+db.execute('SELECT season FROM careers WHERE id=?',(cid,)).fetchone()[0],state['people'])
+                    return self.reply(200,state)
                 except (KeyError,ValueError): return self.reply(400,{'error':'invalid career'})
             if url.path in ('/inbox','/shortlist'):
                 query=parse_qs(url.query)
@@ -310,7 +391,6 @@ class Handler(BaseHTTPRequestHandler):
                 games = fixtures.list_for_member(db,uid,cid)
                 return self.reply(200,{'fixtures':games}) if games is not None else self.reply(404,{'error':'not found'})
             if self.path=='/careers':
-                if online_world.operator(db,uid):return self.reply(200,{'careers':[]})
                 rows=db.execute('SELECT c.id,c.name,c.week,c.season,c.version,m.role FROM careers c JOIN members m ON m.career_id=c.id WHERE m.user_id=?',(uid,)).fetchall()
                 if not online_world.operator(db,uid): rows=sorted(rows,key=lambda r:r[0])[:1]
                 careers = []
@@ -386,6 +466,8 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         self.normalize_path()
         try: self.post()
+        except import_rules.ForeignQuotaError as error:
+            self.reply(409,{'error':str(error)})
         except ValueError as error:
             public={'at most three coaches','select exactly one player per role',
                     'five players, one per role, and at most three coaches required',
@@ -430,7 +512,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self.reply(200,{'token':token})
             uid=self.user(db)
             if not uid: return self.reply(401,{'error':'unauthorized'})
-            if online_world.operator(db,uid) and self.path not in ('/competition-rules','/person-evaluation','/fixtures','/league','/preferences'):
+            if online_world.operator(db,uid) and self.path not in ('/operator/advance','/careers','/manager-profile','/competition-rules','/person-evaluation','/fixtures','/league','/preferences'):
                 return self.reply(403,{'error':'운영자는 구단을 운영하거나 선수단·전술을 변경할 수 없습니다.'})
             if self.path=='/manager-profile':
                 db.execute('BEGIN IMMEDIATE')
@@ -439,7 +521,7 @@ class Handler(BaseHTTPRequestHandler):
             if self.path.startswith('/community-'):
                 return self.reply(403,{'error':'AI fans create community content from game events'})
             if self.path=='/careers':
-                if not manager_identity.view(db,uid)['complete']:
+                if not online_world.operator(db,uid) and not manager_identity.view(db,uid)['complete']:
                     return self.reply(409,{'error':'먼저 감독 닉네임, 이름과 능력치를 설정하세요.'})
                 mode=data.get('mode','create')
                 if online_world.operator(db,uid):
@@ -452,16 +534,27 @@ class Handler(BaseHTTPRequestHandler):
                         if not 1<=cid<=2**63-1 or not db.execute('SELECT 1 FROM careers WHERE id=?',(cid,)).fetchone():
                             raise ValueError('unknown real club')
                         db.execute('BEGIN IMMEDIATE')
-                        role=clubs.grant(db,uid,cid)
+                        role=clubs.grant(db,uid,cid,read_only=True)
                         db.execute('COMMIT'); return self.reply(200,{'id':cid,'role':role})
                     selected=next((club for club in clubs.available(db) if club['team_key']==team_key),None)
                     if not selected: raise ValueError('unknown real club')
                     existing=db.execute('SELECT career_id FROM club_profiles WHERE team_key=?',(team_key,)).fetchone()
                     if existing:
                         db.execute('BEGIN IMMEDIATE')
-                        role=clubs.grant(db,uid,existing[0])
+                        role=clubs.grant(db,uid,existing[0],read_only=True)
                         db.execute('COMMIT'); return self.reply(200,{'id':existing[0],'role':role})
-                    mode,name='takeover',selected['team']
+                    # An unclaimed real club can be observed without occupying
+                    # its future human-manager seat.
+                    db.execute('BEGIN IMMEDIATE')
+                    world=online_world.clock(db)
+                    cid=db.execute('INSERT INTO careers(name,season,week,version) VALUES(?,?,?,?)',
+                                   (selected['team'],world['season'],world['week'],world['version'])).lastrowid
+                    clubs.create(db,cid,'takeover',team_key,selected['league'])
+                    role=clubs.grant(db,uid,cid,read_only=True)
+                    management.ensure(db,cid)
+                    season_calendar.ensure_career(db,cid)
+                    db.execute('COMMIT')
+                    return self.reply(201,{'id':cid,'role':role})
                 else:
                     if db.execute('SELECT 1 FROM members WHERE user_id=?',(uid,)).fetchone():
                         return self.reply(403,{'error':'구단 전환은 운영자만 사용할 수 있습니다.'})
@@ -485,6 +578,7 @@ class Handler(BaseHTTPRequestHandler):
                             db.execute('ROLLBACK');return self.reply(409,{'error':'이미 다른 감독이 맡고 있는 구단입니다.'})
                         role=clubs.grant(db,uid,existing[0]);identity=manager_identity.view(db,uid)
                         management.ensure(db,existing[0])
+                        season_calendar.ensure_career(db,existing[0])
                         db.execute('UPDATE manager_profiles SET name=?,stats=? WHERE career_id=?',(identity['name'],json.dumps(identity['stats'],ensure_ascii=False),existing[0]))
                         db.execute('COMMIT');return self.reply(201,{'id':existing[0],'role':role})
                 world=online_world.clock(db)
@@ -504,6 +598,7 @@ class Handler(BaseHTTPRequestHandler):
                 identity=manager_identity.view(db,uid)
                 db.execute('UPDATE manager_profiles SET name=?,stats=? WHERE career_id=?',(identity['name'],json.dumps(identity['stats'],ensure_ascii=False),cid))
                 community.appointment(db,cid,manager)
+                season_calendar.ensure_career(db,cid)
                 db.execute('COMMIT'); return self.reply(201,{'id':cid,'role':'admin'})
             if self.path in ('/transfer-offer','/transfer-response'):
                 cid=data['id']
@@ -661,6 +756,11 @@ class Handler(BaseHTTPRequestHandler):
                     except ValueError as error:return self.reply(409,{'error':str(error)})
                 elif self.path == '/draft-choice':
                     game=db.execute('SELECT career_id,season,week FROM fixtures WHERE id=?',(fixture,)).fetchone()
+                    try:
+                        import_rules.for_career(db,game[0])
+                    except import_rules.ForeignQuotaError as error:
+                        db.execute('ROLLBACK')
+                        return self.reply(409,{'error':str(error)})
                     if management.readiness(db,game[0],(game[1]-1)*104+game[2]):
                         return self.reply(409,{'error':'select healthy contracted players before draft'})
                     if state['phase']=='feedback' and time.time()>=state['feedback_until']:
@@ -693,6 +793,19 @@ class Handler(BaseHTTPRequestHandler):
                     SELECT career_id,?,? FROM members WHERE career_id=? AND user_id=? AND role='admin'
                     ON CONFLICT(career_id,key) DO UPDATE SET value=excluded.value''',(key,value,cid,uid))
                 return self.reply(200,{'value':value}) if result.rowcount else self.reply(403,{'error':'forbidden'})
+            if self.path=='/operator/advance':
+                if not online_world.operator(db,uid):
+                    return self.reply(403,{'error':'운영자 전용 기능입니다.'})
+                version=data.get('version')
+                if type(version) is not int:raise ValueError('invalid version')
+                db.execute('BEGIN IMMEDIATE')
+                now=online_world.clock(db)
+                if now['version']!=version:
+                    db.execute('ROLLBACK')
+                    return self.reply(409,{'error':'서버 주차가 이미 변경되었습니다. 새로고침하세요.'})
+                updated=advance_clock(db)
+                db.execute('COMMIT')
+                return self.reply(200,dict(updated,advanced=True,operator=True))
             if self.path=='/advance':
                 cid=data['id']; version=data['version']
                 if type(cid)!=int or type(version)!=int: raise ValueError()
@@ -712,30 +825,25 @@ class Handler(BaseHTTPRequestHandler):
                     lineup=recruitment.view(db,cid)['roster']
                     if len(lineup)!=5 or {p['role'] for p in lineup}!=set(recruitment.ROLES):
                         return self.reply(409,{'error':'finalize the five-player lineup before advancing'})
-                pending = db.execute(
-                    "SELECT 1 FROM fixtures WHERE state='queued'").fetchone()
+                try:
+                    import_rules.for_career(db,cid)
+                except import_rules.ForeignQuotaError as error:
+                    db.execute('ROLLBACK')
+                    return self.reply(409,{'error':str(error)})
+                pending=db.execute("SELECT 1 FROM fixtures WHERE state='queued'").fetchone()
                 if pending:
                     db.execute('ROLLBACK')
                     return self.reply(409,{'error':'finish the current series before advancing'})
 
                 readiness=online_world.vote(db,uid)
                 votes,members=readiness['ready_count'],readiness['member_count']
-                advanced=online_world.operator(db,uid) or votes>members//2
+                advanced=votes>members//2
                 if advanced:
-                    if week==104: week=1; season+=1
-                    else: week+=1
-                    current+=1
-                    for (club_id,) in db.execute('SELECT id FROM careers').fetchall():
-                        management.advance(db,club_id,season,week)
-                        fixtures.enqueue(db,club_id,season,week)
-                        league.simulate_ai(db,club_id,season,week)
-                        club_messages.publish(db,club_id,'week:'+str(current),season,week,'온라인 리그 주차 진행',str(season)+'시즌 '+str(week)+'주차로 함께 진행했습니다.')
-                    db.execute('UPDATE careers SET week=?,season=?,version=?',(week,season,current))
-                    db.execute('UPDATE online_clock SET season=?,week=?,version=? WHERE id=1',(season,week,current))
-                    solo.weekly(db,season,week)
-                    import rumors
-                    rumors.weekly(db,season,week)
-                db.execute('COMMIT'); return self.reply(200,{'advanced':advanced,'week':week,'season':season,'version':current,'votes':votes,'members':members})
+                    updated=advance_clock(db)
+                    week,season,current=updated['week'],updated['season'],updated['version']
+                db.execute('COMMIT')
+                return self.reply(200,{'advanced':advanced,'week':week,'season':season,
+                    'version':current,'votes':votes,'members':members})
             if self.path=='/plan':
                 cid=data.get('id')
                 if type(cid) is not int or not transfers.can_manage(db,uid,cid): return self.reply(403,{'error':'forbidden'})

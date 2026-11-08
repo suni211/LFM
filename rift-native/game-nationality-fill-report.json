@@ -1,0 +1,10 @@
+{
+  "total": 1088,
+  "with_country": 1088,
+  "game_estimate_added": 303,
+  "specific_mapping_added": 101,
+  "regional_game_default_added": 202,
+  "missing_after": [],
+  "reassigned_existing": 0,
+  "note": "Fallbacks are game-only nationality assignments, not assertions about real-world passports or citizenship."
+}

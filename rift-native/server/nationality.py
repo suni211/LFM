@@ -49,9 +49,15 @@ def enrich(person):
         if not p.get('nationality_code') and row.get('code'):
             p['nationality_code']=row['code']
         p['nationality_source']=row.get('source')
-        if row.get('citizenship_verified') is False:
-            # User explicitly accepts documented country of birth / origin as
-            # the in-game nationality. Keep the evidence type transparent.
+        if row.get('game_estimate'):
+            # Game-only fallback: use a visible nationality label but never
+            # represent a regional game assignment as a public biographical fact.
+            p['nationality_origin']='game-estimate'
+            p['nationality_evidence_type']='game-estimate'
+            p['nationality_citizenship_verified']=False
+            p['nationality_game_estimated']=True
+        elif row.get('citizenship_verified') is False:
+            # Individually matched public esports region/nationality data.
             p['nationality_origin']='leaguepedia-country-or-birthplace'
             p['nationality_evidence_type']='country-or-birthplace'
             p['nationality_citizenship_verified']=False

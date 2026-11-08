@@ -82,6 +82,8 @@ def init():
         club_history.init(db)
         promotion.init(db)
         sponsorship.init(db)
+        import ai_front_office
+        ai_front_office.init(db)
         # Existing FM league schedules remain authoritative; only absent schedules
         # receive the shared game-generated calendar.
         for (career_id,) in db.execute('SELECT id FROM careers').fetchall():
@@ -124,6 +126,8 @@ def advance_world(db):
     solo.weekly(db,season,week)
     import rumors
     rumors.weekly(db,season,week)
+    import ai_front_office
+    ai_front_office.weekly(db,season,week)
     return dict(season=season,week=week,version=version)
 
 def derive(password, salt): return hashlib.scrypt(password.encode(), salt=salt, n=16384, r=8, p=1)
@@ -195,6 +199,11 @@ class Handler(BaseHTTPRequestHandler):
                 return self.reply(200,dict(season=season,week=world['week'],
                     leagues=season_calendar.leagues(db),league=league_name,
                     team=team_name,fixtures=season_calendar.build(db,season,league_name,team_name)))
+            if url.path=='/ai-transfer-decisions':
+                query=parse_qs(url.query)
+                import ai_front_office
+                return self.reply(200,{'decisions':ai_front_office.report(
+                    db,query.get('league',[''])[0])})
             if url.path=='/operator/nationality-audit':
                 if not online_world.operator(db,uid):
                     return self.reply(403,{'error':'forbidden'})

@@ -97,7 +97,10 @@ class HttpCareerSmokeTests(unittest.TestCase):
         self.assertEqual(200,status,data)
         self.assertEqual('Smoke Phoenix',data['display_name'])
         status,data=self.call('/club-dossier?league=LCK%20CL&team=Smoke%20Phoenix',token=token)
-        self.assertEqual(200,status,data)
+        if status!=200:
+            self.log.flush()
+            with open(self.log.name,encoding='utf-8') as stream:
+                raise AssertionError('Dossier '+str(status)+': '+str(data)+'\nServer trace:\n'+stream.read()[-7000:])
         status,data=self.call('/league-overview?league=LCK%20CL',token=token)
         self.assertEqual(200,status,data)
         status,data=self.call('/training?id='+str(career),token=token)

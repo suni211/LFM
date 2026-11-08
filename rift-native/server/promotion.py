@@ -27,6 +27,9 @@ def init(db):
         UNIQUE(season,league,departing,arriving));""")
 
 def active(db,league,team,season=None):
+    # Available even before the optional promotion migration runs.
+    if not db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='franchise_exits'").fetchone():
+        return True
     row=db.execute('SELECT season FROM franchise_exits WHERE league=? AND team=?',
                    (league,team)).fetchone()
     return not row or (season is not None and season<=row[0])

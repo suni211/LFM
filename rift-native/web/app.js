@@ -115,7 +115,12 @@ async function api(path, body) {
   if (!response.ok) { const errors={'invalid credentials':'계정 이름 또는 비밀번호를 확인하세요.','account name already exists':'이미 사용 중인 계정 이름입니다.','password must be 10 to 128 characters':'비밀번호는 10~128자로 입력하세요.','account name must be 1 to 30 characters':'계정 이름은 1~30자로 입력하세요.','endpoint not found':'해당 기능의 연결 주소를 찾을 수 없습니다.'};throw new Error(errors[data.error] || data.error || '요청을 처리하지 못했습니다.') }
   return data
 }
-function face(id, available=true) { if(!available)return '<span class="face-frame"><span class="face-placeholder" title="등록된 얼굴 없음">●</span></span>';return `<span class="face-frame"><img class="face" alt="선수 얼굴" src="${BASE}/media/portraits/${esc(id)}.png" onerror="this.style.display='none';this.nextElementSibling.hidden=false"/><span class="face-placeholder" hidden title="등록된 얼굴 없음">●</span></span>` }
+function face(id, available=true) {
+  const silhouette='<svg class="portrait-person-svg" viewBox="0 0 64 64" aria-hidden="true" fill="none"><circle cx="32" cy="23" r="13" fill="currentColor" opacity=".78"/><path d="M8 59c0-13 10-22 24-22s24 9 24 22" fill="currentColor" opacity=".58"/></svg>'
+  const fallback='<span class="face-placeholder" aria-label="등록된 얼굴 사진 없음">'+silhouette+'</span>'
+  if (!available) return '<span class="face-frame">'+fallback+'</span>'
+  return '<span class="face-frame"><img class="face" alt="선수 얼굴" src="'+BASE+'/media/portraits/'+esc(id)+'.png" onerror="this.hidden=true;this.nextElementSibling.hidden=false"/><span class="face-placeholder" hidden aria-label="등록된 얼굴 사진 없음">'+silhouette+'</span></span>'
+}
 function logoImg(league, team, overrideBrand=null) {
   const original=league+'\n'+team
   const key=media.academyParents?.[original]||original
@@ -374,7 +379,7 @@ function rosterTable(people, records={}, development={}, contracts={}) {
     const c=contracts[p.id],d=development[p.id],r=records[p.id];const ratings=p.game_evaluation?.ratings||p.stats;const values=ratings?Object.values(ratings).filter(Number.isFinite):[];const ovr=d?.ovr??(values.length?Math.round(values.reduce((a,b)=>a+b,0)/values.length):null)
     const start=c?.start_turn?`${2026+Math.floor((c.start_turn-1)/104)}년 · ${Math.floor((c.start_turn-1)/104)+1}시즌`:'미기록'
     const expiry=c?`${2026+Math.floor((c.end_turn-1)/104)}년 · ${Math.floor((c.end_turn-1)/104)+1}시즌 ${((c.end_turn-1)%104)+1}주`:p.contract_end||'확인 중'
-    const group=p.kind==='player'?(p.real_person?'실존 선수':'생성 선수'):(p.real_person?'실존 프런트':'생성 프런트');const assignment={first:'주전',reserve:'교체',academy:'2군',candidate:'영입 후보',unclassified:'분류 확인 중'}[p.assignment]||''
+    const group=p.kind==='player'?(p.real_person?'실존 선수':'생성 선수'):(p.real_person?'실존 프런트':'생성 프런트');const assignment=rosterStatus(p)
     return `<tr><td>${personLink(p)}</td><td><span class="identity-tag ${p.real_person?'real':'generated'}">${group}</span><small>${esc(assignment)}</small></td><td>${logoImg(p.league,p.team)}${esc(p.team||'무소속')}</td><td>${r?.rating!=null?`<b class="rating">${Number(r.rating).toFixed(1)}</b><small>${r.games}경기</small>`:'기록 없음'}</td><td><b>${ovr??'미평가'}</b></td><td>${flagAndCountry(p)}</td><td>${esc(ROLE[p.role]||'확인 중')}</td><td>${money(c?.annual_salary??p.salary)}${c||p.salary_estimated?'<small>게임 계약</small>':''}</td><td>${start}</td><td>${esc(expiry)}${!c&&p.contract_estimated?'<small>예상</small>':''}</td></tr>`
   }).join('')}</tbody></table></div>`
 }
@@ -637,6 +642,49 @@ async function players(query='',page=0,origin='all') {
   document.getElementById('prev-page').onclick=()=>players(query,page-1,origin)
   document.getElementById('next-page').onclick=()=>players(query,page+1,origin)
   await topbar()
+}
+function rosterStatus(person) {
+  if(person.kind==='coach'||person.kind==='staff') return '코칭스태프 · 프런트'
+  const assignment=String(person.assignment||person.squad||'')
+  const secondTeam=Boolean(person.academy_affiliation||person.squad==='academy'||
+    ['LCK CL','LDL'].includes(person.league))
+  if(assignment==='first')return secondTeam?'2군 주전':'1군 주전'
+  if(assignment==='reserve')return secondTeam?'2군 후보':'1군 후보'
+  if(assignment==='academy')return '2군'
+  if(assignment==='candidate')return '영입 후보'
+  if(assignment==='prospect')return '육성 유망주'
+  if(assignment==='trial')return '입단 테스트'
+  if(assignment==='departed')return '계약 종료'
+  if(assignment==='free'||!person.team)return 'FA · 무소속'
+  if(assignment==='unclassified'||!assignment)return person.team?'명단 확인 중':'FA · 무소속'
+  return '명단 확인 중'
+}
+function playerAttributePanel(analysis) {
+  if(!analysis?.sections?.length)return '<section class="panel"><h2>세부 능력치</h2><p class="empty">게임 내 평가 데이터가 없습니다.</p></section>'
+  return '<div class="fm-attribute-sections">'+analysis.sections.map(section=>
+    '<section class="panel fm-attribute-card"><header><h2>'+esc(section.title)+'</h2><span>1~20</span></header>'+
+    '<div class="fm-attribute-list">'+section.attributes.map(item=>{
+      const level=Math.max(1,Math.min(20,Number(item.value)||1))
+      const tone=level>=16?'elite':level>=12?'strong':level>=8?'average':'develop'
+      return '<div class="fm-attribute-row"><span>'+esc(item.name)+'</span><div class="fm-attribute-bar"><i style="width:'+(level*5)+'%" class="'+tone+'"></i></div><b class="'+tone+'">'+level+'</b></div>'
+    }).join('')+'</div></section>'
+  ).join('')+'</div><p class="muted-note player-model-note">'+esc(analysis.note||'게임 내 시뮬레이션 평가입니다.')+'</p>'
+}
+function playerSeasonPanel(season) {
+  if(!season?.available)return '<section class="panel"><h2>시즌 경기 성적</h2><p class="empty">'+esc(season?.reason||'기록된 경기 결과가 없습니다.')+'</p><p class="muted-note">솔로랭크와 프로 경기는 별도 기록이며, 출전하지 않은 경기의 통계를 만들어 표시하지 않습니다.</p></section>'
+  const metrics=[['출전 세트',season.games+'세트'],['승리 / 패배',season.wins+'승 / '+season.losses+'패'],
+    ['세트 승률',season.win_rate+'%'],['KDA',season.kda],['킬 / 데스 / 어시',season.kills+' / '+season.deaths+' / '+season.assists],
+    ['평균 CS',season.avg_cs],['평균 피해량',Number(season.avg_damage).toLocaleString('ko-KR')],
+    ['평균 골드',Number(season.avg_gold).toLocaleString('ko-KR')],['평균 게임 평점',season.rating]]
+  const recent=(season.recent||[]).map(m=>'<div class="fm-recent-match"><span class="'+(m.won?'won':'lost')+'">'+(m.won?'승':'패')+'</span><div><b>'+esc(m.opponent||'상대 구단')+'</b><small>'+m.week+'주 · '+esc(championKo(m.champion)||m.champion||'챔피언 기록 없음')+'</small></div><strong>'+m.kills+' / '+m.deaths+' / '+m.assists+'</strong></div>').join('')
+  return '<section class="panel fm-match-performance"><h2>'+season.season+'시즌 · 공식 게임 기록</h2><div class="fm-season-metrics">'+metrics.map(([label,value])=>'<div><small>'+esc(String(label))+'</small><strong>'+esc(String(value))+'</strong></div>').join('')+'</div><h3>최근 출전 기록</h3><div class="fm-recent-matches">'+(recent||'<p class="empty">최근 세트가 없습니다.</p>')+'</div><p class="muted-note">'+esc(season.note||'완료된 게임 내 프로 경기 기록만 집계합니다.')+'</p></section>'
+}
+function playerProfileSummary(analysis,scout) {
+  const strengths=analysis?.strengths||[],weaknesses=analysis?.weaknesses||[]
+  return '<section class="panel fm-player-scout"><h2>스카우트 요약</h2><div class="fm-scout-stars"><div><small>현재 능력</small>'+scoutStars(scout?.current_stars)+'</div><div><small>성장 잠재력</small>'+scoutStars(scout?.potential_stars)+'</div></div>'+
+   '<h3>경기 내 강점</h3><div class="fm-trait-tags">'+strengths.map(x=>'<span class="positive">'+esc(x)+'</span>').join('')+'</div>'+
+   '<h3>보완할 점</h3><div class="fm-trait-tags">'+weaknesses.map(x=>'<span>'+esc(x)+'</span>').join('')+'</div>'+
+   '<p class="muted-note">능력치 강·약점은 게임 내 추정 평가입니다. 스카우트 별점은 구단 관찰 능력에 따라 달라질 수 있습니다.</p></section>'
 }
 function scoutStars(value) {
   if (value == null) return '<span class="unknown-rating">미평가</span>'

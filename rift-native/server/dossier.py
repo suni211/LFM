@@ -72,7 +72,9 @@ def front_office(staff,manager=None,owner=None):
         else:
             key,label='COACH','코치'
         entries.append(dict(id=person.get('id'),name=catalog.display(person),
-            role=label,role_key=key,source='real' if person.get('real_person') else 'generated'))
+            role=label,role_key=key,source='real' if person.get('real_person') else 'generated',
+            nationality_name_ko=person.get('nationality_name_ko'),
+            nationality_code=person.get('nationality_code'),nationality=person.get('nationality')))
     order={'OWNER':0,'MANAGER':1,'HEAD_COACH':2,'COACH':3,'GM':4,'ANALYST':5,'DOCTOR':6,'COMMUNITY':7}
     return sorted(entries,key=lambda item:(order.get(item['role_key'],9),item['name']))
 

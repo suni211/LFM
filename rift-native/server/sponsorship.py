@@ -7,7 +7,7 @@ import hashlib
 import random
 import club_history
 
-DISCLAIMER='실존 기업 이름을 활용한 게임 내 가상 계약입니다. 실제 후원·제휴 관계를 의미하지 않습니다.'
+DISCLAIMER='실존 기업 이름을 활용한 게임 내 가상 계약입니다. 실제 후원 관계가 아닙니다. 제휴·연락·계약은 전혀 이루어지지 않았습니다.'
 REGIONS={
   'LCK':'KR','LCK CL':'KR','LPL':'CN','LDL':'CN','LCS':'NA','NACL':'NA',
   'LEC':'EU','LFL':'EU','LES':'EU','PRM':'EU','TCL':'EU',

@@ -256,6 +256,7 @@ def history(db,season=None,league=None):
     import tier2_leagues
     league_names={r['league'] for r in catalog.teams() if r.get('league')}
     league_names.update(r[0] for r in db.execute("SELECT DISTINCT league FROM club_profiles"))
+    league_names.update(tier2_leagues.CLUBS)
     return dict(season=year,current_season=current,
                 finalized=locked,seasons=sorted(seasons,reverse=True),
                 leagues=sorted(league_names),league=league or '',

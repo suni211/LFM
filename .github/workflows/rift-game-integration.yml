@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - fix/solo-pro-floor-league-foundation
+      - fix/fm-unified-nationality-2026-11-08
   workflow_dispatch:
 
 jobs:
@@ -37,3 +38,5 @@ jobs:
         run: python3 -m unittest discover -s rift-native/tests -p 'test_short_nickname_migration.py' -v
       - name: Player FM dossier attributes and recorded match analytics
         run: python3 -m unittest discover -s rift-native/tests -p 'test_player_dossier.py' -v
+      - name: Validate calendars, read-only operator clock and seasonal honors
+        run: cd rift-native/server && python -m unittest test_season_awards test_season_calendar -v

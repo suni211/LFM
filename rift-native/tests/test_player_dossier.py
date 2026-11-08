@@ -9,12 +9,14 @@ from unittest.mock import patch
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'server'))
 import player_analysis
+import player_attributes
 import scouting
 
 
 class PlayerDossierTests(unittest.TestCase):
     def setUp(self):
         self.db=sqlite3.connect(':memory:')
+        player_attributes.init(self.db)
         self.db.executescript("""CREATE TABLE careers(id INTEGER PRIMARY KEY,season INTEGER NOT NULL);
             INSERT INTO careers VALUES(1,3);
             CREATE TABLE fixtures(id INTEGER PRIMARY KEY,career_id INTEGER,
@@ -77,13 +79,23 @@ class PlayerDossierTests(unittest.TestCase):
         self.assertFalse(player_analysis.season_performance(
             self.db,1,self.other)['available'])
 
-    def test_compare_uses_same_visible_28_skills(self):
+    def test_compare_uses_same_visible_30_skills(self):
         with patch('catalog.load',return_value={'people':[self.player,self.other]}):
             compared=scouting.compare(self.db,1,self.player)
         self.assertEqual(1,len(compared))
-        self.assertEqual('in-game-attribute-model',compared[0]['source'])
+        self.assertEqual('game-estimated',compared[0]['source'])
         self.assertEqual(20,compared[0]['scale'])
-        self.assertEqual(28,len(compared[0]['differences']))
+        self.assertEqual(30,len(compared[0]['differences']))
+        report=player_analysis.report(self.db,1,self.player)
+        self.assertEqual(30,report['attributes']['count'])
+        self.assertEqual(5,len(report['attributes']['sections']))
+        # Editor overrides must update comparisons as well as the player page.
+        new={name:20 for name in player_attributes.KEYS}
+        player_attributes.save(self.db,self.other,new,9)
+        with patch('catalog.load',return_value={'people':[self.player,self.other]}):
+            changed=scouting.compare(self.db,1,self.player)
+        self.assertEqual('operator-edited',changed[0]['source'])
+        self.assertEqual(30,len(changed[0]['differences']))
 
     def test_player_html_does_not_show_avatar_dot_or_raw_squad_enum(self):
         js=(ROOT/'web'/'app.js').read_text(encoding='utf-8')

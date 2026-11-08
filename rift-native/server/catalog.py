@@ -92,7 +92,8 @@ def teams():
     for p in load()['people']:
         if not p.get('real_person'): continue
         key=(p.get('league',''),p.get('team',''))
-        if not key[1]: continue
+        # Generic roster buckets are not clubs and must never appear as selectable teams.
+        if not key[1] or (key[0]=='LDL' and key[1]=='LDL 2군'): continue
         group=groups.setdefault(key,dict(league=key[0],team=key[1],players=0,staff=0,unclassified=0))
         group['players' if p.get('kind')=='player' else 'staff' if p.get('kind')=='coach' else 'unclassified']+=1
     return list(sorted(groups.values(),key=lambda row:(row['league'],row['team'])))

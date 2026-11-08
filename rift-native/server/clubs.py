@@ -172,9 +172,15 @@ def assign(db,career,person_id,assignment,role):
         import solo
         solo.require_pro(db,person_id)
     if assignment=='first':
-        db.execute("UPDATE club_roster SET assignment='reserve' WHERE career_id=? AND role=? AND assignment='first' AND person_id!=?",(career,role,person_id))
+        # Promoting an academy player swaps the current starter down to the
+        # academy. Promoting a bench player leaves the old starter on the bench.
+        previous_assignment=db.execute("SELECT assignment FROM club_roster WHERE career_id=? AND person_id=?",(career,person_id)).fetchone()
+        if previous_assignment is None:
+            previous_assignment=db.execute("SELECT assignment FROM generated_people WHERE career_id=? AND id=?",(career,person_id)).fetchone()
+        demoted='academy' if previous_assignment and previous_assignment[0]=='academy' else 'reserve'
+        db.execute("UPDATE club_roster SET assignment=? WHERE career_id=? AND role=? AND assignment='first' AND person_id!=?",(demoted,career,role,person_id))
         for pid,raw in db.execute("SELECT id,payload FROM generated_people WHERE career_id=? AND assignment='first' AND id!=?",(career,person_id)).fetchall():
-            if json.loads(raw)['role']==role: db.execute("UPDATE generated_people SET assignment='reserve' WHERE id=?",(pid,))
+            if json.loads(raw)['role']==role: db.execute("UPDATE generated_people SET assignment=? WHERE id=?",(demoted,pid))
     if row: db.execute('UPDATE club_roster SET assignment=?,role=? WHERE career_id=? AND person_id=?',(assignment,role,career,person_id))
     if generated:
         raw=json.loads(db.execute('SELECT payload FROM generated_people WHERE id=?',(person_id,)).fetchone()[0]);raw['role']=role

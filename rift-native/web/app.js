@@ -7,6 +7,7 @@ const NAV = [
   ['1군', '/app/squad', '선수단'],
   ['2군', '/app/academy', '선수단'],
   ['전술', '/app/tactics', '선수단'],
+  ['밴픽', '/app/draft', '대회'],
   ['훈련', '/app/training', '선수단'],
   ['프런트', '/app/staff', '구단'],
   ['프런트 DB', '/app/front-database', '구단'],
@@ -177,7 +178,7 @@ async function career() {
   return careerCache
 }
 function shell(body,path) {
-  const categories=[['구단',['home','inbox','news','finance','vision','community','staff','front-database','sponsors']],['선수단',['squad','academy','medical','relations','players','solo']],['전술·훈련',['tactics','training']],['영입',['transfers','shortlist']],['리그·경기',['schedule','leagues','history','data']],...(isOperator?[['운영',['operator','clubs']]]:[])]
+  const categories=[['구단',['home','inbox','news','finance','vision','community','staff','front-database','sponsors']],['선수단',['squad','academy','medical','relations','players','solo']],['전술·훈련',['tactics','draft','training']],['영입',['transfers','shortlist']],['리그·경기',['schedule','leagues','history','data']],...(isOperator?[['운영',['operator','clubs']]]:[])]
   const selected=NAV.find(n=>n[1]===path)?.[0]||'구단 관리'
   const menu=categories.map(([label,keys])=>`<details class="nav-category"><summary>${label}<span>⌄</span></summary><div class="dropdown">${keys.map(key=>{const item=NAV.find(n=>n[1]==='/app/'+key)||[key==='clubs'?(isOperator?'구단 조회':'구단 선택'):key,'/app/'+key];return `<a href="${item[1]}" class="${path===item[1]?'on':''}">${item[0]}</a>`}).join('')}</div></details>`).join('')
   document.getElementById('app').innerHTML=`<div id="shell"><header id="masthead"><div id="top"></div><nav id="navigation"><a class="brand" href="/app/home">R/M<span>RIFT MANAGER</span></a>${menu}${isOperator?'<span class="account-link">운영자 · 관전 모드</span>':'<a class="account-link" href="/app/manager">감독 프로필</a>'}<button id="logout" aria-label="로그아웃">로그아웃</button></nav></header><main id="view" aria-label="${esc(selected)}">${body}</main></div>`
@@ -394,29 +395,51 @@ async function news() {
    id:current.id,kind:b.dataset.newsUnfollow,entity:b.dataset.newsEntity,enabled:false}).then(()=>news()).catch(e=>alert(e.message)))
  await topbar()
 }
+function personAge(person) {
+  const year=2025+(worldState?.season||1)
+  const raw=person.birth_date||person.birthdate||person.date_of_birth||person.dateOfBirth||person.dob||person.birthday||''
+  const birthYear=/^(18|19|20)\d{2}(?:-\d\d-\d\d)?$/.test(String(raw))?Number(String(raw).slice(0,4)):
+    (Number.isInteger(person.birth_year)?person.birth_year:null)
+  if(birthYear&&birthYear<=year&&year-birthYear<110)return {label:(year-birthYear)+'세',source:'생년 기준'}
+  if(Number.isInteger(person.age)&&person.age>=12&&person.age<100)
+    return {label:(person.age+(year-(person.age_as_of_year||2026)))+'세',source:'등록 나이'}
+  if(person.real_person)return {label:'미확인',source:'생년월일 자료 없음'}
+  // A consistent game-only age for generated youth, never represented as
+  // the actual age of an imported real-world esports player.
+  let fingerprint=0
+  for(const char of String(person.id||person.nickname||''))fingerprint=(fingerprint*31+char.charCodeAt(0))>>>0
+  return {label:(17+fingerprint%7+year-2026)+'세',source:'생성 선수 나이'}
+}
 function nickname(person) {return person.nickname || person.nickname_ko || person.display_name || person.name || '이름 확인 중'}
 function personLink(person) {
   return `<a href="/app/player/${esc(person.id)}">${face(person.id,Boolean(person.photo))}<span>${esc(nickname(person))}<small>${esc(person.real_name_ko || person.display_name_ko || person.real_name || '')}</small>${flagAndCountry(person)}</span></a>`
 }
-function rosterTable(people, records={}, development={}, contracts={}) {
+function rosterTable(people, records={}, development={}, contracts={},moveEnabled=false) {
   if(!people.length)return '<p class="empty">등록된 선수가 없습니다.</p>'
-  return `<div class="table-scroll"><table class="roster-table"><thead><tr>${['선수 얼굴 · 닉네임 / 이름','구분','소속 팀','게임 레이팅','OVR','인지도','국적','포지션','연봉','시장가치','계약년도','만료'].map(t=>`<th>${t}</th>`).join('')}</tr></thead><tbody>${people.map(p=>{
+  return `<div class="table-scroll"><table class="roster-table"><thead><tr>${['선수 얼굴 · 닉네임 / 이름','구분','소속 팀','나이','게임 레이팅','OVR','인지도','국적','포지션','연봉','시장가치','계약년도','만료',...(moveEnabled?['선수단 이동']:[])].map(t=>`<th>${t}</th>`).join('')}</tr></thead><tbody>${people.map(p=>{
     const c=contracts[p.id],d=development[p.id],r=records[p.id],eco=p.economics||{};const ratings=p.game_evaluation?.ratings||p.stats;const values=ratings?Object.values(ratings).filter(Number.isFinite):[];const ovr=d?.ovr??(values.length?Math.round(values.reduce((a,b)=>a+b,0)/values.length):null)
     const start=c?.start_turn?`${2026+Math.floor((c.start_turn-1)/150)}년 · ${Math.floor((c.start_turn-1)/150)+1}시즌`:'미기록'
     const expiry=c?`${2026+Math.floor((c.end_turn-1)/150)}년 · ${Math.floor((c.end_turn-1)/150)+1}시즌 ${((c.end_turn-1)%150)+1}주`:p.contract_end||'확인 중'
     const group=p.kind==='player'?(p.real_person?'실존 선수':'생성 선수'):(p.real_person?'실존 프런트':'생성 프런트');const assignment=rosterStatus(p)
-    return `<tr><td>${personLink(p)}</td><td><span class="identity-tag ${p.real_person?'real':'generated'}">${group}</span><small>${esc(assignment)}</small></td><td>${logoImg(p.league,p.team)}${esc(p.team||'무소속')}</td><td><b class="rating">${eco.rating??'미평가'}</b><small>${r?.rating!=null?'게임 경기 평점 '+Number(r.rating).toFixed(1):'능력·경력 평가'}</small></td><td><b>${d?.ovr??eco.ovr??ovr??'미평가'}</b></td><td><b>${eco.fame??'미평가'}</b></td><td>${flagAndCountry(p)}</td><td>${esc(ROLE[p.role]||'확인 중')}</td><td>${money(c?.annual_salary??eco.annual_salary??p.salary)}<small>${c?'구단 계약':'연봉 추정'}</small></td><td>${money(eco.market_value)}</td><td>${start}</td><td>${esc(expiry)}${!c&&p.contract_estimated?'<small>예상</small>':''}</td></tr>`
+    const canAssign=moveEnabled&&!isOperator&&p.kind==='player'&&['first','reserve','academy'].includes(p.assignment)&&Object.keys(ROLE).includes(p.role)
+    const moveControls=!canAssign?'':p.assignment==='academy'?
+      '<button class="act" data-lineup-person="'+esc(p.id)+'" data-lineup-role="'+esc(p.role)+'" data-lineup-target="first">1군 주전 등록</button>':
+      p.assignment==='first'?
+      '<button class="act" data-lineup-person="'+esc(p.id)+'" data-lineup-role="'+esc(p.role)+'" data-lineup-target="academy">2군 이동</button>':
+      '<button class="act" data-lineup-person="'+esc(p.id)+'" data-lineup-role="'+esc(p.role)+'" data-lineup-target="first">1군 주전</button> '+
+      '<button class="act" data-lineup-person="'+esc(p.id)+'" data-lineup-role="'+esc(p.role)+'" data-lineup-target="academy">2군 이동</button>'
+    return `<tr><td>${personLink(p)}</td><td><span class="identity-tag ${p.real_person?'real':'generated'}">${group}</span><small>${esc(assignment)}</small></td><td>${logoImg(p.league,p.team)}${esc(p.team||'무소속')}</td><td><b title="${esc(personAge(p).source)}">${esc(personAge(p).label)}</b></td><td><b class="rating">${eco.rating??'미평가'}</b><small>${r?.rating!=null?'게임 경기 평점 '+Number(r.rating).toFixed(1):'능력·경력 평가'}</small></td><td><b>${d?.ovr??eco.ovr??ovr??'미평가'}</b></td><td><b>${eco.fame??'미평가'}</b></td><td>${flagAndCountry(p)}</td><td>${esc(ROLE[p.role]||'확인 중')}</td><td>${money(c?.annual_salary??eco.annual_salary??p.salary)}<small>${c?'구단 계약':'연봉 추정'}</small></td><td>${money(eco.market_value)}</td><td>${start}</td><td>${esc(expiry)}${!c&&p.contract_estimated?'<small>예상</small>':''}</td>${moveEnabled?'<td>'+moveControls+'</td>':''}</tr>`
   }).join('')}</tbody></table></div>`
 }
 async function squad(which) {
   const current=await requireCareer();if(!current)return
   const [data,manage,train,stats]=await Promise.all([api('/recruitment?id='+current.id),api('/management?id='+current.id),api('/training?id='+current.id),api('/analytics?id='+current.id+'&season='+current.season)])
-  const index=(items,key='id')=>Object.fromEntries(items.map(x=>[key==='person'?x.person.id:x.id,x]));const records=index(stats.players||[]),dev=index(train.players||[],'person'),contracts=index((manage.contracts||[]).filter(c=>c.active),'person')
+  const index=(items,key='id')=>Object.fromEntries(items.map(x=>[key==='person'?x.person.id:x.id,x]));const records=index(stats.players||[]),dev=index(train.players||[],'person'),contracts=index(manage.contracts||[],'person')
   const registered=(data.people||[]).filter(p=>p.kind==='player' || p.kind==='unclassified')
   const shown=registered.filter(p=>which==='academy'?p.assignment==='academy':['first','reserve'].includes(p.assignment))
   const extra=registered.filter(p=>which==='academy'?p.assignment==='candidate':p.assignment==='unclassified')
   const sort=(a,b)=>Object.keys(ROLE).indexOf(a.role)-Object.keys(ROLE).indexOf(b.role)||nickname(a).localeCompare(nickname(b),'ko')
-  shell(`<div class="page-heading"><div><p class="eyebrow">SQUAD REGISTRATION</p><h1>${which==='academy'?'2군 · 육성 선수단':'1군 선수단'}</h1><p>${esc(current.name)} · ${shown.length}명</p></div><a class="text-link" href="/app/${which==='academy'?'squad':'academy'}">${which==='academy'?'1군 보기':'2군 보기'}</a></div><section class="panel">${rosterTable(shown.sort(sort),records,dev,contracts)}</section>${extra.length?`<section class="panel"><h2>${which==='academy'?'영입·육성 후보':'등록 분류 확인 중'}</h2>${rosterTable(extra.sort(sort),records,dev,contracts)}</section>`:''}${data.complete?'':'<p>경기 참가를 위해 각 포지션의 1군 주전 선수를 등록하세요.</p>'}`,which==='academy'?'/app/academy':'/app/squad')
+  shell(`<div class="page-heading"><div><p class="eyebrow">SQUAD REGISTRATION</p><h1>${which==='academy'?'2군 · 육성 선수단':'1군 선수단'}</h1><p>${esc(current.name)} · ${shown.length}명</p></div><a class="text-link" href="/app/${which==='academy'?'squad':'academy'}">${which==='academy'?'1군 보기':'2군 보기'}</a></div><section class="panel">${rosterTable(shown.sort(sort),records,dev,contracts,data.complete&&!isOperator&&current.role==='admin')}</section>${extra.length?`<section class="panel"><h2>${which==='academy'?'영입·육성 후보':'등록 분류 확인 중'}</h2>${rosterTable(extra.sort(sort),records,dev,contracts)}</section>`:''}${data.complete?'':'<p>경기 참가를 위해 각 포지션의 1군 주전 선수를 등록하세요.</p>'}`,which==='academy'?'/app/academy':'/app/squad')
   if(data.mode==='create' && !data.complete){
     const selectable=(data.people||[]).filter(p=>p.assignment==='candidate'&&p.kind==='player'&&p.solo?.path==='pro')
     document.getElementById('view').insertAdjacentHTML('afterbegin',`<section class="panel"><h2>창단 선수단 구성 · ${data.roster.length} / 5</h2><p>포지션마다 주전 한 명을 선택한 뒤 등록을 완료하세요. 아래 후보는 생성 선수입니다.</p>${data.roster.map(p=>`<div class="row">${personLink(p)}<b>${esc(ROLE[p.role])}</b><button class="act" data-recruit="${esc(p.id)}" data-enabled="false">선택 취소</button></div>`).join('')}${Object.entries(ROLE).map(([role,label])=>`<details class="recruit-role"><summary>${label} · 후보 ${selectable.filter(p=>p.role===role).length}명</summary>${selectable.filter(p=>p.role===role).map(p=>`<div class="row">${personLink(p)}<span>OVR ${dev[p.id]?.ovr??'미평가'} · 연봉 ${money(p.salary)}</span><button class="act" data-recruit="${esc(p.id)}" data-enabled="true" ${data.roster.some(r=>r.role===role)?'disabled':''}>주전 선택</button></div>`).join('')}</details>`).join('')}<button class="act" id="finalize-roster" ${data.roster.length===5?'':'disabled'}>주전 5명 등록 완료</button><p class="err" id="recruit-error"></p></section>`)
@@ -424,6 +447,35 @@ async function squad(which) {
     document.querySelectorAll('[data-recruit]').forEach(b=>b.onclick=()=>action('/recruitment-select',{person:b.dataset.recruit,enabled:b.dataset.enabled==='true'}))
     document.getElementById('finalize-roster').onclick=()=>action('/recruitment-finalize',{})
   }
+  const selected=(data.people||[]).filter(p=>p.kind==='player')
+  const now=(current.season-1)*150+current.week
+  const issues=[]
+  const lineup=(data.roster||[]).filter(p=>p.kind==='player'&&p.assignment==='first')
+  const positions=new Set(lineup.map(p=>p.role))
+  Object.entries(ROLE).forEach(([key,label])=>{if(!positions.has(key))issues.push(label+' 주전 누락')})
+  for(const p of lineup){
+    const c=contracts[p.id]
+    if(!c||!c.active)issues.push(nickname(p)+' 계약 없음')
+    else if(c.end_turn<now)issues.push(nickname(p)+' 계약 만료')
+    if(c?.injury_turns>0)issues.push(nickname(p)+' 부상')
+  }
+  if(which==='first')document.getElementById('view').insertAdjacentHTML('afterbegin',
+    '<section class="panel"><h2>밴픽 출전 점검</h2>'+
+    (issues.length?'<p class="err">'+issues.map(esc).join(' · ')+'</p>':'<p>주전 5명 등록 및 계약·부상 상태 양호</p>')+
+    '<p>2군 선수를 1군 주전으로 바꾸면 동일 포지션 기존 주전은 2군으로 이동합니다.</p>'+
+    '<a class="act" href="/app/draft">밴픽 탭으로 이동</a></section>')
+  document.querySelectorAll('[data-lineup-person]').forEach(button=>button.onclick=async()=>{
+    const person=button.dataset.lineupPerson,target=button.dataset.lineupTarget,role=button.dataset.lineupRole
+    const found=selected.find(p=>p.id===person)
+    if(!found)return
+    const message=target==='first'?
+      nickname(found)+' 선수를 '+(ROLE[role]||role)+' 1군 주전으로 등록할까요? 기존 주전은 2군으로 이동합니다.':
+      nickname(found)+' 선수를 2군으로 이동할까요? 빈 포지션이 생기면 밴픽을 시작할 수 없습니다.'
+    if(!confirm(message))return
+    button.disabled=true
+    try{await api('/club-lineup',{id:current.id,person,assignment:target,role});await squad(which)}
+    catch(error){alert(error.message);button.disabled=false}
+  })
   await topbar()
 }
 async function tactics() {
@@ -620,13 +672,48 @@ async function schedule() {
  document.querySelectorAll('.calendar-match').forEach(a=>a.onclick=e=>{e.preventDefault();go(a.getAttribute('href'))})
  await topbar()
 }
-async function match(id) {
+async function draftLobby() {
+  const current=await requireCareer();if(!current)return
+  const [fixtureData,preflight]=await Promise.all([
+    api('/fixtures?id='+current.id),
+    api('/lineup-readiness?id='+current.id)
+  ])
+  const fixtures=fixtureData.fixtures||[]
+  const active=fixtures.filter(g=>g.state==='queued')
+  const upcoming=fixtures.filter(g=>g.state==='scheduled').sort((a,b)=>a.season-b.season||a.week-b.week).slice(0,6)
+  const errors=(preflight.issues||[]).map(issue=>
+    '<div class="row"><b>'+esc(issue.nickname||issue.role||'선수단')+
+    '</b><span>'+esc(issue.reason)+'</span></div>').join('')
+  const games=active.map(g=>
+    '<a class="row" href="/app/draft/'+g.id+'"><div><b>'+
+    esc(g.opponent)+'</b><p>'+esc(g.competition||'정규 시즌')+
+    ' · '+g.season+'시즌 '+g.week+'주차 · BO'+g.best_of+'</p></div>'+
+    '<strong>밴픽 입장</strong></a>').join('')
+  const planned=upcoming.map(g=>
+    '<div class="row"><span>'+g.season+'시즌 '+g.week+'주 · '+esc(g.opponent)+
+    '</span><small>예정</small></div>').join('')
+  shell('<div class="page-heading"><div><p class="eyebrow">LIVE DRAFT</p>'+
+    '<h1>밴픽 센터</h1>'+
+    '<p>경기 진행과 별도로 밴·픽, 선픽·후픽, 블루·레드 진영을 선택하는 곳입니다.</p></div></div>'+
+    '<section class="panel"><h2>1군 주전 · 밴픽 출전 상태</h2>'+
+    (preflight.ready?'<p>주전 5명이 건강하며 계약도 유효합니다.</p>':
+     '<p class="err">밴픽을 시작할 수 없습니다. 아래 문제를 해결하세요.</p>'+errors)+
+    '<a class="act" href="/app/squad">1군·2군 선수 변경</a></section>'+
+    '<section class="panel"><h2>진행 중 경기</h2>'+
+    (games||'<p class="empty">현재 밴픽에 입장할 경기가 없습니다. 운영자가 주차를 진행하면 해당 경기의 밴픽이 열립니다.</p>')+
+    '</section><section class="panel"><h2>예정 경기</h2>'+
+    (planned||'<p class="empty">예정된 경기가 없습니다.</p>')+
+    '<a class="act" href="/app/schedule">전체 경기 일정</a></section>','/app/draft')
+  await topbar()
+}
+async function match(id,draftView=false) {
   await loadChampionMeta()
   const current = await requireCareer(); if (!current) return
   const data = await api('/fixtures?id=' + current.id)
   const game = data.fixtures.find(item => item.id === id)
   if (!game) { shell('<p>경기를 찾지 못했습니다.</p>', '/app/schedule'); return }
   const series = game.series || {}
+  if(!draftView&&['choice','draft_pending','draft','swap'].includes(series.phase))return go('/app/draft/'+id)
   let controls = `<p>${esc(game.competition)} ${esc(game.stage)} · ${esc(series.phase || game.state)}</p>`
   if (series.phase === 'choice') controls += `<button class="act" data-choice="priority" data-value="first">선픽</button><button class="act" data-choice="priority" data-value="second">후픽</button><button class="act" data-choice="side" data-value="blue">블루</button><button class="act" data-choice="side" data-value="red">레드</button>`
   if (series.phase === 'draft') {
@@ -636,7 +723,14 @@ async function match(id) {
   if (series.phase === 'swap') controls += `<p>스왑은 30초입니다. 역할 번호를 바꿉니다.</p><input id="swap-a" value="0"/><input id="swap-b" value="1"/><button class="act" id="swap">스왑</button>`
   if (series.phase === 'feedback') controls += `<input id="note" maxlength="300" placeholder="세트 피드백"/><button class="act" id="note-save">전달</button>`
   if (game.result) controls += `<p>결과 ${(game.result.score || []).join(':')}</p>`
-  shell(`<div class="panel"><h2>${esc(game.opponent)}</h2>${controls}</div>`, '/app/match/' + id)
+  const progress=(series.draft||[]).map((entry,i)=>'<div class="row"><b>'+(i+1)+'. '+(entry.action==='ban'?'밴':'픽')+' · '+(entry.team===0?'우리 팀':'상대 팀')+'</b><span>'+championIcon(entry.champion)+esc(championKo(entry.champion))+'</span></div>').join('')
+  const draftBoard=draftView?'<section class="panel"><h2>현재 밴픽 순서 · '+(series.draft?.length||0)+' / 20</h2>'+
+    (progress||'<p>아직 밴픽 기록이 없습니다. 선픽·후픽 또는 진영을 선택하세요.</p>')+
+    '<p class="muted-note">밴픽 시간은 기존 서버 규칙에 따릅니다. 피어리스 제한은 계속 적용됩니다.</p></section>':''
+  shell('<div class="page-heading"><h1>'+(draftView?'밴픽 센터':'경기 진행')+' · '+esc(game.opponent)+'</h1>'+
+    '<a class="act" href="'+(draftView?'/app/schedule':'/app/draft')+'">경기 목록</a></div>'+
+    draftBoard+'<div class="panel"><h2>'+esc(game.opponent)+'</h2>'+controls+'</div>',
+    (draftView?'/app/draft/':'/app/match/')+id)
   document.querySelectorAll('[data-choice]').forEach(button => button.onclick = () => api('/draft-choice', {id, category:button.dataset.choice, value:button.dataset.value, manual:true}).then(() => draw()).catch(error => alert(error.message)))
   const pick = document.getElementById('pick')
   if (pick) pick.onclick = () => api('/draft-action', {id, champion:document.getElementById('champ').value.trim(), version:series.draft_version}).then(() => draw()).catch(error => alert(error.message))
@@ -808,7 +902,7 @@ async function player(id, tab) {
          '<h3>선수단 소속</h3><div class="fm-role-detail"><b>'+esc(statusLabel)+'</b>'+
            '<span>'+joinedText+'</span></div></section>'+
        '<section class="panel"><h2>계약 · 정보</h2><div class="fm-quickfacts">'+
-         '<div><span>국적</span>'+flagAndCountry(person)+'</div>'+
+         '<div><span>국적</span>'+flagAndCountry(person)+'</div>'+ '<div><span>나이</span><b>'+esc(personAge(person).label)+'</b></div>'+
          '<div><span>연봉</span><b>'+money(contract?.annual_salary??eco.annual_salary??person.salary)+'</b></div>'+
          '<div><span>시장가치</span><b>'+money(eco.market_value)+'</b></div>'+
          '<div><span>인지도</span><b>'+(eco.fame??'미평가')+' / 100</b></div>'+
@@ -821,7 +915,7 @@ async function player(id, tab) {
     (isPlayer?'<section class="panel"><h2>능력치 · 시즌 성적의 차이</h2><p class="muted-note">'+
       '개별 능력은 게임 평가 모델의 추정값이고, KDA·CS·피해량은 실제로 진행된 LFM 경기만 집계합니다. '+
       '솔로랭크 전적은 프로 경기 성적에 포함하지 않습니다.</p></section>':'')
-  else if(tab==='personal') main=`<section class="panel"><h2>개인 정보</h2><div class="info-pairs"><p>영문 닉네임 <b>${esc(person.nickname||'기록 없음')}</b></p><p>본명 <b>${esc(person.real_name||'기록 없음')}</b></p><p>국적 <b>${flagAndCountry(person)}</b></p><p>리그 <b>${esc(person.league||'무소속')}</b></p><p>지역 <b>${esc(person.region||person.nationality_name_ko||'정보 없음')}</b></p><p>포지션 <b>${esc(ROLE[person.role]||person.role||'정보 없음')}</b></p><p>솔로랭크 <b>${esc(person.solo?.label||'정보 없음')}</b></p></div></section>`
+  else if(tab==='personal') main=`<section class="panel"><h2>개인 정보</h2><div class="info-pairs"><p>영문 닉네임 <b>${esc(person.nickname||'기록 없음')}</b></p><p>본명 <b>${esc(person.real_name||'기록 없음')}</b></p><p>국적 <b>${flagAndCountry(person)}</b></p><p>나이 <b>${esc(personAge(person).label)}</b></p><p>리그 <b>${esc(person.league||'무소속')}</b></p><p>지역 <b>${esc(person.region||person.nationality_name_ko||'정보 없음')}</b></p><p>포지션 <b>${esc(ROLE[person.role]||person.role||'정보 없음')}</b></p><p>솔로랭크 <b>${esc(person.solo?.label||'정보 없음')}</b></p></div></section>`
   else if(tab==='contract') {
     const expiryYear=contract?.expiry_season?2025+contract.expiry_season:null
     const expiryText=contract?.expiry_season?
@@ -1306,6 +1400,9 @@ async function draw() {
     const leaguePath=path.match(/^\/app\/league\/(.+)$/)
     if(leaguePath)return await leagueOverview(decodeURIComponent(leaguePath[1]))
     if (path === '/app/data') return await dataHub()
+    if(path==='/app/draft')return await draftLobby()
+    const draftPath=path.match(/^\/app\/draft\/(\d+)$/)
+    if(draftPath)return await match(Number(draftPath[1]),true)
     let matchPath = path.match(/^\/app\/match\/(\d+)$/)
     if (matchPath) return await match(Number(matchPath[1]))
     let personPath = path.match(/^\/app\/player\/([^/]+)(?:\/([^/]+))?$/)

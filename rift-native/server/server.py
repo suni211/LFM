@@ -392,6 +392,18 @@ class Handler(BaseHTTPRequestHandler):
                     db.execute('BEGIN IMMEDIATE');management.ensure(db,cid);db.execute('COMMIT')
                     return self.reply(200,management.snapshot(db,cid))
                 except (ValueError,KeyError): return self.reply(400,{'error':'invalid management request'})
+            if url.path=='/lineup-readiness':
+                try:
+                    cid=int(parse_qs(url.query)['id'][0])
+                    if not 1<=cid<=2**63-1: raise ValueError()
+                    if not news.member(db,uid,cid):return self.reply(404,{'error':'not found'})
+                    db.execute('BEGIN IMMEDIATE')
+                    management.ensure(db,cid)
+                    now=management.turn(db,cid)
+                    problems=management.readiness_details(db,cid,now)
+                    db.execute('COMMIT')
+                    return self.reply(200,{'ready':not problems,'issues':problems})
+                except (KeyError,ValueError):return self.reply(400,{'error':'invalid lineup request'})
             if url.path=='/recruitment':
                 try:
                     cid=int(parse_qs(url.query)['id'][0])
@@ -973,8 +985,11 @@ class Handler(BaseHTTPRequestHandler):
                     except ValueError as error:return self.reply(409,{'error':str(error)})
                 elif self.path == '/draft-choice':
                     game=db.execute('SELECT career_id,season,week FROM fixtures WHERE id=?',(fixture,)).fetchone()
-                    if management.readiness(db,game[0],(game[1]-1)*150+game[2]):
-                        return self.reply(409,{'error':'select healthy contracted players before draft'})
+                    management.ensure(db,game[0])
+                    problems=management.readiness_details(db,game[0],(game[1]-1)*150+game[2])
+                    if problems:
+                        return self.reply(409,{'error':'밴픽을 시작할 수 없습니다. 1군에서 계약·부상·주전 5명 상태를 확인하세요.',
+                                               'issues':problems})
                     if state['phase']=='feedback' and time.time()>=state['feedback_until']:
                         series_state.next_choice(state,seed)
                     category,value = data['category'],data['value']

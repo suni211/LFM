@@ -2,6 +2,7 @@
 import json
 import os
 from collections import defaultdict
+import nationality
 from pathlib import Path
 
 PEOPLE=Path(os.environ.get('RIFT_PEOPLE',Path(__file__).resolve().parent.parent/'assets'/'people.json'))
@@ -15,6 +16,7 @@ def init(db):
 def load():
     data=json.loads(PEOPLE.read_text(encoding='utf-8'))
     people=data['people']
+    people[:]=[nationality.enrich(p) for p in people]
     # Repair only generic *league buckets* in the game view. A bucket is not
     # a real club. The chosen destination is fictional game placement.
     aliases={'LCK 2군':'LCK CL','LCK CL 2군':'LCK CL','LDL 2군':'LDL'}
@@ -75,7 +77,7 @@ def detail(db,career,person_id):
     person=next((p.copy() for p in data['people'] if p['id']==person_id),None)
     if person is None:
         row=db.execute('SELECT payload,assignment FROM generated_people WHERE id=?',(person_id,)).fetchone()
-        if row: person=dict(json.loads(row[0]),assignment=row[1])
+        if row: person=nationality.enrich(dict(json.loads(row[0]),assignment=row[1]))
     if person is None and db.execute("SELECT 1 FROM sqlite_master WHERE name='solo_people'").fetchone():
         row=db.execute('SELECT payload FROM solo_people WHERE person_id=?',(person_id,)).fetchone()
         if row: person=json.loads(row[0])
@@ -99,7 +101,7 @@ def search(db,career,page=0,query='',team='',kind='',league='',origin='all'):
     matches=[]
     query=query.casefold().strip()
     changes=game_clubs(db)
-    generated=[dict(json.loads(raw),assignment=assignment) for raw,assignment in db.execute('SELECT payload,assignment FROM generated_people')]
+    generated=[nationality.enrich(dict(json.loads(raw),assignment=assignment)) for raw,assignment in db.execute('SELECT payload,assignment FROM generated_people')]
     amateurs=[json.loads(raw) for raw, in db.execute('SELECT payload FROM solo_people')] if db.execute("SELECT 1 FROM sqlite_master WHERE name='solo_people'").fetchone() else []
     unique={p['id']:p for p in amateurs+generated+data['people']}
     for raw_person in unique.values():

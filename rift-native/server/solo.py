@@ -62,12 +62,12 @@ def init(db):
         CREATE TABLE IF NOT EXISTS solo_people(person_id TEXT PRIMARY KEY, payload TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS solo_weeks(season INTEGER NOT NULL, week INTEGER NOT NULL, PRIMARY KEY(season,week));
         CREATE TABLE IF NOT EXISTS solo_seed(key TEXT PRIMARY KEY, value TEXT NOT NULL);''')
-    if not db.execute("SELECT 1 FROM solo_seed WHERE key='ready'").fetchone():
-        backfill(db)
-        db.execute("INSERT OR REPLACE INTO solo_seed VALUES('ready','1')")
     columns={x[1] for x in db.execute("PRAGMA table_info(solo_ranks)")}
     if 'region' not in columns:
         db.execute("ALTER TABLE solo_ranks ADD COLUMN region TEXT NOT NULL DEFAULT ''")
+    if not db.execute("SELECT 1 FROM solo_seed WHERE key='ready'").fetchone():
+        backfill(db)
+        db.execute("INSERT OR REPLACE INTO solo_seed VALUES('ready','1')")
     seed_easter(db)
     # Imported pro players queue on the region of their registered league.
     # This is separate from nationality and real-life account residency.

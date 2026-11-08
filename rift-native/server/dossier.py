@@ -5,6 +5,7 @@ import catalog
 import clubs
 import dashboard
 import leadership
+import academy_clubs
 import staffing
 
 def roots():
@@ -34,9 +35,14 @@ def people_for(db, league, team):
     changes = catalog.game_clubs(db)
     rows = []
     for person in catalog.load()['people']:
-        current = catalog.apply_game_club(person, changes)
-        if current.get('league') == league and current.get('team') == team:
-            rows.append(dict(current, display_name=catalog.display(current)))
+        current=catalog.apply_game_club(person,changes)
+        public=catalog.display_academy_affiliation(current,changes)
+        if (public.get('league'),public.get('team')) == (league,team):
+            rows.append(dict(public,display_name=catalog.display(public)))
+        # The main organization can still access its contracted second team:
+        # academy affiliation is a public league view, not a contract transfer.
+        elif (current.get('league'),current.get('team')) == (league,team) and current.get('squad')=='academy':
+            rows.append(dict(current,display_name=catalog.display(current)))
     return rows
 
 def find_career(db, league, team):

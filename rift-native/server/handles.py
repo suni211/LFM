@@ -50,4 +50,19 @@ def choose(seed, used):
         name=CANDIDATES[(start+offset)%len(CANDIDATES)]
         if valid(name) and not too_similar(name,used):
             return name
-    raise ValueError('Unique, sufficiently distinct English nicknames exhausted')
+    # The curated list is intentionally finite; additional clubs still need
+    # identities. Generate varied pronounceable names without fixed shared prefixes.
+    onsets=('v','z','k','r','t','s','d','f','m','n','l','p','br','cr','dr','gr','kr','tr','sk','th','sh','ch','fl','gl')
+    vowels=('a','e','i','o','u','ae','ai','eo','ia','oa','io')
+    codas=('n','r','s','x','m','l','th','k','v','z','nd','nt','rk','rn','st','sh','')
+    for attempt in range(20000):
+        digest=hashlib.sha256(f'{seed}|{attempt}|handle-v2'.encode()).digest()
+        syllables=2+(digest[0]%2)
+        chunks=[]
+        for index in range(syllables):
+            base=1+3*index
+            chunks.append(onsets[digest[base]%len(onsets)]+vowels[digest[base+1]%len(vowels)]+codas[digest[base+2]%len(codas)])
+        name=''.join(chunks).capitalize()
+        if valid(name) and not too_similar(name,used):
+            return name
+    raise ValueError('Could not generate a sufficiently distinct English nickname')

@@ -1,0 +1,33 @@
+{
+  "LCK": {
+    "url": "https://commons.wikimedia.org/wiki/Special:FilePath/League_of_Legends_Champions_Korea_logo.svg",
+    "source": "https://commons.wikimedia.org/wiki/File:League_of_Legends_Champions_Korea_logo.svg",
+    "year": 2021
+  },
+  "LCK CL": {
+    "url": "https://commons.wikimedia.org/wiki/Special:FilePath/League_of_Legends_Champions_Korea_logo.svg",
+    "source": "https://commons.wikimedia.org/wiki/File:League_of_Legends_Champions_Korea_logo.svg",
+    "note": "LCK 모리그 로고를 임시 계열 표시로 사용; LCK CL 독립 공식 로고 아님"
+  },
+  "LEC": {
+    "url": "https://commons.wikimedia.org/wiki/Special:FilePath/League_of_Legends_EMEA_Championship.png",
+    "source": "https://commons.wikimedia.org/wiki/File:League_of_Legends_EMEA_Championship.png",
+    "year": 2022
+  },
+  "LCS": {
+    "url": "https://commons.wikimedia.org/wiki/Special:FilePath/League_of_Legends_Championship_Series.svg",
+    "source": "https://commons.wikimedia.org/wiki/File:League_of_Legends_Championship_Series.svg",
+    "year": 2021,
+    "note": "historical logo; may differ from 2026"
+  },
+  "LCP": {
+    "url": "https://commons.wikimedia.org/wiki/Special:FilePath/League_of_Legends_Championship_Pacific_logo.svg",
+    "source": "https://commons.wikimedia.org/wiki/File:League_of_Legends_Championship_Pacific_logo.svg",
+    "year": 2025
+  },
+  "CBLOL": {
+    "url": "https://commons.wikimedia.org/wiki/Special:FilePath/CBLOL_logo.png",
+    "source": "https://commons.wikimedia.org/wiki/File:CBLOL_logo.png",
+    "year": 2021
+  }
+}

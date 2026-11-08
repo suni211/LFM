@@ -281,7 +281,7 @@ def _retire(db, row, season, week):
 def weekly(db, season, week):
     if not db.execute('INSERT OR IGNORE INTO solo_weeks VALUES(?,?)',(season,week)).rowcount: return
     rows=db.execute('''SELECT person_id,mmr,games,path,personality,career_id,stall,last_talk_turn,nickname,real_name,role,club_name
-        FROM solo_ranks WHERE path IN ('amateur','prospect')''').fetchall()
+        FROM solo_ranks WHERE path IN ('amateur','prospect','pro')''').fetchall()
     for row in rows:
         person_id,mmr,games,path,personality=row[0],row[1],row[2],row[3],row[4]
         roll=_unit(f'{person_id}:{season}:{week}:solo')
@@ -293,10 +293,12 @@ def weekly(db, season, week):
         stall=row[6]
         if delta<8: stall+=STALL_GAIN[personality]
         else: stall=max(0,stall-2)
-        if stall>=STALL_LIMIT[personality]:
+        if path!='pro' and stall>=STALL_LIMIT[personality]:
             _retire(db,row,season,week)
             continue
-        db.execute('UPDATE solo_ranks SET mmr=?,games=games+1,stall=? WHERE person_id=?',(max(0,mmr+delta),stall,person_id))
+        floor=PRO_MIN_MMR if path=='pro' else 0
+        # These are independent weekly solo-queue simulations, not pro match results.
+        db.execute('UPDATE solo_ranks SET mmr=?,games=games+1,stall=? WHERE person_id=?',(max(floor,mmr+delta),0 if path=='pro' else stall,person_id))
 
 def _rating(player, won, team_damage):
     kills,deaths,assists=player.get('kda',[0,0,0])
@@ -314,16 +316,30 @@ def record_result(db, result):
 
 
 def repair_legacy_handles(db):
-    used={n.casefold() for n, in db.execute('SELECT nickname FROM solo_ranks')}
-    used.update(n for n, in db.execute('SELECT nickname_key FROM generated_people'))
-    starts=tuple('루라리레로시세소하해호유이아오누나노미모');ends=('온','엘','안','오','루','리','린','빈','솔','별','율','현','빛','나','노','담','람','하','로','유')
+    """Update generated amateur handle data without changing real player identities."""
+    import re
+    prefixes=('Aero','Ash','Blue','Cinder','Dawn','Ember','Frost','Gale','Haze','Iron','Jade','Lunar','Mist','Night','Opal','Pine','Quartz','Raven','Silver','Thorn')
+    suffixes=('Arc','Bloom','Crest','Drift','Echo','Flare','Grove','Hawk','Iris','Jet','Knight','Leaf','Moon','Nova','Oath','Peak','Quill','Rise','Storm','Vale')
+    used={str(n).casefold() for n, in db.execute('SELECT nickname FROM solo_ranks')}
     for pid,raw in db.execute('SELECT person_id,payload FROM solo_people').fetchall():
-        p=json.loads(raw);old=p.get('nickname','')
-        if not pid.startswith('amateur-') or p.get('original_nickname') or not any(old.startswith(prefix) for prefix in ('Ash','Blue','Cinder','Dawn','Ember','Frost','Gale','Haze','Iron','Jade')):continue
+        p=json.loads(raw)
+        if not pid.startswith('amateur-'): continue
+        old=str(p.get('nickname') or '')
+        if re.fullmatch(r'[A-Za-z]{2,20}',old): continue
         seed=int(hashlib.sha256(pid.encode()).hexdigest(),16)
         for offset in range(100000):
-            n=seed+offset;nick=starts[n%20]+ends[(n//20)%20]+('' if offset<400 else str(offset//400+1))
+            n=seed+offset
+            nick=prefixes[n%len(prefixes)]+suffixes[(n//len(prefixes))%len(suffixes)]
+            if offset>=len(prefixes)*len(suffixes):
+                count=offset//(len(prefixes)*len(suffixes))
+                ending=''
+                while count:
+                    count,r=divmod(count-1,26);ending=chr(65+r)+ending
+                nick+=ending
             if nick.casefold() not in used:break
-        used.add(nick.casefold());p.update(original_nickname=old,nickname=nick,nickname_ko=nick)
+        else: raise ValueError('amateur nickname space exhausted')
+        used.add(nick.casefold())
+        p.update(original_nickname=old,nickname=nick)
+        p.pop('nickname_ko',None)
         db.execute('UPDATE solo_people SET payload=? WHERE person_id=?',(json.dumps(p,ensure_ascii=False),pid))
         db.execute('UPDATE solo_ranks SET nickname=? WHERE person_id=?',(nick,pid))

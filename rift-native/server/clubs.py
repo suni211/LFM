@@ -63,7 +63,9 @@ def create(db,career,mode,team_key=None,league='LCK CL'):
     db.execute('INSERT INTO club_profiles VALUES(?,?,?,?,?)',(career,mode,team['league'],team_key,catalog.load().get('source','GCD')))
     occupied=set()
     academy_players=0
-    for person in catalog.load()['people']:
+    roster_changes=catalog.game_clubs(db)
+    for original in catalog.load()['people']:
+        person=catalog.apply_game_club(original,roster_changes)
         if (person.get('league'),person.get('team'))!=(team['league'],team['team']): continue
         if db.execute("SELECT 1 FROM sqlite_master WHERE name='person_ownership'").fetchone():
             moved=db.execute('SELECT career_id FROM person_ownership WHERE person_id=?',(person['id'],)).fetchone()
@@ -90,7 +92,8 @@ def profile(db,career):
 
 def roster(db,career):
     people=[]
-    latest={p['id']:p for p in catalog.load()['people']}
+    changes=catalog.game_clubs(db)
+    latest={p['id']:catalog.apply_game_club(p,changes) for p in catalog.load()['people']}
     for raw,assignment,role in db.execute("SELECT payload,assignment,role FROM club_roster WHERE career_id=? AND assignment!='departed' ORDER BY person_id",(career,)):
         saved=json.loads(raw)
         source=dict(saved,**latest.get(saved['id'],{}))

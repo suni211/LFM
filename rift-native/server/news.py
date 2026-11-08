@@ -63,7 +63,7 @@ def _item(nid,season,week,headline,body,subjects,league,origin,club,follows,scop
     entities.add(('competition',league))
     own=('team',club) in entities
     followed=bool(entities & follows)
-    eligible=(own or followed) if scope=='home' else followed if scope=='following' else bool(competition and league==competition)
+    eligible=(own or followed or bool(competition and league==competition)) if scope=='home' else followed if scope=='following' else bool(competition and league==competition)
     if not eligible: return None
     label='스토브 유출' if origin=='leak' and 1<=week<=10 else '유출 기사' if origin=='leak' else '게임 내 가상 기사'
     return dict(id=nid,season=season,week=week,headline=headline,body=body,subjects=subjects,competition=league,
@@ -76,8 +76,12 @@ def feed(db,user,career,competition='',scope='home',before=None):
     rumors.prune(db)
     follows={(item['kind'],item['entity']) for item in preferences(db,user,career)}
     club=db.execute('SELECT name FROM careers WHERE id=?',(career,)).fetchone()[0]
-    query='SELECT id,season,week,headline,body,subjects,competition,origin FROM career_news WHERE career_id=?'
-    params=[career]
+    home=db.execute('SELECT league FROM club_profiles WHERE career_id=?',(career,)).fetchone()
+    home_league=home[0] if home else ''
+    if not competition:competition=home_league
+    # In-game league articles are public across clubs; inbox is private.
+    query='SELECT id,season,week,headline,body,subjects,competition,origin FROM career_news WHERE (career_id=? OR competition=?)'
+    params=[career,competition]
     if before is not None:
         if type(before) is not int or before<1: raise ValueError('invalid cursor')
         query+=' AND id<?'; params.append(before)

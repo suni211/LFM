@@ -117,6 +117,8 @@ def detail(db,career,person_id):
     player_attributes.apply_to_game_evaluation(db,person)
     import solo
     solo.attach(db,person)
+    import player_economy
+    person['economics']=player_economy.profile(db,person)
     return person
 
 def search(db,career,page=0,query='',team='',kind='',league='',origin='all'):
@@ -140,7 +142,11 @@ def search(db,career,page=0,query='',team='',kind='',league='',origin='all'):
         if query and query not in ' '.join(str(p.get(k) or '') for k in ('display_name_ko','real_name_ko','real_name','nickname','nickname_ko','team')).casefold(): continue
         matches.append(dict(p,display_name=display(p)))
     matches.sort(key=lambda p:(p['display_name'],p['id']))
-    return dict(people=matches[page*150:(page+1)*150],total=len(matches),page=page,page_size=150,
+    import player_economy
+    shown=matches[page*150:(page+1)*150]
+    for p in shown:
+        p['economics']=player_economy.estimate(p)
+    return dict(people=shown,total=len(matches),page=page,page_size=150,
                 retrieved=data.get('retrieved'),source=data.get('source'))
 
 def teams():

@@ -56,7 +56,8 @@ class WorldTransferTest(unittest.TestCase):
         self.assertEqual(deal["league"],"LCK")
         self.assertGreater(deal["fee"],0)
         self.assertEqual(deal["status"],"official")
-        self.assertEqual(deal["person_id"],"extra-top")
+        # Either of the two TOPs can move; at least one TOP remains at Alpha.
+        self.assertIn(deal["person_id"],("A0","extra-top"))
         changes=catalog.game_clubs(self.db)
         moved=next(p for p in fixture() if p["id"]==deal["person_id"])
         self.assertEqual(catalog.apply_game_club(moved,changes)["team"],"Beta")

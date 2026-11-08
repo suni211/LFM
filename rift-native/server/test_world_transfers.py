@@ -66,7 +66,7 @@ class WorldTransferTest(unittest.TestCase):
         merged=transfers.activity(self.db,league="LCK")
         self.assertEqual(len(merged),1)
         self.assertEqual(merged[0]["origin"],"ai")
-        self.assertEqual(merged[0]["player_name"],"extra-top")
+        self.assertEqual(merged[0]["player_name"],deal["player_name"])
         self.assertEqual(transfers.activity(self.db,league="LPL"),[])
 
     def test_managed_source_cannot_be_modified(self):

@@ -21,6 +21,6 @@ jobs:
       - name: Compile server Python
         run: python -m compileall -q rift-native/server rift-native/tools/audit_nationalities.py
       - name: Import, transfer, calendar and operator access tests
-        run: cd rift-native/server && python -m unittest test_import_rules test_world_transfers test_season_calendar -v
+        run: cd rift-native/server && python -m unittest test_import_rules test_world_transfers test_season_calendar test_season_awards -v
       - name: Web JavaScript syntax
         run: node --check rift-native/web/app.js

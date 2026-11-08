@@ -221,8 +221,13 @@ class Handler(BaseHTTPRequestHandler):
                        FROM fixtures f JOIN careers c ON c.id=f.career_id
                        WHERE f.season=? AND f.competition=? ORDER BY f.week,f.id LIMIT 160""",
                     (season,league_name))]
+                changes=[dict(season=sn,old_team=old,new_team=new,headline=head)
+                    for sn,old,new,head in db.execute(
+                      """SELECT season,departing,arriving,headline FROM franchise_announcements
+                         WHERE league=? ORDER BY season DESC LIMIT 12""",(league_name,))]
                 return self.reply(200,dict(league=league_name,season=season,week=clock['week'],
-                    standings=standings,clubs=clubs_in_league,fixtures=fixtures_rows))
+                    standings=standings,clubs=clubs_in_league,fixtures=fixtures_rows,
+                    franchise_news=changes))
             if url.path=='/dashboard':
                 try:
                     cid=int(parse_qs(url.query)['id'][0])
@@ -435,7 +440,12 @@ class Handler(BaseHTTPRequestHandler):
                     return self.reply(200,{'dashboard':json.loads(row[0]) if row else ['news','standings','budget']})
                 if url.path=='/club-dossier':
                     import dossier
-                    return self.reply(200,dossier.view(db,uid,query.get('league',[''])[0],query.get('team',[''])[0]))
+                    league_name=query.get('league',[''])[0]
+                    team=query.get('team',[''])[0]
+                    result=dossier.view(db,uid,league_name,team)
+                    result['display_name']=club_history.display(db,league_name,team)
+                    result['history']=club_history.history(db,league_name,team)
+                    return self.reply(200,result)
                 try: cid=int(query['id'][0])
                 except (KeyError,ValueError): return self.reply(400,{'error':'invalid request'})
                 if not news.member(db,uid,cid): return self.reply(404,{'error':'not found'})

@@ -114,3 +114,17 @@ img.club-primary-image{object-fit:contain;object-position:center}
 .club-emblem-fallback{display:inline-flex;align-items:center;justify-content:center;gap:2px;overflow:hidden;text-align:center}
 .club-emblem-fallback .club-emblem-symbol{font-size:.72em;opacity:.62;line-height:1}
 .fm-team-header>img.club-primary-image,.continue-club img.club-primary-image{object-fit:contain;object-position:center}
+
+
+/* Appointment invitations and verifiable club leadership */
+.club-choice-list .club-choice{background:linear-gradient(105deg,#20324d,#151d2f);border-color:#536987;align-items:center;min-height:105px;transition:border-color .15s,transform .15s}
+.club-choice-list .club-choice:hover:not(.club-locked){border-color:#7baddc;transform:translateY(-1px)}
+.club-choice-list .club-choice>.logo{width:48px;height:48px;object-fit:contain}
+.club-choice-list .club-choice>div{min-width:0}
+.club-choice-list .club-choice b{font-size:15px}
+.club-choice-list .club-choice small{font-size:11px;color:#9fb4ce}
+.club-choice-list .club-choice p{font-size:12px;line-height:1.5;color:#b3c2d7;margin-top:7px}
+.club-choice-list .club-choice button.act{background:#2e6f61;border-color:#4fa28a;min-width:88px}
+.club-choice-list .club-choice.club-locked button.act{background:#293447}
+.front-person .front-source{font-size:11px;color:#8ed3ff;margin-top:auto}
+.front-person .front-source:hover{text-decoration:underline}

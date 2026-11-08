@@ -1,0 +1,48 @@
+name: FM player country provenance audit
+on:
+  push:
+    branches:
+      - fix/fm-unified-nationality-2026-11-08
+    paths:
+      - 'rift-native/tools/import_public_figure_countries.py'
+      - 'rift-native/tools/import_leaguepedia_nationalities.py'
+      - 'rift-native/tools/apply_country_origins.py'
+      - '.github/workflows/fm-nationality-audit.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  country-hints:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install pycountry pyarrow pandas
+      - name: Match public Leaguepedia country records to exact player identities
+        run: python -u rift-native/tools/import_public_figure_countries.py
+      - name: Promote matched country and birthplace to game nationality
+        run: python -u rift-native/tools/apply_country_origins.py
+      - name: Preserve source URLs and audit counts
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add rift-native/assets/country-hints.json rift-native/country-hints-report.json rift-native/assets/nationality-overrides.json rift-native/nationality-merged-report.json
+          if ! git diff --staged --quiet; then
+            git commit -m 'Map source-backed player countries (citizenship review pending)'
+            git fetch origin fix/fm-unified-nationality-2026-11-08
+            git rebase origin/fix/fm-unified-nationality-2026-11-08
+            git push origin HEAD:fix/fm-unified-nationality-2026-11-08
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fm-player-country-audit
+          path: |
+            rift-native/country-hints-report.json
+            rift-native/nationality-merged-report.json
+          if-no-files-found: ignore

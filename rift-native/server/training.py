@@ -70,7 +70,7 @@ def ensure(db, career, person):
         pool = _trim(person, json.loads(row[2]))
         return dict(focus=focus, ovr=max(1, min(99, row[1])), pool=pool, assigned=row[3] if row[3] in ('ovr', 'pool') else 'ovr')
     created = dict(focus='auto', ovr=starting_ovr(person), pool=seed_pool(person), assigned='ovr')
-    db.execute('INSERT INTO player_development VALUES(?,?,?,?,?)', (career, person['id'], created['focus'], created['ovr'], json.dumps(created['pool'], ensure_ascii=False), created['assigned']))
+    db.execute('INSERT INTO player_development(career_id,person_id,focus,ovr,pool,assigned) VALUES(?,?,?,?,?,?)', (career, person['id'], created['focus'], created['ovr'], json.dumps(created['pool'], ensure_ascii=False), created['assigned']))
     return created
 
 def resolve(focus, ovr, pool, week):

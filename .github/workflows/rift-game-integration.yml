@@ -1,0 +1,42 @@
+name: RIFT game integration tests
+on:
+  push:
+    branches:
+      - fix/solo-pro-floor-league-foundation
+      - fix/fm-unified-nationality-2026-11-08
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout isolated feature branch
+        uses: actions/checkout@v4
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Compile backend and data tools
+        run: python3 -m compileall -q rift-native/server rift-native/tools rift-native/tests
+      - name: Validate browser JavaScript
+        run: node --check rift-native/web/app.js
+      - name: Franchise sponsor and team identity checks
+        run: python3 -m unittest discover -s rift-native/tests -p 'test_franchise_sponsor_identity.py' -v
+      - name: Country, owner and coach roster checks
+        run: python3 -m unittest discover -s rift-native/tests -p 'test_country_roster_roles.py' -v
+      - name: Rookie manager invitations and existing team identity
+        run: python3 -m unittest discover -s rift-native/tests -p 'test_rookie_career_features.py' -v
+      - name: Validate per-player detailed attributes and operator edits
+        run: python3 -m unittest discover -s rift-native/tests -p 'test_player_attributes.py' -v
+      - name: Run real API integration smoke test with temporary DB
+        run: python3 -m unittest discover -s rift-native/tests -p 'test_http_career_smoke.py' -v
+      - name: Migrate older solo player nicknames and Master floor
+        run: python3 -m unittest discover -s rift-native/tests -p 'test_short_nickname_migration.py' -v
+      - name: Player FM dossier attributes and recorded match analytics
+        run: python3 -m unittest discover -s rift-native/tests -p 'test_player_dossier.py' -v
+      - name: Validate calendars, read-only operator clock and seasonal honors
+        run: cd rift-native/server && python -m unittest test_season_awards test_season_calendar test_player_economy -v

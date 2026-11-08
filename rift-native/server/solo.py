@@ -10,6 +10,7 @@ import json
 import uuid
 import catalog
 import club_messages
+import solo_handles
 
 PERSONALITIES=('독함','꾸준','조급')
 PATHS=('amateur','prospect','pro','retired')
@@ -18,9 +19,19 @@ PATH_NAME={'amateur':'일반인','prospect':'유망주','pro':'프로','retired'
 STALL_GAIN={'독함':1,'꾸준':2,'조급':3}
 STALL_LIMIT={'독함':24,'꾸준':12,'조급':6}
 TALK_CHANCE={'독함':0.30,'꾸준':0.52,'조급':0.70}
-DEBUT_MMR=1100
+PRO_MIN_MMR=2800  # Master 0 LP: pro AND prospect minimum
+DEBUT_MMR=PRO_MIN_MMR  # Academy prospects must already be Master to debut
 PROSPECT_LIMIT=15
 MAJOR={'LCK','LPL','LEC','LCS'}
+
+# Rank-server region, not citizenship. Pro competitive matches never influence it.
+SOLO_REGIONS=('KR','CN','EUW','NA','BR','APAC','JP','VN')
+LEAGUE_SOLO={
+ 'LCK':'KR','LCK CL':'KR','LPL':'CN','LDL':'CN',
+ 'LEC':'EUW','LFL':'EUW','LES':'EUW','PRM':'EUW','TCL':'EUW',
+ 'LCS':'NA','NACL':'NA','CBLOL':'BR','Circuito Desafiante':'BR',
+ 'LCP':'APAC','PCS':'APAC','LJL':'JP','VCS':'VN'
+}
 
 def init(db):
     db.executescript('''CREATE TABLE IF NOT EXISTS solo_ranks(
@@ -31,10 +42,26 @@ def init(db):
         CREATE TABLE IF NOT EXISTS solo_people(person_id TEXT PRIMARY KEY, payload TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS solo_weeks(season INTEGER NOT NULL, week INTEGER NOT NULL, PRIMARY KEY(season,week));
         CREATE TABLE IF NOT EXISTS solo_seed(key TEXT PRIMARY KEY, value TEXT NOT NULL);''')
+    columns={x[1] for x in db.execute("PRAGMA table_info(solo_ranks)")}
+    if 'region' not in columns:
+        db.execute("ALTER TABLE solo_ranks ADD COLUMN region TEXT NOT NULL DEFAULT ''")
     if not db.execute("SELECT 1 FROM solo_seed WHERE key='ready'").fetchone():
         backfill(db)
         db.execute("INSERT OR REPLACE INTO solo_seed VALUES('ready','1')")
     seed_easter(db)
+    # Imported pro players queue on the region of their registered league.
+    # This is separate from nationality and real-life account residency.
+    for person in catalog.load().get('people',[]):
+        if person.get('kind')=='player':
+            where=LEAGUE_SOLO.get(person.get('league'),'APAC')
+            db.execute("UPDATE solo_ranks SET region=? WHERE person_id=? AND region!=?",
+                       (where,person['id'],where))
+    seed_amateurs(db)
+    repair_short_handles(db)
+    # Live migration: imported academy players, pre-existing prospects and pros
+    # never appear in a lower solo rank, even in an older saved career.
+    db.execute("UPDATE solo_ranks SET mmr=? WHERE path IN ('pro','prospect') AND mmr<?",
+               (PRO_MIN_MMR,PRO_MIN_MMR))
 
 def _unit(key):
     return int.from_bytes(hashlib.sha256(key.encode()).digest()[:4],'big')/4294967295
@@ -59,8 +86,13 @@ def start_mmr(person, path):
     spread=int(_unit(person['id']+':mmr')*360)
     if path=='pro':
         league=person.get('league') or ''
-        base=2460 if league in MAJOR else 1760 if ('CL' in league or 'Academy' in league or 'Challengers' in league) else 1500 if league else 1300
-        return base+spread//2
+        base=3220 if league in MAJOR else 2950 if ('CL' in league or 'Academy' in league or 'Challengers' in league or 'LDL' in league) else 2850
+        return max(PRO_MIN_MMR,base+spread//2)
+    if path=='prospect':
+        return PRO_MIN_MMR+int(_unit(person['id']+':prospect')*500)
+    # Amateur solo-only players can be below Master until they climb.
+    if person.get('origin')=='solo-queue-only':
+        return 2600+int(_unit(person['id']+':ranked-amateur')*830)
     return 280+int(_unit(person['id']+':amateur')*1050)
 
 def public_row(row, rank=None):
@@ -69,11 +101,12 @@ def public_row(row, rank=None):
     item=dict(id=person_id,mmr=mmr,games=games,path=path,path_name=PATH_NAME.get(path,path),
               personality=personality,career_id=career_id,stall=stall,nickname=nickname,real_name=real_name,
               role=role,club=club,label=describe(mmr),debut_ready=path=='prospect' and mmr>=DEBUT_MMR)
+    if len(row)>12:item['region']=row[12]
     if rank is not None: item['rank']=rank
     return item
 
 def fetch(db, person_id):
-    return db.execute('''SELECT person_id,mmr,games,path,personality,career_id,stall,last_talk_turn,nickname,real_name,role,club_name
+    return db.execute('''SELECT person_id,mmr,games,path,personality,career_id,stall,last_talk_turn,nickname,real_name,role,club_name,region
         FROM solo_ranks WHERE person_id=?''',(person_id,)).fetchone()
 
 def _insert(db, person, path, career_id=None, club=''):
@@ -83,8 +116,9 @@ def _insert(db, person, path, career_id=None, club=''):
     nickname=person.get('nickname') or person.get('display_name') or person.get('real_name') or '무명'
     real=person.get('display_name_ko') or person.get('real_name') or nickname
     mmr=start_mmr(person,path)
-    db.execute('''INSERT OR IGNORE INTO solo_ranks(person_id,mmr,games,path,personality,career_id,stall,nickname,real_name,role,club_name)
-        VALUES(?,?,0,?,?,?,0,?,?,?,?)''',(person['id'],mmr,path,personality_of(person['id']),career_id,nickname,real,role,club or person.get('team') or ''))
+    region=person.get('region') if person.get('region') in SOLO_REGIONS else LEAGUE_SOLO.get(person.get('league'),'APAC')
+    db.execute('''INSERT OR IGNORE INTO solo_ranks(person_id,mmr,games,path,personality,career_id,stall,nickname,real_name,role,club_name,region)
+        VALUES(?,?,0,?,?,?,0,?,?,?,?,?)''',(person['id'],mmr,path,personality_of(person['id']),career_id,nickname,real,role,club or person.get('team') or '',region))
     return fetch(db, person['id'])
 
 def ensure(db, person, path='pro', career_id=None, club=''):
@@ -109,7 +143,7 @@ def seed_easter(db):
         if not person.get('easter_egg'): continue
         found+=1
         db.execute('INSERT OR REPLACE INTO solo_people(person_id,payload) VALUES(?,?)',(person['id'],json.dumps(person,ensure_ascii=False)))
-        mmr=1120+int(_unit(person['id']+':easter')*420)
+        mmr=PRO_MIN_MMR+int(_unit(person['id']+':easter')*420)
         nickname=person.get('nickname') or person.get('real_name') or '무명'
         real=person.get('display_name_ko') or person.get('real_name') or nickname
         role=person.get('role') if person.get('role') in ROLES else 'TOP'
@@ -123,6 +157,92 @@ def seed_easter(db):
             db.execute('UPDATE solo_ranks SET mmr=? WHERE person_id=?',(mmr,person['id']))
     if found:
         db.execute("INSERT OR REPLACE INTO solo_seed VALUES('easter-academy','1')")
+
+def seed_amateurs(db):
+    """Create 520 fictional solo-only amateurs per region with natural short handles."""
+    if db.execute("SELECT 1 FROM solo_seed WHERE key='regional-amateurs-v1'").fetchone():
+        return
+    reserved={str(p.get('nickname') or '').casefold() for p in catalog.load().get('people',[])}
+    reserved.update(str(n).casefold() for n, in db.execute("SELECT nickname FROM solo_ranks"))
+    short_signatures=solo_handles.signatures_for(reserved)
+    for region in SOLO_REGIONS:
+        for i in range(520):
+            person_id=uuid.uuid5(uuid.NAMESPACE_URL,f'LFM:2026:solo:{region}:{i}').hex[:20]
+            handle=solo_handles.choose(person_id,reserved,short_signatures)
+            role=ROLES[int(_unit(person_id+':role')*len(ROLES))]
+            person=dict(id=person_id,nickname=handle,real_name=handle,kind='player',
+                        role=role,team='',league='',region=region,real_person=False,
+                        origin='solo-queue-only',nationality_pending=True,
+                        game_evaluation={'ratings':{role:40+int(_unit(person_id)*28)}})
+            db.execute('INSERT OR IGNORE INTO solo_people(person_id,payload) VALUES(?,?)',
+                       (person_id,json.dumps(person,ensure_ascii=False)))
+            _insert(db,person,'amateur')
+    db.execute("INSERT OR IGNORE INTO solo_seed VALUES('regional-amateurs-v1','1')")
+
+
+def repair_short_handles(db):
+    """One-time upgrade of already-saved 4160 fictional solo aliases.
+
+    Renames only solo-only generated people, never real players, registered
+    rookies, managers, or a nickname a user manually supplied. Keeps IDs,
+    MMR, games, club assignments and relationship records unchanged.
+    """
+    revision='compact-solo-handles-v3'
+    if db.execute("SELECT 1 FROM solo_seed WHERE key=?",(revision,)).fetchone():
+        return
+    people=[]
+    for pid,raw in db.execute("SELECT person_id,payload FROM solo_people ORDER BY person_id"):
+        p=json.loads(raw)
+        if p.get('origin')=='solo-queue-only' or (
+            pid.startswith('amateur-') and p.get('real_person') is False
+            and p.get('kind')=='player'):
+            people.append((pid,p))
+    owned={pid for pid,_ in people}
+    used={str(n).casefold() for pid,n in db.execute("SELECT person_id,nickname FROM solo_ranks")
+          if pid not in owned}
+    used.update(str(p.get('nickname') or '').casefold() for p in catalog.load().get('people',[])
+                if p.get('nickname'))
+    if db.execute("SELECT 1 FROM sqlite_master WHERE name='generated_people'").fetchone():
+        for pid,raw in db.execute("SELECT id,payload FROM generated_people"):
+            if pid not in owned:
+                p=json.loads(raw)
+                used.add(str(p.get('nickname') or '').casefold())
+    # Preserve already-short, unique player aliases across migrations.
+    kept={}
+    signatures=solo_handles.signatures_for(used)
+    for pid,person in people:
+        old=str(person.get('nickname') or '')
+        if (solo_handles.valid(old) and old.casefold() not in used
+            and not (solo_handles._fingerprint(old) & signatures)):
+            kept[pid]=old
+            used.add(old.casefold())
+            signatures.update(solo_handles._fingerprint(old))
+    # Include other people's old nicknames to avoid clashing with UNIQUE
+    # nickname_key while migrating previously recruited solo-only prospects.
+    for pid,person in people:
+        if pid not in kept and solo_handles.valid(person.get('nickname')):
+            used.add(str(person['nickname']).casefold())
+    for pid,person in people:
+        if pid in kept:continue
+        nickname=solo_handles.choose(pid,used,signatures)
+        old=str(person.get('nickname') or '')
+        person['nickname']=nickname
+        if person.get('real_name')==old:
+            person['real_name']=nickname
+        db.execute("UPDATE solo_people SET payload=? WHERE person_id=?",
+                   (json.dumps(person,ensure_ascii=False),pid))
+        db.execute("UPDATE solo_ranks SET nickname=?,real_name=CASE WHEN real_name=? THEN ? ELSE real_name END WHERE person_id=?",
+                   (nickname,old,nickname,pid))
+        if db.execute("SELECT 1 FROM sqlite_master WHERE name='generated_people'").fetchone():
+            record=db.execute("SELECT payload FROM generated_people WHERE id=?",(pid,)).fetchone()
+            if record:
+                g=json.loads(record[0])
+                g['nickname']=nickname
+                if g.get('real_name')==old:g['real_name']=nickname
+                db.execute("UPDATE generated_people SET nickname_key=?,payload=? WHERE id=?",
+                           (nickname.casefold(),json.dumps(g,ensure_ascii=False),pid))
+    db.execute("INSERT OR REPLACE INTO solo_seed(key,value) VALUES(?,?)",
+               (revision,str(len(people))))
 
 def claim_club(db, career, team):
     if not isinstance(team,str) or not team: return
@@ -145,28 +265,8 @@ def backfill(db):
             _insert(db, person, path, career, club[0] if club else '')
             if path!='amateur':
                 db.execute('UPDATE solo_ranks SET career_id=?,club_name=? WHERE person_id=?',(career,club[0] if club else '',pid))
-    if db.execute('SELECT COUNT(*) FROM solo_people').fetchone()[0]>=80: return
-    used=set()
-    for name,nick in db.execute('SELECT real_name,nickname FROM solo_ranks'):
-        used.add(name); used.add(nick.casefold())
-    for person in catalog.load().get('people',[]):
-        used.add(person.get('real_name') or ''); used.add(str(person.get('nickname') or '').casefold())
-    names=[''.join(parts) for parts in itertools.product(tuple('김이박최정강조윤장임한오서신권황안송유홍'),tuple('민서도시지예준현하태수건진성재우승정찬영'),tuple('준윤우호빈혁성현훈원민진환겸찬율영재수석'))]
-    nicks=[''.join(parts) for parts in itertools.product(tuple('루라리레로시세소하해호유이아오누나노미모'),('온','엘','안','오','루','리','린','빈','솔','별','율','현','빛','나','노','담','람','하','로','유'))]
-    import random
-    rng=random.Random('online-rookie-identities-2026');rng.shuffle(names);rng.shuffle(nicks)
-    made=0
-    for name,nick in zip(names,nicks):
-        if made>=80: break
-        if name in used or nick.casefold() in used: continue
-        pid='amateur-'+uuid.uuid5(uuid.NAMESPACE_URL,name+nick).hex[:20]
-        if fetch(db,pid): continue
-        role=ROLES[made%5]
-        person=dict(id=pid,real_name=name,display_name_ko=name,display_name=name,nickname=nick,kind='player',role=role,
-                    raw_role=role,team='',league='',real_person=False,nationality_name_ko='대한민국')
-        db.execute('INSERT OR IGNORE INTO solo_people VALUES(?,?)',(pid,json.dumps(person,ensure_ascii=False)))
-        _insert(db, person, 'amateur')
-        used.add(name); used.add(nick.casefold()); made+=1
+    # No random unattached solo-player pool. Recruitable players must come from
+    # the club recruitment system, saved prospects, or registered player data.
 
 def is_pro(db, person_id):
     row=fetch(db, person_id)
@@ -177,15 +277,32 @@ def require_pro(db, person_id):
     if row and row[3]!='pro':
         raise ValueError('amateurs and prospects cannot be signed')
 
-def ladder(db, career, role=''):
+def ladder(db, career, role='', region='KR', scope='all'):
     if role not in ('',*ROLES): raise ValueError('invalid role')
-    rows=db.execute('''SELECT person_id,mmr,games,path,personality,career_id,stall,last_talk_turn,nickname,real_name,role,club_name
-        FROM solo_ranks WHERE path!='retired' AND (?='' OR role=?) ORDER BY mmr DESC, nickname LIMIT 100''',(role,role)).fetchall()
+    if region not in SOLO_REGIONS:raise ValueError('invalid solo region')
+    if scope not in ('all','mine','amateur'):raise ValueError('invalid solo filter')
+    club=db.execute('SELECT name FROM careers WHERE id=?',(career,)).fetchone()
+    name=club[0] if club else ''
+    where="region=? AND path!='retired' AND (?='' OR role=?)"
+    values=[region,role,role]
+    if scope=='mine':
+        where+=" AND (career_id=? OR (club_name=? AND path='pro'))"
+        values.extend((career,name))
+    elif scope=='amateur':
+        where+=" AND path IN ('amateur','prospect')"
+    rows=db.execute('''SELECT person_id,mmr,games,path,personality,career_id,stall,
+        last_talk_turn,nickname,real_name,role,club_name,region
+        FROM solo_ranks WHERE '''+where+
+        ' ORDER BY mmr DESC, games DESC, nickname COLLATE NOCASE LIMIT 500',values).fetchall()
     board=[public_row(row,index+1) for index,row in enumerate(rows)]
-    mine_rows=db.execute('''SELECT person_id,mmr,games,path,personality,career_id,stall,last_talk_turn,nickname,real_name,role,club_name
-        FROM solo_ranks WHERE career_id=? AND path IN ('amateur','prospect') ORDER BY path, mmr DESC''',(career,)).fetchall()
-    return dict(role=role,rows=board,mine=[public_row(row) for row in mine_rows],
-                debut_at=describe(DEBUT_MMR),personalities=list(PERSONALITIES))
+    mine_rows=db.execute('''SELECT person_id,mmr,games,path,personality,career_id,stall,
+        last_talk_turn,nickname,real_name,role,club_name,region
+        FROM solo_ranks WHERE career_id=? AND path IN ('amateur','prospect')
+        ORDER BY mmr DESC''',(career,)).fetchall()
+    return dict(role=role,region=region,regions=list(SOLO_REGIONS),scope=scope,
+                rows=board,mine=[public_row(row) for row in mine_rows],
+                top=500,debut_at=describe(DEBUT_MMR),pro_floor=describe(PRO_MIN_MMR),
+                personalities=list(PERSONALITIES))
 
 def _turn(db):
     import online_world
@@ -213,6 +330,7 @@ def talk(db, career, person_id):
         if owner==career: raise ValueError('already your prospect')
         raise ValueError('another club is developing this player')
     if owner not in (None,career): raise ValueError('this player is in another club tryout')
+    if row[1]<PRO_MIN_MMR:raise ValueError('유망주는 솔로랭크 마스터 이상만 영입할 수 있습니다.')
     held=db.execute("SELECT COUNT(*) FROM solo_ranks WHERE career_id=? AND path='prospect'",(career,)).fetchone()[0]
     if held>=PROSPECT_LIMIT: raise ValueError('prospect list is full')
     clock,turn=_turn(db)
@@ -228,8 +346,10 @@ def talk(db, career, person_id):
         rumors.scout(db,career,person_id,row[8],False)
         return dict(accepted=False,player=public_row(fetch(db,person_id)))
     person=_payload(db, person_id)
-    person.update(kind='player',team=club,league='LCK CL',real_person=False)
-    db.execute('UPDATE solo_ranks SET path=?,career_id=?,club_name=?,stall=0 WHERE person_id=?',('prospect',career,club,person_id))
+    league=db.execute('SELECT league FROM club_profiles WHERE career_id=?',(career,)).fetchone()
+    person.update(kind='player',team=club,league=league[0] if league else 'LCK CL',real_person=False)
+    db.execute('UPDATE solo_ranks SET path=?,mmr=MAX(mmr,?),career_id=?,club_name=?,stall=0 WHERE person_id=?',
+               ('prospect',PRO_MIN_MMR,career,club,person_id))
     if db.execute('SELECT 1 FROM generated_people WHERE id=?',(person_id,)).fetchone():
         db.execute("UPDATE generated_people SET career_id=?,assignment='academy',payload=? WHERE id=?",(career,json.dumps(person,ensure_ascii=False),person_id))
     else:
@@ -260,7 +380,7 @@ def debut(db, career, person_id):
         db.execute('UPDATE generated_people SET assignment=?,payload=? WHERE id=?',(assignment,json.dumps(raw,ensure_ascii=False),person_id))
     if db.execute("SELECT 1 FROM sqlite_master WHERE name='club_roster'").fetchone():
         db.execute("UPDATE club_roster SET assignment=? WHERE person_id=? AND assignment='academy'",(assignment,person_id))
-    db.execute("UPDATE solo_ranks SET path='pro',stall=0 WHERE person_id=?",(person_id,))
+    db.execute("UPDATE solo_ranks SET path='pro',mmr=MAX(mmr,?),stall=0 WHERE person_id=?",(PRO_MIN_MMR,person_id))
     clock,_=_turn(db)
     club_messages.publish(db,career,'solo-debut:'+person_id,clock['season'],clock['week'],'프로 데뷔',
                           row[8]+'을 구단에서 직접 키운 뒤 프로로 데뷔시켰습니다. 이제 선발과 영입 시장에 프로로 올라갑니다.')
@@ -281,7 +401,7 @@ def _retire(db, row, season, week):
 def weekly(db, season, week):
     if not db.execute('INSERT OR IGNORE INTO solo_weeks VALUES(?,?)',(season,week)).rowcount: return
     rows=db.execute('''SELECT person_id,mmr,games,path,personality,career_id,stall,last_talk_turn,nickname,real_name,role,club_name
-        FROM solo_ranks WHERE path IN ('amateur','prospect')''').fetchall()
+        FROM solo_ranks WHERE path IN ('amateur','prospect','pro')''').fetchall()
     for row in rows:
         person_id,mmr,games,path,personality=row[0],row[1],row[2],row[3],row[4]
         roll=_unit(f'{person_id}:{season}:{week}:solo')
@@ -293,10 +413,12 @@ def weekly(db, season, week):
         stall=row[6]
         if delta<8: stall+=STALL_GAIN[personality]
         else: stall=max(0,stall-2)
-        if stall>=STALL_LIMIT[personality]:
+        if path!='pro' and stall>=STALL_LIMIT[personality]:
             _retire(db,row,season,week)
             continue
-        db.execute('UPDATE solo_ranks SET mmr=?,games=games+1,stall=? WHERE person_id=?',(max(0,mmr+delta),stall,person_id))
+        floor=PRO_MIN_MMR if path in ('pro','prospect') else 0
+        # These are independent weekly solo-queue simulations, not pro match results.
+        db.execute('UPDATE solo_ranks SET mmr=?,games=games+1,stall=? WHERE person_id=?',(max(floor,mmr+delta),0 if path=='pro' else stall,person_id))
 
 def _rating(player, won, team_damage):
     kills,deaths,assists=player.get('kda',[0,0,0])
@@ -305,42 +427,39 @@ def _rating(player, won, team_damage):
     return max(1,min(9.9,6+min(1.4,kills*.18+assists*.08)-min(3.5,deaths*.38)+(0.5 if won else -0.3)+(share-expected)*2))
 
 def record_result(db, result):
-    if not isinstance(result,dict): return
-    games=result.get('sets') or [result]
-    for game in games:
-        players=game.get('players') or []
-        if not players: continue
-        by_team={}
-        for index,player in enumerate(players):
-            team=player.get('team',index//5)
-            by_team[team]=by_team.get(team,0)+player.get('damage',0)
-        for index,player in enumerate(players):
-            person_id=player.get('player_id')
-            if not person_id: continue
-            row=fetch(db, person_id)
-            if not row or row[3] not in ('pro','prospect'): continue
-            team=player.get('team',index//5)
-            won=team==game.get('winner')
-            rating=_rating(player,won,by_team.get(team,0))
-            delta=int(round((rating-5)*6+(16 if won else -14)))
-            delta=max(-30,min(28,delta))
-            stall=row[6]
-            if row[3]=='prospect':
-                stall=max(0,stall-2) if delta>=8 else stall+STALL_GAIN[row[4]]
-            db.execute('UPDATE solo_ranks SET mmr=?,games=games+1,stall=? WHERE person_id=?',(max(0,row[1]+delta),stall,person_id))
+    """Professional match results do not change individual solo queue ratings.
+
+    Team competition performance is recorded by management.record_match.
+    Solo queue MMR is advanced only by separate solo queue simulations.
+    """
+    return None
 
 
 def repair_legacy_handles(db):
-    used={n.casefold() for n, in db.execute('SELECT nickname FROM solo_ranks')}
-    used.update(n for n, in db.execute('SELECT nickname_key FROM generated_people'))
-    starts=tuple('루라리레로시세소하해호유이아오누나노미모');ends=('온','엘','안','오','루','리','린','빈','솔','별','율','현','빛','나','노','담','람','하','로','유')
+    """Update generated amateur handle data without changing real player identities."""
+    import re
+    prefixes=('Aero','Ash','Blue','Cinder','Dawn','Ember','Frost','Gale','Haze','Iron','Jade','Lunar','Mist','Night','Opal','Pine','Quartz','Raven','Silver','Thorn')
+    suffixes=('Arc','Bloom','Crest','Drift','Echo','Flare','Grove','Hawk','Iris','Jet','Knight','Leaf','Moon','Nova','Oath','Peak','Quill','Rise','Storm','Vale')
+    used={str(n).casefold() for n, in db.execute('SELECT nickname FROM solo_ranks')}
     for pid,raw in db.execute('SELECT person_id,payload FROM solo_people').fetchall():
-        p=json.loads(raw);old=p.get('nickname','')
-        if not pid.startswith('amateur-') or p.get('original_nickname') or not any(old.startswith(prefix) for prefix in ('Ash','Blue','Cinder','Dawn','Ember','Frost','Gale','Haze','Iron','Jade')):continue
+        p=json.loads(raw)
+        if not pid.startswith('amateur-'): continue
+        old=str(p.get('nickname') or '')
+        if re.fullmatch(r'[A-Za-z]{2,20}',old): continue
         seed=int(hashlib.sha256(pid.encode()).hexdigest(),16)
         for offset in range(100000):
-            n=seed+offset;nick=starts[n%20]+ends[(n//20)%20]+('' if offset<400 else str(offset//400+1))
+            n=seed+offset
+            nick=prefixes[n%len(prefixes)]+suffixes[(n//len(prefixes))%len(suffixes)]
+            if offset>=len(prefixes)*len(suffixes):
+                count=offset//(len(prefixes)*len(suffixes))
+                ending=''
+                while count:
+                    count,r=divmod(count-1,26);ending=chr(65+r)+ending
+                nick+=ending
             if nick.casefold() not in used:break
-        used.add(nick.casefold());p.update(original_nickname=old,nickname=nick,nickname_ko=nick)
+        else: raise ValueError('amateur nickname space exhausted')
+        used.add(nick.casefold())
+        p.update(original_nickname=old,nickname=nick)
+        p.pop('nickname_ko',None)
         db.execute('UPDATE solo_people SET payload=? WHERE person_id=?',(json.dumps(p,ensure_ascii=False),pid))
         db.execute('UPDATE solo_ranks SET nickname=? WHERE person_id=?',(nick,pid))

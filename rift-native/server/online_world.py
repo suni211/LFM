@@ -7,7 +7,7 @@ def init(db):
         version INTEGER NOT NULL,PRIMARY KEY(user_id,version));''')
     latest=db.execute('SELECT season,week,version FROM careers ORDER BY season DESC,week DESC LIMIT 1').fetchone()
     db.execute('INSERT OR IGNORE INTO online_clock VALUES(1,?,?,?)',latest or (1,1,1))
-    db.execute('INSERT OR IGNORE INTO league_operators SELECT id FROM users WHERE id=(SELECT MIN(id) FROM users)')
+    # Operator privileges are explicitly provisioned, never assigned to the first sign-up.
     former=[r[0] for r in db.execute("SELECT career_id FROM members WHERE user_id IN (SELECT user_id FROM league_operators) AND role='admin'")]
     db.execute("UPDATE members SET role='viewer' WHERE user_id IN (SELECT user_id FROM league_operators) AND role='admin'")
     if db.execute("SELECT 1 FROM sqlite_master WHERE name='manager_profiles'").fetchone():

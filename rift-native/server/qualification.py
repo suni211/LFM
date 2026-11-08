@@ -71,6 +71,10 @@ def snapshot(db,season):
         champion_extra=int(bool(champion and champion['league']==league and eligibility is True))
         pending=bool(champion and champion['league']==league and eligibility is None)
         rows.append(dict(league=league,first_stand_slots=FST[league],msi_slots=MSI[league],msi_bracket_slots=2 if bypass==league else 1,msi_second_seed_pending=bypass is None and MSI[league]>1,worlds_base=base,worlds_confirmed_slots=base+extra+champion_extra,worlds_extra_seed=extra,worlds_champion_slot=champion_extra,worlds_champion_pending=pending))
-    year=2026+season-1
-    events=[dict(name='First Stand',start=f'{year}-03-16',end=f'{year}-03-22',entrants=8,format='4팀 더블 엘리미네이션 2개 조 → 4강·결승, 전 경기 BO5',source='https://lolesports.com/en-gb/news/fst-2026-primer'),dict(name='MSI',start=f'{year}-06-28',end=f'{year}-07-12',entrants=11,format='4팀 플레이인 → 8팀 더블 엘리미네이션',source=SOURCE),dict(name='Worlds',start=f'{year}-10-15',end=f'{year}-11-14',entrants=19,format='4팀 BO5 플레이인 → 16팀 스위스 → 8강 토너먼트',source=SOURCE)]
+    # Career events are scheduled by season/week, never by Gregorian dates.
+    events=[
+        dict(name='First Stand',start_week=11,end_week=12,entrants=8,format='4팀 더블 엘리미네이션 2개 조 → 4강·결승, 전 경기 BO5',source='https://lolesports.com/en-gb/news/fst-2026-primer'),
+        dict(name='MSI',start_week=26,end_week=29,entrants=11,format='4팀 플레이인 → 8팀 더블 엘리미네이션',source=SOURCE),
+        dict(name='Worlds',start_week=41,end_week=46,entrants=19,format='4팀 BO5 플레이인 → 16팀 스위스 → 8강 토너먼트',source=SOURCE)
+    ]
     return dict(season=season,rules_year=2026,allocations=rows,events=events,first_stand_bye_region=bypass,msi_champion=champion,msi_champion_playoffs=eligibility,worlds_extra_region=bonus,results=placements,source=SOURCE)

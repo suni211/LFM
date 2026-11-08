@@ -25,7 +25,7 @@ def init(db):
 
 def owner(db,p):
     row=db.execute('SELECT career_id,club_key FROM person_ownership WHERE person_id=?',(p['id'],)).fetchone()
-    if row: return row
+    if row: return (None,None) if row==(None,'free-agent') else row
     roster=db.execute("SELECT career_id FROM club_roster WHERE person_id=? AND assignment!='departed'",(p['id'],)).fetchone()
     generated=db.execute('SELECT career_id,assignment FROM generated_people WHERE id=?',(p['id'],)).fetchone()
     if roster: result=(roster[0],None)
@@ -59,8 +59,13 @@ def quote(db,buyer,person_id,salary,fee,years,pitch):
         solo.require_pro(db,person_id)
     seller,source=owner(db,person)
     if seller==buyer: raise ValueError('person already belongs to this club')
+    economics=person.get('economics')
+    if not economics:
+        import player_economy
+        economics=player_economy.profile(db,person)
     base=person.get('salary')
-    if type(base) is not int or base<1: base=24000000 if person['kind']=='player' else 18000000
+    if type(base) is not int or base<1:
+        base=economics['annual_salary'] if economics else (24000000 if person['kind']=='player' else 18000000)
     if seller:
         old=db.execute('SELECT annual_salary FROM club_contracts WHERE career_id=? AND person_id=? AND active=1',(seller,person_id)).fetchone()
         if old: base=old[0]
@@ -69,7 +74,10 @@ def quote(db,buyer,person_id,salary,fee,years,pitch):
     trust=trust_row[0] if trust_row else 50
     discount=(profile['stats']['협상']-10)*.003+(trust-50)*.001
     ask=max(1,round(base*(1.08-discount-(.03 if pitch=='development' else 0))))
-    asking_fee=max(0,base//2) if source or seller else 0
+    # Valuations follow the same performance/reputation model used by the
+    # player dossier. A genuine unattached FA has no transfer fee.
+    asking_fee=max(0,int(economics['market_value'])) if economics and (source or seller) else (
+        max(0,base//2) if source or seller else 0)
     if db.execute("SELECT 1 FROM transfer_offers WHERE buyer=? AND person_id=? AND state IN ('quoted','seller_pending','ready')",(buyer,person_id)).fetchone():
         raise ValueError('an offer is already open for this person')
     offer=db.execute('''INSERT INTO transfer_offers(buyer,seller,person_id,annual_salary,fee,years,asking_salary,asking_fee,state,pitch,created_turn)

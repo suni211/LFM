@@ -21,6 +21,22 @@ def league_table(db,league,season):
         for team,sw,sl in ((home,score[0],score[1]),(away,score[1],score[0])):
             if team not in table:continue
             row=table[team];row['played']+=1;row['wins']+=int(sw>sl);row['losses']+=int(sw<sl);row['sets_won']+=sw;row['sets_lost']+=sl
+    # Include AI-vs-AI round-robin results, while avoiding double counting
+    # user fixtures already included above. Fictional AI entrants are explicit.
+    for week,home,away,hw,aw,fid in db.execute("""SELECT g.week,g.home,g.away,g.home_wins,g.away_wins,g.fixture_id
+        FROM league_games g JOIN club_profiles p ON p.career_id=g.career_id
+        WHERE p.league=? AND g.season=? AND g.home_wins IS NOT NULL AND g.away_wins IS NOT NULL""",(league,season)):
+        if fid is not None: continue
+        match_key=(week,*sorted((home,away)))
+        if match_key in seen:continue
+        seen.add(match_key)
+        for team in (home,away):
+            if team not in table:table[team]=dict(team=team,played=0,wins=0,losses=0,sets_won=0,sets_lost=0)
+        for team,sw,sl in ((home,hw,aw),(away,aw,hw)):
+            record=table[team]
+            record['played']+=1
+            record['wins']+=int(sw>sl);record['losses']+=int(sw<sl)
+            record['sets_won']+=sw;record['sets_lost']+=sl
     rows=sorted(table.values(),key=lambda p:(-p['wins'],p['sets_lost']-p['sets_won'],p['team']))
     rank=0;previous=None
     for i,row in enumerate(rows):

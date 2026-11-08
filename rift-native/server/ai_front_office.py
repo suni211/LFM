@@ -135,6 +135,12 @@ def _choose(db,cid,season,week,market):
 def weekly(db,season,week):
     # Decision-making is a durable monthly event, not repeated per GET.
     if week!=2 and week%4!=1:return
+    # Support legacy database snapshots and clock-only integration tests.
+    required={'club_finances','club_contracts','person_ownership',
+              'ai_transfer_decisions','recruitment_state','club_roster'}
+    existing={name for (name,) in db.execute(
+        "SELECT name FROM sqlite_master WHERE type='table'")}
+    if not required.issubset(existing):return
     import management
     market=[p for p in catalog.load()['people'] if p.get('kind')=='player']
     for (cid,) in db.execute('SELECT id FROM careers ORDER BY id').fetchall():

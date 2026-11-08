@@ -26,6 +26,7 @@ import solo
 import player_departures
 import scouting
 import career_rules
+import rookie_offers
 import series_state
 import manual_draft
 from highlight_recording import clip_path
@@ -66,6 +67,7 @@ def init():
         player_departures.init(db)
         scouting.init(db)
         career_rules.init(db)
+        rookie_offers.init(db)
         solo.repair_legacy_handles(db)
         recruitment.repair_initial_pool(db)
         import training
@@ -140,6 +142,14 @@ class Handler(BaseHTTPRequestHandler):
                     brandings[league+'\n'+name]=dict(
                         short=short,color=color,emblem=emblem,logo_data=logo_data)
                 return self.reply(200,{'brandings':brandings})
+            if url.path=='/rookie-offers':
+                if not manager_identity.view(db,uid)['complete']:
+                    return self.reply(409,{'error':'감독 프로필을 먼저 설정하세요.'})
+                if online_world.operator(db,uid):
+                    return self.reply(403,{'error':'운영자는 신인 감독 부임 대상이 아닙니다.'})
+                if db.execute('SELECT 1 FROM members WHERE user_id=? LIMIT 1',(uid,)).fetchone():
+                    return self.reply(200,{'offers':[],'already_managing':True})
+                return self.reply(200,{'offers':rookie_offers.list_offers(db,uid),'already_managing':False})
             if url.path=='/clubs':
                 directory=clubs.directory(db)
                 for club in directory:
@@ -526,6 +536,8 @@ class Handler(BaseHTTPRequestHandler):
                         if not selected: raise ValueError('unknown real club')
                         if not career_rules.takeover_allowed(selected['league'],selected['team']):
                             return self.reply(403,{'error':career_rules.takeover_reason(selected['league'],selected['team'])})
+                        if not rookie_offers.invited(db,uid,selected['team_key']):
+                            return self.reply(403,{'error':'해당 구단의 신인 감독 부임 제안을 받지 않았습니다.'})
                         name=selected['team']
                     elif mode=='create': name=data.get('name','')
                     else: raise ValueError('invalid club mode')
@@ -543,6 +555,7 @@ class Handler(BaseHTTPRequestHandler):
                         role=clubs.grant(db,uid,existing[0]);identity=manager_identity.view(db,uid)
                         management.ensure(db,existing[0])
                         db.execute('UPDATE manager_profiles SET name=?,stats=? WHERE career_id=?',(identity['name'],json.dumps(identity['stats'],ensure_ascii=False),existing[0]))
+                        if not online_world.operator(db,uid):rookie_offers.accept(db,uid,selected['team_key'])
                         db.execute('COMMIT');return self.reply(201,{'id':existing[0],'role':role})
                 world=online_world.clock(db)
                 cur=db.execute('INSERT INTO careers(name,season,week,version) VALUES(?,?,?,?)',(name.strip(),world['season'],world['week'],world['version'])); cid=cur.lastrowid
@@ -572,6 +585,7 @@ class Handler(BaseHTTPRequestHandler):
                 except (ValueError,sqlite3.IntegrityError):
                     # An occupied schedule is not fatal to club creation; other leagues remain available.
                     pass
+                if mode=='takeover' and not online_world.operator(db,uid):rookie_offers.accept(db,uid,selected['team_key'])
                 db.execute('COMMIT'); return self.reply(201,{'id':cid,'role':'admin'})
             if self.path in ('/transfer-offer','/transfer-response'):
                 cid=data['id']

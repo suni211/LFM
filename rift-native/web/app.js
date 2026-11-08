@@ -394,18 +394,33 @@ async function news() {
    id:current.id,kind:b.dataset.newsUnfollow,entity:b.dataset.newsEntity,enabled:false}).then(()=>news()).catch(e=>alert(e.message)))
  await topbar()
 }
+function personAge(person) {
+  const year=2025+(worldState?.season||1)
+  const raw=person.birth_date||person.birthdate||person.date_of_birth||person.dateOfBirth||person.dob||person.birthday||''
+  const birthYear=/^(18|19|20)\d{2}(?:-\d\d-\d\d)?$/.test(String(raw))?Number(String(raw).slice(0,4)):
+    (Number.isInteger(person.birth_year)?person.birth_year:null)
+  if(birthYear&&birthYear<=year&&year-birthYear<110)return {label:(year-birthYear)+'세',source:'생년 기준'}
+  if(Number.isInteger(person.age)&&person.age>=12&&person.age<100)
+    return {label:(person.age+(year-(person.age_as_of_year||2026)))+'세',source:'등록 나이'}
+  if(person.real_person)return {label:'미확인',source:'생년월일 자료 없음'}
+  // A consistent game-only age for generated youth, never represented as
+  // the actual age of an imported real-world esports player.
+  let fingerprint=0
+  for(const char of String(person.id||person.nickname||''))fingerprint=(fingerprint*31+char.charCodeAt(0))>>>0
+  return {label:(17+fingerprint%7+year-2026)+'세',source:'생성 선수 나이'}
+}
 function nickname(person) {return person.nickname || person.nickname_ko || person.display_name || person.name || '이름 확인 중'}
 function personLink(person) {
   return `<a href="/app/player/${esc(person.id)}">${face(person.id,Boolean(person.photo))}<span>${esc(nickname(person))}<small>${esc(person.real_name_ko || person.display_name_ko || person.real_name || '')}</small>${flagAndCountry(person)}</span></a>`
 }
 function rosterTable(people, records={}, development={}, contracts={}) {
   if(!people.length)return '<p class="empty">등록된 선수가 없습니다.</p>'
-  return `<div class="table-scroll"><table class="roster-table"><thead><tr>${['선수 얼굴 · 닉네임 / 이름','구분','소속 팀','게임 레이팅','OVR','인지도','국적','포지션','연봉','시장가치','계약년도','만료'].map(t=>`<th>${t}</th>`).join('')}</tr></thead><tbody>${people.map(p=>{
+  return `<div class="table-scroll"><table class="roster-table"><thead><tr>${['선수 얼굴 · 닉네임 / 이름','구분','소속 팀','나이','게임 레이팅','OVR','인지도','국적','포지션','연봉','시장가치','계약년도','만료'].map(t=>`<th>${t}</th>`).join('')}</tr></thead><tbody>${people.map(p=>{
     const c=contracts[p.id],d=development[p.id],r=records[p.id],eco=p.economics||{};const ratings=p.game_evaluation?.ratings||p.stats;const values=ratings?Object.values(ratings).filter(Number.isFinite):[];const ovr=d?.ovr??(values.length?Math.round(values.reduce((a,b)=>a+b,0)/values.length):null)
     const start=c?.start_turn?`${2026+Math.floor((c.start_turn-1)/150)}년 · ${Math.floor((c.start_turn-1)/150)+1}시즌`:'미기록'
     const expiry=c?`${2026+Math.floor((c.end_turn-1)/150)}년 · ${Math.floor((c.end_turn-1)/150)+1}시즌 ${((c.end_turn-1)%150)+1}주`:p.contract_end||'확인 중'
     const group=p.kind==='player'?(p.real_person?'실존 선수':'생성 선수'):(p.real_person?'실존 프런트':'생성 프런트');const assignment=rosterStatus(p)
-    return `<tr><td>${personLink(p)}</td><td><span class="identity-tag ${p.real_person?'real':'generated'}">${group}</span><small>${esc(assignment)}</small></td><td>${logoImg(p.league,p.team)}${esc(p.team||'무소속')}</td><td><b class="rating">${eco.rating??'미평가'}</b><small>${r?.rating!=null?'게임 경기 평점 '+Number(r.rating).toFixed(1):'능력·경력 평가'}</small></td><td><b>${d?.ovr??eco.ovr??ovr??'미평가'}</b></td><td><b>${eco.fame??'미평가'}</b></td><td>${flagAndCountry(p)}</td><td>${esc(ROLE[p.role]||'확인 중')}</td><td>${money(c?.annual_salary??eco.annual_salary??p.salary)}<small>${c?'구단 계약':'연봉 추정'}</small></td><td>${money(eco.market_value)}</td><td>${start}</td><td>${esc(expiry)}${!c&&p.contract_estimated?'<small>예상</small>':''}</td></tr>`
+    return `<tr><td>${personLink(p)}</td><td><span class="identity-tag ${p.real_person?'real':'generated'}">${group}</span><small>${esc(assignment)}</small></td><td>${logoImg(p.league,p.team)}${esc(p.team||'무소속')}</td><td><b title="${esc(personAge(p).source)}">${esc(personAge(p).label)}</b></td><td><b class="rating">${eco.rating??'미평가'}</b><small>${r?.rating!=null?'게임 경기 평점 '+Number(r.rating).toFixed(1):'능력·경력 평가'}</small></td><td><b>${d?.ovr??eco.ovr??ovr??'미평가'}</b></td><td><b>${eco.fame??'미평가'}</b></td><td>${flagAndCountry(p)}</td><td>${esc(ROLE[p.role]||'확인 중')}</td><td>${money(c?.annual_salary??eco.annual_salary??p.salary)}<small>${c?'구단 계약':'연봉 추정'}</small></td><td>${money(eco.market_value)}</td><td>${start}</td><td>${esc(expiry)}${!c&&p.contract_estimated?'<small>예상</small>':''}</td></tr>`
   }).join('')}</tbody></table></div>`
 }
 async function squad(which) {
@@ -808,7 +823,7 @@ async function player(id, tab) {
          '<h3>선수단 소속</h3><div class="fm-role-detail"><b>'+esc(statusLabel)+'</b>'+
            '<span>'+joinedText+'</span></div></section>'+
        '<section class="panel"><h2>계약 · 정보</h2><div class="fm-quickfacts">'+
-         '<div><span>국적</span>'+flagAndCountry(person)+'</div>'+
+         '<div><span>국적</span>'+flagAndCountry(person)+'</div>'+ '<div><span>나이</span><b>'+esc(personAge(person).label)+'</b></div>'+
          '<div><span>연봉</span><b>'+money(contract?.annual_salary??eco.annual_salary??person.salary)+'</b></div>'+
          '<div><span>시장가치</span><b>'+money(eco.market_value)+'</b></div>'+
          '<div><span>인지도</span><b>'+(eco.fame??'미평가')+' / 100</b></div>'+
@@ -821,7 +836,7 @@ async function player(id, tab) {
     (isPlayer?'<section class="panel"><h2>능력치 · 시즌 성적의 차이</h2><p class="muted-note">'+
       '개별 능력은 게임 평가 모델의 추정값이고, KDA·CS·피해량은 실제로 진행된 LFM 경기만 집계합니다. '+
       '솔로랭크 전적은 프로 경기 성적에 포함하지 않습니다.</p></section>':'')
-  else if(tab==='personal') main=`<section class="panel"><h2>개인 정보</h2><div class="info-pairs"><p>영문 닉네임 <b>${esc(person.nickname||'기록 없음')}</b></p><p>본명 <b>${esc(person.real_name||'기록 없음')}</b></p><p>국적 <b>${flagAndCountry(person)}</b></p><p>리그 <b>${esc(person.league||'무소속')}</b></p><p>지역 <b>${esc(person.region||person.nationality_name_ko||'정보 없음')}</b></p><p>포지션 <b>${esc(ROLE[person.role]||person.role||'정보 없음')}</b></p><p>솔로랭크 <b>${esc(person.solo?.label||'정보 없음')}</b></p></div></section>`
+  else if(tab==='personal') main=`<section class="panel"><h2>개인 정보</h2><div class="info-pairs"><p>영문 닉네임 <b>${esc(person.nickname||'기록 없음')}</b></p><p>본명 <b>${esc(person.real_name||'기록 없음')}</b></p><p>국적 <b>${flagAndCountry(person)}</b></p><p>나이 <b>${esc(personAge(person).label)}</b></p><p>리그 <b>${esc(person.league||'무소속')}</b></p><p>지역 <b>${esc(person.region||person.nationality_name_ko||'정보 없음')}</b></p><p>포지션 <b>${esc(ROLE[person.role]||person.role||'정보 없음')}</b></p><p>솔로랭크 <b>${esc(person.solo?.label||'정보 없음')}</b></p></div></section>`
   else if(tab==='contract') {
     const expiryYear=contract?.expiry_season?2025+contract.expiry_season:null
     const expiryText=contract?.expiry_season?

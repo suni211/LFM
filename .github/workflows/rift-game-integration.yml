@@ -1,0 +1,31 @@
+name: RIFT game integration tests
+on:
+  push:
+    branches:
+      - fix/solo-pro-floor-league-foundation
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout isolated feature branch
+        uses: actions/checkout@v4
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Compile backend and data tools
+        run: python3 -m compileall -q rift-native/server rift-native/tools rift-native/tests
+      - name: Validate browser JavaScript
+        run: node --check rift-native/web/app.js
+      - name: Franchise sponsor and team identity checks
+        run: python3 -m unittest discover -s rift-native/tests -p 'test_franchise_sponsor_identity.py' -v
+      - name: Country, owner and coach roster checks
+        run: python3 -m unittest discover -s rift-native/tests -p 'test_country_roster_roles.py' -v
+      - name: Rookie manager invitations and existing team identity
+        run: python3 -m unittest discover -s rift-native/tests -p 'test_rookie_career_features.py' -v

@@ -1,6 +1,7 @@
 """Shared, ID-based people and club browsing. Preserve imported provenance."""
 import json
 import os
+from collections import defaultdict
 from pathlib import Path
 
 PEOPLE=Path(os.environ.get('RIFT_PEOPLE',Path(__file__).resolve().parent.parent/'assets'/'people.json'))
@@ -14,12 +15,35 @@ def init(db):
 def load():
     data=json.loads(PEOPLE.read_text(encoding='utf-8'))
     people=data['people']
+    # Repair only generic *league buckets* in the game view. A bucket is not
+    # a real club. The chosen destination is fictional game placement.
+    aliases={'LCK 2군':'LCK CL','LCK CL 2군':'LCK CL','LDL 2군':'LDL'}
+    destinations={}
+    for dest in set(aliases.values()):
+        names=sorted({p.get('team') for p in people if p.get('league')==dest
+                      and p.get('team') and p.get('team') not in aliases})
+        if len(names)<2:
+            names=[dest+' Academy North (AI)',dest+' Academy South (AI)',dest+' Academy West (AI)']
+        destinations[dest]=names
+    used=defaultdict(set)
+    for person in sorted((p for p in people if p.get('team') in aliases),
+                         key=lambda p:(str(p.get('role') or ''),p['id'])):
+        original=person['team']
+        dest=aliases[original]
+        names=destinations[dest]
+        role=person.get('role')
+        selected=min(names,key=lambda team:(role in used[(dest,team)],len(used[(dest,team)]),team))
+        used[(dest,selected)].add(role)
+        person['original_team_bucket']=original
+        person['team']=selected
+        person['league']=dest
+        person['assignment_origin']='fictional-game-placement'
     if len({person['id'] for person in people})!=len(people):
         raise ValueError('duplicate person IDs in catalog')
     return data
 
 def display(person):
-    return person.get('nickname_ko') or person.get('nickname') or person.get('name') or person.get('display_name_ko') or '닉네임 확인 중'
+    return person.get('nickname') or person.get('nickname_ko') or person.get('name') or person.get('display_name_ko') or '닉네임 확인 중'
 
 def game_clubs(db):
     if not db.execute("SELECT 1 FROM sqlite_master WHERE name='club_roster'").fetchone(): return {}

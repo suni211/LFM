@@ -25,6 +25,7 @@ import dashboard
 import solo
 import player_departures
 import scouting
+import career_rules
 import series_state
 import manual_draft
 from highlight_recording import clip_path
@@ -64,6 +65,7 @@ def init():
         solo.init(db)
         player_departures.init(db)
         scouting.init(db)
+        career_rules.init(db)
         solo.repair_legacy_handles(db)
         recruitment.repair_initial_pool(db)
         import training
@@ -127,7 +129,13 @@ class Handler(BaseHTTPRequestHandler):
                 if not 1<=season<=10000:raise ValueError('invalid season')
                 return self.reply(200,qualification.snapshot(db,season))
             if url.path=='/manager-profile': return self.reply(200,manager_identity.view(db,uid))
-            if url.path=='/clubs': return self.reply(200,{'clubs':clubs.directory(db),'leagues':sorted({p['league'] for p in catalog.load()['people'] if p.get('league')})})
+            if url.path=='/clubs':
+                directory=clubs.directory(db)
+                for club in directory:
+                    club['eligible']=career_rules.takeover_allowed(club['league'],club['team'])
+                    club['ineligible_reason']=career_rules.takeover_reason(club['league'],club['team'])
+                    club['power']=round(career_rules.club_power(club['league'],club['team']))
+                return self.reply(200,{'clubs':directory,'leagues':career_rules.creation_leagues(db)})
             if url.path=='/world': return self.reply(200,online_world.status(db,uid))
             if url.path=='/departure-requests':
                 cid=int(parse_qs(url.query)['id'][0])
@@ -480,6 +488,8 @@ class Handler(BaseHTTPRequestHandler):
                     if mode=='takeover':
                         selected=next((club for club in clubs.available(db) if club['team_key']==data.get('team_key')),None)
                         if not selected: raise ValueError('unknown real club')
+                        if not career_rules.takeover_allowed(selected['league'],selected['team']):
+                            return self.reply(403,{'error':career_rules.takeover_reason(selected['league'],selected['team'])})
                         name=selected['team']
                     elif mode=='create': name=data.get('name','')
                     else: raise ValueError('invalid club mode')
@@ -503,8 +513,14 @@ class Handler(BaseHTTPRequestHandler):
                 if db.execute('SELECT 1 FROM careers WHERE lower(name)=lower(?) AND id!=?',(name.strip(),cid)).fetchone():
                     return self.reply(409,{'error':'club name already exists'})
                 requested_league=data.get('league','LCK CL')
-                if mode=='create' and requested_league not in {p['league'] for p in catalog.load()['people']}:
+                if mode=='create' and requested_league not in career_rules.creation_leagues(db):
                     db.execute('ROLLBACK');return self.reply(400,{'error':'등록된 리그를 선택하세요.'})
+                if mode=='create':
+                    short=data.get('short','')
+                    color=data.get('color','#254A7A')
+                    emblem=data.get('emblem','shield')
+                    career_rules.valid_brand(name,short,color)
+                    career_rules.store_brand(db,cid,short,color,emblem)
                 clubs.create(db,cid,mode,data.get('team_key'),requested_league)
                 db.execute('INSERT INTO members VALUES(?,?,?)',(cid,uid,'admin'))
                 manager=manager_identity.view(db,uid)['name']
@@ -515,6 +531,11 @@ class Handler(BaseHTTPRequestHandler):
                 identity=manager_identity.view(db,uid)
                 db.execute('UPDATE manager_profiles SET name=?,stats=? WHERE career_id=?',(identity['name'],json.dumps(identity['stats'],ensure_ascii=False),cid))
                 community.appointment(db,cid,manager)
+                try:
+                    career_rules.seed_league(db,cid,selected['league'] if selected else requested_league,world['season'],world['week'])
+                except (ValueError,sqlite3.IntegrityError):
+                    # An occupied schedule is not fatal to club creation; other leagues remain available.
+                    pass
                 db.execute('COMMIT'); return self.reply(201,{'id':cid,'role':'admin'})
             if self.path in ('/transfer-offer','/transfer-response'):
                 cid=data['id']

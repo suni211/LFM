@@ -27,6 +27,9 @@ import player_departures
 import scouting
 import career_rules
 import rookie_offers
+import promotion
+import club_history
+import sponsorship
 import series_state
 import manual_draft
 from highlight_recording import clip_path
@@ -68,6 +71,9 @@ def init():
         scouting.init(db)
         career_rules.init(db)
         rookie_offers.init(db)
+        club_history.init(db)
+        promotion.init(db)
+        sponsorship.init(db)
         solo.repair_legacy_handles(db)
         recruitment.repair_initial_pool(db)
         import training
@@ -88,7 +94,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('Content-Type','application/json; charset=utf-8'); self.send_header('Cache-Control','no-store'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body)
     def input(self):
         n=int(self.headers.get('Content-Length','0'))
-        limit=131072 if self.path in ('/community-create','/community-edit','/careers') else 16384
+        limit=131072 if self.path in ('/community-create','/community-edit','/careers','/club-logo','/operator/club-identity') else 16384
         if n<=0 or n>limit: raise ValueError('invalid body')
         value=json.loads(self.rfile.read(n));
         if not isinstance(value,dict): raise ValueError('invalid body')
@@ -141,7 +147,36 @@ class Handler(BaseHTTPRequestHandler):
                     JOIN club_profiles p ON p.career_id=c.id"""):
                     brandings[league+'\n'+name]=dict(
                         short=short,color=color,emblem=emblem,logo_data=logo_data)
+                for league,team,display_name,logo_data,short,color in db.execute(
+                    """SELECT league,canonical_team,display_name,logo_data,short,color
+                      FROM club_public_identity"""):
+                    key=league+'\n'+team
+                    current=brandings.setdefault(key,{})
+                    if display_name:current['display_name']=display_name
+                    if logo_data:current['logo_data']=logo_data
+                    if short:current['short']=short
+                    if color and color!='#17324d':current['color']=color
                 return self.reply(200,{'brandings':brandings})
+            if url.path=='/club-identity':
+                query=parse_qs(url.query)
+                league_name=query.get('league',[''])[0]
+                team=query.get('team',[''])[0]
+                if not club_history.exists(db,league_name,team):
+                    return self.reply(404,{'error':'구단을 찾지 못했습니다.'})
+                return self.reply(200,dict(league=league_name,team=team,
+                    display_name=club_history.display(db,league_name,team),
+                    branding=club_history.visual(db,league_name,team),
+                    history=club_history.history(db,league_name,team),
+                    can_manage_name=online_world.operator(db,uid),
+                    can_manage_logo=online_world.operator(db,uid) or bool(
+                       db.execute("""SELECT 1 FROM careers c JOIN club_profiles p ON p.career_id=c.id
+                         JOIN members m ON m.career_id=c.id WHERE c.name=? AND p.league=?
+                         AND m.user_id=? AND m.role='admin'""",
+                         (team,league_name,uid)).fetchone())))
+            if url.path=='/sponsor-offers':
+                cid=int(parse_qs(url.query)['id'][0])
+                if not news.member(db,uid,cid):return self.reply(404,{'error':'not found'})
+                return self.reply(200,sponsorship.proposals(db,cid))
             if url.path=='/rookie-offers':
                 if not manager_identity.view(db,uid)['complete']:
                     return self.reply(409,{'error':'감독 프로필을 먼저 설정하세요.'})
@@ -495,8 +530,49 @@ class Handler(BaseHTTPRequestHandler):
                 return self.reply(200,{'token':token})
             uid=self.user(db)
             if not uid: return self.reply(401,{'error':'unauthorized'})
-            if online_world.operator(db,uid) and self.path not in ('/competition-rules','/person-evaluation','/fixtures','/league','/preferences'):
+            if online_world.operator(db,uid) and self.path not in ('/competition-rules','/person-evaluation','/fixtures','/league','/preferences','/operator/club-identity'):
                 return self.reply(403,{'error':'운영자는 구단을 운영하거나 선수단·전술을 변경할 수 없습니다.'})
+            if self.path=='/operator/club-identity':
+                if not online_world.operator(db,uid):
+                    return self.reply(403,{'error':'구단 이름 수정은 운영자만 가능합니다.'})
+                league_name=data.get('league','')
+                team=data.get('team','')
+                if not isinstance(league_name,str) or not isinstance(team,str) or len(league_name)>80 or len(team)>80:
+                    return self.reply(400,{'error':'invalid club'})
+                clock=online_world.clock(db)
+                db.execute('BEGIN IMMEDIATE')
+                result={}
+                if 'name' in data:
+                    result=club_history.rename(db,league_name,team,data['name'],
+                                                clock['season'],clock['week'])
+                if 'logo_data' in data:
+                    club_history.update_logo(db,league_name,team,data['logo_data'],
+                                             clock['season'],clock['week'],'operator')
+                db.execute('COMMIT')
+                return self.reply(200,dict(result,updated=True))
+            if self.path=='/club-logo':
+                cid=data.get('id')
+                if type(cid)!=int or not transfers.can_manage(db,uid,cid):
+                    return self.reply(403,{'error':'본인 구단의 로고만 변경할 수 있습니다.'})
+                row=db.execute("""SELECT c.name,p.league FROM careers c
+                    JOIN club_profiles p ON p.career_id=c.id WHERE c.id=?""",(cid,)).fetchone()
+                if not row:return self.reply(404,{'error':'not found'})
+                clock=online_world.clock(db)
+                db.execute('BEGIN IMMEDIATE')
+                club_history.update_logo(db,row[1],row[0],data.get('logo_data',''),
+                                         clock['season'],clock['week'])
+                db.execute('COMMIT')
+                return self.reply(200,{'updated':True})
+            if self.path=='/sponsor-accept':
+                cid=data.get('id')
+                if type(cid)!=int or not transfers.can_manage(db,uid,cid):
+                    return self.reply(403,{'error':'forbidden'})
+                if type(data.get('offer'))!=int:
+                    return self.reply(400,{'error':'invalid sponsor offer'})
+                db.execute('BEGIN IMMEDIATE')
+                result=sponsorship.accept(db,cid,data['offer'])
+                db.execute('COMMIT')
+                return self.reply(200,result)
             if self.path=='/manager-profile':
                 db.execute('BEGIN IMMEDIATE')
                 result=manager_identity.save(db,uid,data)
@@ -812,8 +888,14 @@ class Handler(BaseHTTPRequestHandler):
                 votes,members=readiness['ready_count'],readiness['member_count']
                 advanced=online_world.operator(db,uid) or votes>members//2
                 if advanced:
-                    if week==104: week=1; season+=1
-                    else: week+=1
+                    if week==104:
+                        # The outgoing season's results are reviewed privately.
+                        promotion.year_end(db,season)
+                        sponsorship.year_end(db,season)
+                        week=1
+                        season+=1
+                        promotion.apply_new_season(db,season)
+                    else:week+=1
                     current+=1
                     for (club_id,) in db.execute('SELECT id FROM careers').fetchall():
                         management.advance(db,club_id,season,week)

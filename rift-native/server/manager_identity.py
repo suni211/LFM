@@ -1,14 +1,21 @@
 """Account-level manager identity, completed before joining the online league."""
 import json
 import re
+import nationality
 ATTRIBUTES=('전술','훈련','협상','동기부여','선수관리','스카우팅')
 def init(db):
     db.execute('''CREATE TABLE IF NOT EXISTS account_managers(user_id INTEGER PRIMARY KEY REFERENCES users(id),
-        nickname TEXT NOT NULL,name TEXT NOT NULL,stats TEXT NOT NULL)''')
+        nickname TEXT NOT NULL,name TEXT NOT NULL,stats TEXT NOT NULL,nationality_code TEXT NOT NULL DEFAULT '')''')
+    fields={x[1] for x in db.execute("PRAGMA table_info(account_managers)")}
+    if 'nationality_code' not in fields:
+        db.execute("ALTER TABLE account_managers ADD COLUMN nationality_code TEXT NOT NULL DEFAULT ''")
 def view(db,uid):
-    row=db.execute('SELECT nickname,name,stats FROM account_managers WHERE user_id=?',(uid,)).fetchone()
+    row=db.execute('SELECT nickname,name,stats,nationality_code FROM account_managers WHERE user_id=?',(uid,)).fetchone()
+    country=row[3] if row else ''
     return dict(complete=bool(row),nickname=row[0] if row else '',name=row[1] if row else '',
-                stats=json.loads(row[2]) if row else dict.fromkeys(ATTRIBUTES,10),attributes=ATTRIBUTES,total=60,minimum=1,maximum=20)
+                nationality_code=country,nationality_name_ko=nationality.COUNTRIES.get(country,''),
+                stats=json.loads(row[2]) if row else dict.fromkeys(ATTRIBUTES,10),
+                attributes=ATTRIBUTES,total=60,minimum=1,maximum=20)
 def save(db,uid,data):
     nick=data.get('nickname');name=data.get('name');stats=data.get('stats')
     for text in (nick,name):
@@ -20,8 +27,14 @@ def save(db,uid,data):
     if existing: raise ValueError('이미 사용 중인 감독 닉네임입니다.')
     if not isinstance(stats,dict) or set(stats)!=set(ATTRIBUTES) or any(type(v) is not int or not 1<=v<=20 for v in stats.values()) or sum(stats.values())!=60:
         raise ValueError('감독 능력치는 각각 1~20, 합계 60으로 설정하세요.')
+    code=data.get('nationality_code')
+    if code not in nationality.COUNTRIES:
+        raise ValueError('감독 국적을 목록에서 선택해 주세요.')
     raw=json.dumps(stats,ensure_ascii=False)
-    db.execute('INSERT INTO account_managers VALUES(?,?,?,?) ON CONFLICT(user_id) DO UPDATE SET nickname=excluded.nickname,name=excluded.name,stats=excluded.stats',(uid,nick.strip(),name.strip(),raw))
+    db.execute("""INSERT INTO account_managers(user_id,nickname,name,stats,nationality_code)
+        VALUES(?,?,?,?,?) ON CONFLICT(user_id) DO UPDATE SET
+        nickname=excluded.nickname,name=excluded.name,stats=excluded.stats,
+        nationality_code=excluded.nationality_code""",(uid,nick.strip(),name.strip(),raw,code))
     # Viewing another club as an operator never changes that club's manager.
     db.execute("UPDATE manager_profiles SET name=?,stats=? WHERE career_id IN (SELECT career_id FROM members WHERE user_id=? AND role='admin')",(name.strip(),raw,uid))
     return view(db,uid)

@@ -96,12 +96,16 @@ def annotate_verified_staff(league,team,people):
 
 def owner_info(league,team,created=False):
     record=VERIFIED.get((league,team))
-    if record:return deepcopy(record)
+    if record:
+        # Corporate club owners and their representatives never show flags.
+        result=deepcopy(record)
+        result.pop('nationality_code',None)
+        result.pop('nationality_name_ko',None)
+        return result
     return dict(
-        name='신생 구단 투자 이사회 (게임)' if created else '구단 운영위원회 (게임)',
-        representative='',representative_role='게임 내 가상 운영 주체',
-        nationality_name_ko='',nationality_code='',
-        source='simulation',source_url='')
+        name='신생 구단 이사회 (게임)' if created else '구단주 정보 확인 중',
+        representative='',representative_role='',
+        source='simulation' if created else 'unverified',source_url='')
 
 def head_coach(people):
     """Look up real head coach in the recorded team's LoL staff, not generic staff."""
@@ -112,7 +116,6 @@ def head_coach(people):
         score=0
         if 'head coach' in raw or '감독' in raw:score=5
         elif str(p.get('staff_role') or '')=='HEAD_COACH':score=4
-        elif raw=='coach' or 'coach' in raw:score=1
         if score:
             candidates.append((-score,str(p.get('id','')),p))
     if not candidates:return None

@@ -22,7 +22,7 @@ def estimate(person,fan_support=50):
         return dict(units=0,gross_sales=0,cost=0,profit=0)
     factor=max(.20,min(1.9,float(fan_support)/65))
     # One simulated item per 35,000 KRW of fictional gross demand.
-    gross=int(econ['merch_annual_sales']/104*factor)
+    gross=int(econ['merch_annual_sales']/150*factor)
     units=max(0,gross//35000)
     gross=units*35000
     cost=units*19250
@@ -32,7 +32,7 @@ def estimate(person,fan_support=50):
 def weekly(db,career,season,week,contracts,fan_support):
     import management
     for contract in contracts:
-        if not contract['active'] or contract['end_turn']<(season-1)*104+week:
+        if not contract['active'] or contract['end_turn']<(season-1)*150+week:
             continue
         person=contract['person']
         if person.get('kind')!='player':continue

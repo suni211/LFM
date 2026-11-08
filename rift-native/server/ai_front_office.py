@@ -118,17 +118,23 @@ def _choose(db,cid,season,week,market):
         if p['id'] in belonging:continue
         source=source_club(db,p,cid)
         scored=scoring(p,known[role],fans)
-        if not scored or scored['projected_net_value']<=0:continue
+        if not scored or scored['playing_benefit']<=0:continue
         fee=0 if source and source['kind']=='free-agent' else int(
             (p.get('economics') or player_economy.estimate(p))['market_value']*.18)
         net=scored['projected_net_value']-fee//2
-        if net<=0:continue
         affordable=bool(source and cash>=fee+scored['annual_salary']//104
             and budget>=fee and payroll+scored['annual_salary']<=wages)
-        candidates.append((int(affordable),net,p['id'],p,scored,source,fee))
+        if not affordable: continue
+        # Hard priority: on-field improvement, then financial headroom,
+        # then commercial upside. Popularity cannot trump better performance.
+        remaining_budget=budget-fee
+        candidates.append((scored['playing_benefit'],remaining_budget,
+                           scored['predicted_merch_profit']+scored['reputation']*350000,
+                           p['id'],p,scored,source,fee))
     if not candidates:return
-    candidates.sort(key=lambda item:(-item[0],-item[1],item[2]))
-    can_sign,_,pid,p,score,source,fee=candidates[0]
+    candidates.sort(key=lambda item:(-item[0],-item[1],-item[2],item[3]))
+    _,_,_,pid,p,score,source,fee=candidates[0]
+    can_sign=True
     signed=False
     if can_sign:
         import solo
@@ -137,7 +143,7 @@ def _choose(db,cid,season,week,market):
         except (ValueError,KeyError):
             can_sign=0
         else:
-            now=(season-1)*104+week
+            now=(season-1)*150+week
             signed=db.execute("""INSERT OR IGNORE INTO club_roster(
                 career_id,person_id,payload,assignment,role) VALUES(?,?,?,?,?)""",
                 (cid,pid,json.dumps(dict(p,team=team,league=league),ensure_ascii=False),
@@ -154,7 +160,7 @@ def _choose(db,cid,season,week,market):
                     DO UPDATE SET career_id=excluded.career_id,club_key=NULL""",(pid,cid))
                 db.execute("""INSERT OR IGNORE INTO club_contracts
                     (career_id,person_id,annual_salary,end_turn,active)
-                    VALUES(?,?,?,?,1)""",(cid,pid,score['annual_salary'],now+103))
+                    VALUES(?,?,?,?,1)""",(cid,pid,score['annual_salary'],now+149))
                 db.execute("""INSERT OR IGNORE INTO contract_signings VALUES(?,?,?)""",(cid,pid,now))
                 db.execute("""INSERT OR IGNORE INTO club_health(career_id,person_id)
                     VALUES(?,?)""",(cid,pid))

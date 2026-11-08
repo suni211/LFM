@@ -9,6 +9,7 @@ import clubs
 import fixtures
 import league
 import season_calendar
+import season_structure
 
 
 class CalendarAndOperatorTest(unittest.TestCase):
@@ -39,8 +40,10 @@ class CalendarAndOperatorTest(unittest.TestCase):
     def test_world_schedule_exists_without_any_played_match(self):
         matches=season_calendar.build(self.db,1,'LCK')
         self.assertEqual(len(matches),12)
-        self.assertEqual({g['week'] for g in matches},set(range(2,8)))
-        for week in range(2,8):
+        weeks={g['week'] for g in matches}
+        self.assertEqual(len(weeks),6)
+        self.assertTrue(all(11<=week<=125 and season_structure.phase(week)=='regional' for week in weeks))
+        for week in weeks:
             teams=[name for g in matches if g['week']==week for name in (g['home'],g['away'])]
             self.assertCountEqual(teams,['Alpha','Beta','Gamma','Delta'])
         self.assertTrue(all(g['source']=='game-generated' and g['best_of']==3 for g in matches))
@@ -50,13 +53,15 @@ class CalendarAndOperatorTest(unittest.TestCase):
         self.assertEqual(created,6)
         self.assertEqual(season_calendar.ensure_career(self.db,10),0)
         rows=self.db.execute("SELECT season,week FROM fixtures WHERE career_id=10 ORDER BY week").fetchall()
-        self.assertEqual(rows,[(1,week) for week in range(2,8)])
+        self.assertEqual(rows,[(1,week) for week in sorted(
+            {g['week'] for g in season_calendar.build(self.db,1,'LCK',team='Alpha')})])
 
     def test_manual_fixture_is_not_overwritten(self):
+        blocked=next(g['week'] for g in season_calendar.build(self.db,1,'LCK',team='Alpha'))
         self.db.execute("""INSERT INTO fixtures(career_id,season,week,opponent,seed,best_of,competition,stage)
-            VALUES(10,1,2,'Manual Rival',1,5,'Worlds','final')""")
+            VALUES(10,1,?,'Manual Rival',1,5,'Worlds','final')""",(blocked,))
         self.assertEqual(season_calendar.ensure_career(self.db,10),5)
-        row=self.db.execute("SELECT opponent,best_of,competition,stage FROM fixtures WHERE career_id=10 AND week=2").fetchone()
+        row=self.db.execute("SELECT opponent,best_of,competition,stage FROM fixtures WHERE career_id=10 AND week=?",(blocked,)).fetchone()
         self.assertEqual(row,('Manual Rival',5,'Worlds','final'))
 
     def test_next_season_is_generated_immediately(self):

@@ -13,6 +13,7 @@ import recruitment
 import clubs
 import staffing
 import club_vision
+import season_structure
 
 def init(db):
     club_vision.init(db)
@@ -50,7 +51,7 @@ def init(db):
 
 def turn(db,career):
     season,week=db.execute('SELECT season,week FROM careers WHERE id=?',(career,)).fetchone()
-    return (season-1)*104+week
+    return season_structure.absolute_turn(season,week)
 
 def ensure(db,career):
     actual=clubs.profile(db,career)['mode']=='takeover'
@@ -70,9 +71,9 @@ def ensure(db,career):
             import player_economy
             estimate=p.get('economics') or player_economy.estimate(p)
             salary=estimate['annual_salary'] if estimate else 18000000
-        end=now+103
+        end=now+149
         if p.get('real_person') and not p.get('contract_estimated'):
-            try: end=max(now,(date.fromisoformat(p['contract_end']).year-2026+1)*104)
+            try: end=max(now,(date.fromisoformat(p['contract_end']).year-2026+1)*150)
             except (TypeError,ValueError,KeyError): pass
         added=db.execute('INSERT OR IGNORE INTO club_contracts VALUES(?,?,?,?,1)',(career,p['id'],salary,end))
         if added.rowcount: db.execute('INSERT OR IGNORE INTO contract_signings VALUES(?,?,?)',(career,p['id'],now))
@@ -86,6 +87,23 @@ def ensure(db,career):
     ids=sorted(p['id'] for p in selected if p['assignment']=='first')
     for i,first in enumerate(ids):
         for second in ids[i+1:]: db.execute('INSERT OR IGNORE INTO club_relationships(career_id,first_id,second_id) VALUES(?,?,?)',(career,first,second))
+
+def agent_demand(db,career,contract,manager=None):
+    """Minimum game wage demand: permits raises and cuts after changing performance."""
+    person=contract['person']
+    import player_economy
+    economy=player_economy.profile(db,person) or {}
+    target=int(economy.get('annual_salary') or contract['annual_salary'])
+    current=contract['annual_salary']
+    morale=contract.get('morale',60)
+    manager=manager or {'stats':{'협상':10}}
+    trust_row=db.execute('SELECT trust FROM agent_relations WHERE career_id=? AND person_id=?',
+                         (career,person['id'])).fetchone()
+    trust=trust_row[0] if trust_row else 50
+    negotiation=manager['stats'].get('협상',10)
+    factor=max(.70,min(1.30,1+(morale-60)*.004+(50-trust)*.002
+                         -(negotiation-10)*.005))
+    return max(1000000,int(round((target*.70+current*.30)*factor/100000))*100000)
 
 def snapshot(db,career):
     finance=db.execute('SELECT cash,transfer_budget,wage_budget,board,fans FROM club_finances WHERE career_id=?',(career,)).fetchone()
@@ -102,6 +120,11 @@ def snapshot(db,career):
         signed=db.execute('SELECT start_turn FROM contract_signings WHERE career_id=? AND person_id=?',(career,pid)).fetchone()
         contracts.append(dict(start_turn=signed[0] if signed else None,person=p,annual_salary=salary,end_turn=end,remaining_turns=max(0,end-now+1),active=bool(active),
                               fatigue=fatigue,injury_turns=max(0,injury-now),treatment=treatment,morale=morale,growth=json.loads(growth)))
+    manager_row=db.execute('SELECT stats FROM manager_profiles WHERE career_id=?',(career,)).fetchone()
+    manager_for_agent={'stats':json.loads(manager_row[0])} if manager_row else {'stats':{'협상':10}}
+    if db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='agent_relations'").fetchone():
+        for contract in contracts:
+            contract['agent_asking_salary']=agent_demand(db,career,contract,manager_for_agent)
     state['contracts']=contracts
     state['annual_payroll']=sum(p['annual_salary'] for p in contracts if p['active'])
     import merchandise
@@ -138,12 +161,12 @@ def action(db,career,data):
         pid=data['person']; salary,years=data['annual_salary'],data['years']
         contract=next((p for p in state['contracts'] if p['person']['id']==pid),None)
         if not contract: raise ValueError('contract not found')
-        if type(salary) is not int or type(years) is not int or years not in (1,2,3) or not contract['annual_salary']<=salary<=10**11:
-            raise ValueError('salary offer below demand')
+        if type(salary) is not int or type(years) is not int or years not in (1,2,3) or not contract.get('agent_asking_salary',contract['annual_salary'])<=salary<=10**11:
+            raise ValueError('salary offer below agent demand')
         if state['annual_payroll']-(contract['annual_salary'] if contract['active'] else 0)+salary>state['wage_budget']: raise ValueError('wage budget exceeded')
-        db.execute('UPDATE club_contracts SET annual_salary=?,end_turn=?,active=1 WHERE career_id=? AND person_id=?',(salary,now+104*years-1,career,pid))
+        db.execute('UPDATE club_contracts SET annual_salary=?,end_turn=?,active=1 WHERE career_id=? AND person_id=?',(salary,now+150*years-1,career,pid))
         db.execute('INSERT INTO contract_signings VALUES(?,?,?) ON CONFLICT(career_id,person_id) DO UPDATE SET start_turn=excluded.start_turn',(career,pid,now))
-        club_messages.publish(db,career,'renew:'+pid+':'+str(now)+':'+str(max(now,contract['end_turn']+1)),(now-1)//104+1,(now-1)%104+1,'계약 연장',contract['person'].get('display_name',catalog.display(contract['person']))+'의 계약을 '+str(years)+'시즌 연장했습니다. 게임용 계약입니다.')
+        club_messages.publish(db,career,'renew:'+pid+':'+str(now)+':'+str(max(now,contract['end_turn']+1)),(now-1)//150+1,(now-1)%150+1,'계약 연장',contract['person'].get('display_name',catalog.display(contract['person']))+'의 계약을 '+str(years)+'시즌 연장했습니다. 게임용 계약입니다.')
     elif op=='treatment':
         pid=data['person']; mode=data['treatment']
         if mode not in ('normal','rest','rehab'): raise ValueError('invalid treatment')
@@ -182,7 +205,7 @@ def action(db,career,data):
 
 def advance(db,career,season,week):
     ensure(db,career)
-    now=(season-1)*104+week
+    now=(season-1)*150+week
     if not db.execute('INSERT OR IGNORE INTO management_turns VALUES(?,?)',(career,now)).rowcount: return
     state=snapshot(db,career)
     training=dict(db.execute('SELECT key,value FROM settings WHERE career_id=?',(career,))).get('training','기본기')
@@ -201,7 +224,7 @@ def advance(db,career,season,week):
             db.execute('UPDATE club_contracts SET active=0 WHERE career_id=? AND person_id=?',(career,pid))
             club_messages.publish(db,career,'expired:'+pid+':'+str(now),season,week,'계약 만료',name+'의 계약이 만료됐습니다. 재계약 또는 선수단 교체가 필요합니다.')
             continue
-        salary=contract['annual_salary'];payroll+=(salary*now)//104-(salary*(now-1))//104
+        salary=contract['annual_salary'];payroll+=(salary*now)//150-(salary*(now-1))//150
         if contract['person'].get('kind') in ('coach','staff'): continue
         personal.apply_week(db,career,contract['person'],week,coach_bonus)
         fatigue=contract['fatigue']; injured=contract['injury_turns']>1
@@ -220,7 +243,7 @@ def advance(db,career,season,week):
         db.execute('UPDATE club_health SET fatigue=?,growth=?,morale=MIN(100,morale+?) WHERE career_id=? AND person_id=?',
                    (fatigue,json.dumps(growth,ensure_ascii=False),1 if recovering else 0,career,pid))
     if payroll:
-        ledger(db,career,'payroll:'+str(now),-payroll,'salary','선수·스탭 주간 급여 · 연봉 104턴 분할',season,week)
+        ledger(db,career,'payroll:'+str(now),-payroll,'salary','선수·스탭 주간 급여 · 연봉 150턴 분할',season,week)
         club_messages.publish(db,career,'payroll:'+str(now),season,week,'급여 지급',format(payroll,',')+'원을 지급했습니다. 재정 원장에서 확인할 수 있습니다.')
     import merchandise
     merchandise.weekly(db,career,season,week,state['contracts'],state['fans'])

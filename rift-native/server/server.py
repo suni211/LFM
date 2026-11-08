@@ -6,6 +6,7 @@ from pathlib import Path
 from urllib.parse import urlsplit, parse_qs
 import fixtures
 import season_calendar
+import season_structure
 import season_awards
 import league
 import news
@@ -46,6 +47,9 @@ def connect():
 
 def init():
     with closing(connect()) as db:
+        # Legacy 104-week fixture constraints must be rebuilt with FK checks
+        # paused; the migration itself is transactional and preserves IDs.
+        db.execute('PRAGMA foreign_keys=OFF')
         db.executescript('''CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY, name TEXT UNIQUE NOT NULL, salt BLOB NOT NULL, password BLOB NOT NULL);
         CREATE TABLE IF NOT EXISTS sessions(token_hash TEXT PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id), expires INTEGER NOT NULL);
         CREATE TABLE IF NOT EXISTS careers(id INTEGER PRIMARY KEY, name TEXT NOT NULL, week INTEGER NOT NULL DEFAULT 1, season INTEGER NOT NULL DEFAULT 1, version INTEGER NOT NULL DEFAULT 1);
@@ -84,6 +88,10 @@ def init():
         sponsorship.init(db)
         import ai_front_office
         ai_front_office.init(db)
+        season_structure.migrate_legacy_schema(db)
+        problems=db.execute('PRAGMA foreign_key_check').fetchall()
+        if problems:raise RuntimeError('database foreign key integrity check failed: '+str(problems[:5]))
+        db.execute('PRAGMA foreign_keys=ON')
         # Existing FM league schedules remain authoritative; only absent schedules
         # receive the shared game-generated calendar.
         for (career_id,) in db.execute('SELECT id FROM careers').fetchall():
@@ -103,7 +111,7 @@ def advance_world(db):
     if db.execute("SELECT 1 FROM fixtures WHERE state='queued' LIMIT 1").fetchone():
         raise ValueError('finish the current series before advancing')
     season,week,version=now['season'],now['week'],now['version']+1
-    if week==104:
+    if week==150:
         season_awards.finalize(db,season)
         promotion.year_end(db,season)
         sponsorship.year_end(db,season)
@@ -128,7 +136,7 @@ def advance_world(db):
     rumors.weekly(db,season,week)
     import ai_front_office
     ai_front_office.weekly(db,season,week)
-    return dict(season=season,week=week,version=version)
+    return dict(season=season,week=week,version=version,phase=season_structure.phase(week),weeks_per_season=150)
 
 def derive(password, salt): return hashlib.scrypt(password.encode(), salt=salt, n=16384, r=8, p=1)
 class Handler(BaseHTTPRequestHandler):
@@ -959,7 +967,7 @@ class Handler(BaseHTTPRequestHandler):
                     except ValueError as error:return self.reply(409,{'error':str(error)})
                 elif self.path == '/draft-choice':
                     game=db.execute('SELECT career_id,season,week FROM fixtures WHERE id=?',(fixture,)).fetchone()
-                    if management.readiness(db,game[0],(game[1]-1)*104+game[2]):
+                    if management.readiness(db,game[0],(game[1]-1)*150+game[2]):
                         return self.reply(409,{'error':'select healthy contracted players before draft'})
                     if state['phase']=='feedback' and time.time()>=state['feedback_until']:
                         series_state.next_choice(state,seed)

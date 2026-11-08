@@ -5,7 +5,7 @@ import catalog
 import clubs
 import fan_community
 
-YEAR=104
+YEAR=150
 
 def init(db):
     db.execute('''CREATE TABLE IF NOT EXISTS league_rumors(
@@ -23,9 +23,9 @@ def prune(db):
     clock=online_world.clock(db)
     cutoff=_turn(clock['season'],clock['week'])-YEAR
     if cutoff<1: return
-    db.execute('DELETE FROM career_news WHERE ((season-1)*104+week)<?',(cutoff,))
+    db.execute('DELETE FROM career_news WHERE ((season-1)*150+week)<?',(cutoff,))
     if db.execute("SELECT 1 FROM sqlite_master WHERE name='league_rumors'").fetchone():
-        db.execute('DELETE FROM league_rumors WHERE ((season-1)*104+week)<?',(cutoff,))
+        db.execute('DELETE FROM league_rumors WHERE ((season-1)*150+week)<?',(cutoff,))
 
 def break_story(db,league,key,season,week,headline,body,subjects):
     if db.execute('SELECT 1 FROM league_rumors WHERE event_key=?',(key,)).fetchone(): return
@@ -94,7 +94,7 @@ def _teams(db):
     return grouped
 
 def weekly(db,season,week):
-    if not 1<=week<=10: prune(db); return
+    if not (1<=week<=10 or 145<=week<=150): prune(db); return
     if db.execute('SELECT 1 FROM stove_weeks WHERE season=? AND week=?',(season,week)).fetchone():
         prune(db); return
     for league,teams in _teams(db).items():

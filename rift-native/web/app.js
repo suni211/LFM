@@ -512,7 +512,18 @@ async function managementPage(kind) {
       '</div><div class="budget-editor"><label>이적 예산 조정<input id="budget-transfer" type="number" min="0" value="'+budget+'"/></label>'+
        '<label>급여 예산<input id="budget-wage" type="number" min="0" value="'+Number(data.wage_budget||0)+'"/></label>'+
        '<button class="act" id="save-budget">예산 저장</button></div></section></div>'+
-      '<section class="panel"><h2>회계 내역 · '+ledger.length+'건</h2>'+
+      '<section class="panel"><h2>선수 계약 · 에이전트 재협상</h2><p class="muted-note">게임 내 현재 연봉·시장가치와 성적·사기·에이전트 신뢰에 따른 최소 요구 연봉입니다.</p>'+
+       (data.contracts||[]).filter(c=>c.active).map(c=>{
+         const p=c.person,eco=p.economics||{},minimum=Number(c.agent_asking_salary??c.annual_salary)
+         return '<div class="panel"><div class="row">'+personLink(p)+
+           '<span>현재 연봉 <b>'+money(c.annual_salary)+'</b></span>'+
+           '<span>시장가치 <b>'+money(eco.market_value)+'</b></span>'+
+           '<span>에이전트 요구 <b>'+money(minimum)+'</b></span></div>'+
+           '<div class="row"><label>제안 연봉<input type="number" min="'+minimum+'" step="100000" value="'+minimum+'" data-renew-salary="'+esc(p.id)+'"></label>'+
+           '<label>계약 기간<select data-renew-years="'+esc(p.id)+'"><option value="1">1시즌</option><option value="2">2시즌</option><option value="3">3시즌</option></select></label>'+
+           '<button class="act" data-renew="'+esc(p.id)+'">에이전트와 재계약</button></div></div>'
+       }).join('')+'</section>'+
+       '<section class="panel"><h2>회계 내역 · '+ledger.length+'건</h2>'+
        ledger.map(row=>'<div class="finance-ledger-line"><span>'+row.season+'시즌 '+row.week+'주 · '+esc(row.description)+'</span>'+
        '<b class="'+(row.amount>=0?'positive':'negative')+'">'+(row.amount>=0?'+':'')+money(row.amount)+'</b></div>').join('')+'</section>'
   } else if (kind === 'medical') {
@@ -565,6 +576,16 @@ async function managementPage(kind) {
   shell(body, path)
   const budget = document.getElementById('save-budget')
   if (budget) budget.onclick = () => api('/management', {id:current.id, action:'budget', transfer_budget:Number(document.getElementById('budget-transfer').value), wage_budget:Number(document.getElementById('budget-wage').value)}).then(() => draw()).catch(error => alert(error.message))
+  document.querySelectorAll('[data-renew]').forEach(button => button.onclick = async () => {
+    const pid=button.dataset.renew
+    const salary=Number(document.querySelector('[data-renew-salary="'+CSS.escape(pid)+'"]').value)
+    const years=Number(document.querySelector('[data-renew-years="'+CSS.escape(pid)+'"]').value)
+    if(!confirm('에이전트 조건으로 재계약을 제안할까요?'))return
+    try {
+      await api('/management',{id:current.id,action:'renew',person:pid,annual_salary:salary,years})
+      await managementPage('finance')
+    } catch(error) {alert(error.message)}
+  })
   document.querySelectorAll('[data-release]').forEach(button => button.onclick = async () => {
     const approve=button.dataset.approve==='true'
     if(!confirm(approve?'선수와 합의해 계약을 종료하고 FA로 전환할까요?':'선수의 FA 요청을 거절할까요?'))return
@@ -587,11 +608,11 @@ async function schedule() {
  const season=current.season
  const currentWeek=current.week
  const fixtures=all.filter(g=>g.season===season)
- const maxPage=7
+ const maxPage=Math.ceil(150/14)-1
  if(calendarPage<0||calendarPage>maxPage)calendarPage=Math.floor((currentWeek-1)/14)
  const start=calendarPage*14+1
  const cells=Array.from({length:14},(_,i)=>{
-   const week=start+i;if(week>104)return '<div class="calendar-cell calendar-unused"></div>'
+   const week=start+i;if(week>150)return '<div class="calendar-cell calendar-unused"></div>'
    const games=fixtures.filter(g=>g.week===week)
    const status=week===currentWeek?'current-week':week<currentWeek?'past-week':'future-week'
    return '<div class="calendar-cell '+status+'"><div class="calendar-cell-heading"><b>'+week+'주</b><small>'+
@@ -605,7 +626,7 @@ async function schedule() {
  const ended=fixtures.filter(g=>g.state==='finished').length
  shell('<div class="page-heading"><div><p class="eyebrow">SEASON PLANNER</p><h1>시즌 경기 캘린더</h1><p>'+season+'시즌 · 실제 날짜가 아닌 게임 주차 기준</p></div></div>'+
   '<div class="calendar-summary"><div><small>현재</small><strong>'+currentWeek+'주</strong></div><div><small>진행 경기</small><strong>'+ended+'경기</strong></div><div><small>다음 상대</small><strong>'+esc(nextGame?displayTeam(current.club_profile?.league||'',nextGame.opponent):'미정')+'</strong></div></div>'+
-  '<section class="panel calendar-panel"><div class="calendar-toolbar"><div><h2>시즌 일정 · '+start+'~'+Math.min(104,start+13)+'주</h2><small>승패·예정 경기와 휴식 주간을 카드로 확인합니다</small></div>'+
+  '<section class="panel calendar-panel"><div class="calendar-toolbar"><div><h2>시즌 일정 · '+start+'~'+Math.min(150,start+13)+'주</h2><small>승패·예정 경기와 휴식 주간을 카드로 확인합니다</small></div>'+
   '<div class="calendar-controls"><button data-calendar-prev '+(calendarPage===0?'disabled':'')+'>〈 이전</button><button data-calendar-now>이번 주</button><button data-calendar-next '+(calendarPage===maxPage?'disabled':'')+'>다음 〉</button></div></div>'+
   '<div class="calendar-weekheaders">'+['첫 번째','두 번째','세 번째','네 번째','다섯 번째','여섯 번째','일곱 번째'].map(day=>'<span>'+day+' 주차 칸</span>').join('')+'</div>'+
   '<div class="calendar-grid">'+cells+'</div>'+

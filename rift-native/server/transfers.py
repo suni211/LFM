@@ -125,7 +125,7 @@ def respond(db,user,career,offer_id,choice,counter_fee=None):
     if seller is not None and not seller_approved:
         db.execute("UPDATE transfer_offers SET annual_salary=?,fee=?,state='seller_pending' WHERE id=?",(salary,fee,offer_id))
         now=management.turn(db,buyer)
-        club_messages.publish(db,seller,'offer:'+str(offer_id),(now-1)//104+1,(now-1)%104+1,'이적 제안 도착',catalog.display(person)+' 영입 제안이 도착했습니다. 이적 활동에서 수락·거절·역제안을 선택하세요.')
+        club_messages.publish(db,seller,'offer:'+str(offer_id),(now-1)//150+1,(now-1)%150+1,'이적 제안 도착',catalog.display(person)+' 영입 제안이 도착했습니다. 이적 활동에서 수락·거절·역제안을 선택하세요.')
         rumors.step(db,buyer,offer_id,'forward',person)
         return
     state=management.snapshot(db,buyer)
@@ -154,19 +154,19 @@ def respond(db,user,career,offer_id,choice,counter_fee=None):
     db.execute('UPDATE person_ownership SET career_id=?,club_key=NULL WHERE person_id=?',(buyer,pid))
     now=management.turn(db,buyer)
     db.execute('''INSERT INTO club_contracts VALUES(?,?,?,?,1) ON CONFLICT(career_id,person_id)
-        DO UPDATE SET annual_salary=excluded.annual_salary,end_turn=excluded.end_turn,active=1''',(buyer,pid,salary,now+years*104-1))
+        DO UPDATE SET annual_salary=excluded.annual_salary,end_turn=excluded.end_turn,active=1''',(buyer,pid,salary,now+years*150-1))
     db.execute('INSERT INTO contract_signings VALUES(?,?,?) ON CONFLICT(career_id,person_id) DO UPDATE SET start_turn=excluded.start_turn',(buyer,pid,now))
     db.execute('INSERT OR IGNORE INTO club_health(career_id,person_id) VALUES(?,?)',(buyer,pid))
     management.ledger(db,buyer,'transfer-buy:'+str(offer_id),-fee,'transfer','선수·스탭 영입 이적료')
     db.execute('UPDATE club_finances SET transfer_budget=MAX(0,MIN(?,cash)) WHERE career_id=?',(state['transfer_budget']-fee,buyer))
     db.execute("UPDATE transfer_offers SET state='completed',annual_salary=?,fee=? WHERE id=?",(salary,fee,offer_id))
     db.execute('INSERT INTO transfer_events(offer_id,buyer,seller,person_id,fee,season,week,kind) VALUES(?,?,?,?,?,?,?,?)',
-               (offer_id,buyer,seller,pid,fee,(now-1)//104+1,(now-1)%104+1,person['kind']))
+               (offer_id,buyer,seller,pid,fee,(now-1)//150+1,(now-1)%150+1,person['kind']))
     db.execute('''INSERT INTO agent_relations VALUES(?,?,55) ON CONFLICT(career_id,person_id) DO UPDATE SET trust=MIN(100,trust+5)''',(buyer,pid))
     import fan_community
     fan_community.transfer(db,buyer,offer_id,person)
     rumors.step(db,buyer,offer_id,'accept',person)
-    club_messages.publish(db,buyer,'signed:'+str(offer_id),(now-1)//104+1,(now-1)%104+1,'영입 완료',catalog.display(person)+' 영입과 게임용 계약이 확정됐습니다. 선수단 배치에서 선발·후보·유소년을 지정하세요.')
+    club_messages.publish(db,buyer,'signed:'+str(offer_id),(now-1)//150+1,(now-1)%150+1,'영입 완료',catalog.display(person)+' 영입과 게임용 계약이 확정됐습니다. 선수단 배치에서 선발·후보·유소년을 지정하세요.')
 
 def activity(db,kind=''):
     if kind not in ('','player','coach','staff'): raise ValueError('invalid transfer kind')

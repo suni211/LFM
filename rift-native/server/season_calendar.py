@@ -8,6 +8,7 @@ import random
 import secrets
 from collections import defaultdict
 import catalog
+import season_structure
 
 
 def leagues(db):
@@ -17,7 +18,7 @@ def leagues(db):
 
 
 def build(db, season, league='', team=''):
-    """Double round-robin, one match per team per week, starting week two."""
+    """Double round-robin spread across league-specific regional competition windows."""
     if type(season) is not int or not 1 <= season <= 10000:
         raise ValueError('invalid calendar season')
     if not isinstance(league,str) or len(league)>100 or not isinstance(team,str) or len(team)>100:
@@ -37,17 +38,21 @@ def build(db, season, league='', team=''):
         random.Random(seed).shuffle(members)
         if len(members)%2: members.append(None)
         rotations=len(members)-1
+        slots=season_structure.round_slots(lg)
+        needed=rotations*2
+        # If a larger league needs additional matchdays, multiple series may
+        # share an active week; never create fixtures in the transfer/Worlds breaks.
+        active=[slots[min(len(slots)-1,int(i*len(slots)/needed))] for i in range(needed)]
         for round_no in range(rotations):
             for leg in range(2):
-                week=2+round_no+leg*rotations
-                if week>104: continue
+                week,competition=active[round_no+leg*rotations]
                 for idx in range(len(members)//2):
                     left,right=members[idx],members[-idx-1]
                     if left is None or right is None: continue
                     home,away=(left,right) if (round_no+idx+leg)%2==0 else (right,left)
                     if team and team not in (home,away): continue
                     rows.append(dict(season=season,week=week,league=lg,home=home,away=away,
-                                     competition=lg,stage='regular',best_of=3,
+                                     competition=competition,stage='regular',best_of=3,
                                      source='game-generated',state='planned'))
             # Round-robin circle rotation fixes the first team.
             members=[members[0],members[-1],*members[1:-1]]
@@ -71,6 +76,6 @@ def ensure_career(db, career_id):
         db.execute('''INSERT OR IGNORE INTO fixtures(
             career_id,season,week,opponent,seed,best_of,competition,stage)
             VALUES(?,?,?,?,?,?,?,?)''',
-            (career_id,season,game['week'],opponent,secrets.randbits(31),3,league,'regular'))
+            (career_id,season,game['week'],opponent,secrets.randbits(31),3,game['competition'],'regular'))
         created+=1
     return created

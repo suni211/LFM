@@ -62,7 +62,7 @@ def resolve(db,career,pid,approve):
 
 def weekly(db,career,season,week):
     """Bench frustration can produce a request; it never silently releases a user player."""
-    now=(season-1)*104+week
+    now=(season-1)*150+week
     import online_world
     import recruitment
     roster=recruitment.view(db,career)['people']

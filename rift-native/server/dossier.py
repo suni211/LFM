@@ -109,7 +109,7 @@ def view(db, user, league, team):
     ranking=next((row for row in standings if row['team']==team),None)
     owner_info=leadership.owner_info(league,team,bool(career and db.execute(
         "SELECT 1 FROM club_profiles WHERE career_id=? AND mode='create'",(career['id'],)).fetchone()))
-    manager_info=leadership.ai_manager(rows)
+    manager_info=leadership.ai_manager(rows,league,team)
     body=dict(identity=identity(league,team),players=players,academy=academy,staff=staff,other=other,
               manager=manager_info['name'],manager_info=manager_info,
               owner=owner_info['name'],owner_info=owner_info,

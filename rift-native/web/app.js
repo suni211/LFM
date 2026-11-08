@@ -100,7 +100,7 @@ function flagAndCountry(person) {
   const rawCode=String(p.nationality_code||p.country_code||p.iso2||'').trim()
   const entry=FLAG_COUNTRIES[raw]||FLAG_COUNTRIES[rawCode]
   const code=entry?.[0]||(/^[A-Za-z]{2}$/.test(rawCode)?rawCode.toLowerCase():null)
-  const name=raw||entry?.[1]||'국적 미등록'
+  const name=(raw||entry?.[1]||'국적 미등록')+(p.country_hint&&!p.nationality_code?' · 국적 확인 필요':'')
   const image=code?'<img class="country-flag" loading="lazy" width="24" height="16" src="https://flagcdn.com/w40/'+code+'.png" alt="'+esc(name)+' 국기" onerror="this.hidden=true"/>':''
   return '<span class="country-badge">'+image+'<span>'+esc(name)+'</span></span>'
 }

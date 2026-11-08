@@ -413,25 +413,32 @@ function nickname(person) {return person.nickname || person.nickname_ko || perso
 function personLink(person) {
   return `<a href="/app/player/${esc(person.id)}">${face(person.id,Boolean(person.photo))}<span>${esc(nickname(person))}<small>${esc(person.real_name_ko || person.display_name_ko || person.real_name || '')}</small>${flagAndCountry(person)}</span></a>`
 }
-function rosterTable(people, records={}, development={}, contracts={}) {
+function rosterTable(people, records={}, development={}, contracts={},moveEnabled=false) {
   if(!people.length)return '<p class="empty">등록된 선수가 없습니다.</p>'
-  return `<div class="table-scroll"><table class="roster-table"><thead><tr>${['선수 얼굴 · 닉네임 / 이름','구분','소속 팀','나이','게임 레이팅','OVR','인지도','국적','포지션','연봉','시장가치','계약년도','만료'].map(t=>`<th>${t}</th>`).join('')}</tr></thead><tbody>${people.map(p=>{
+  return `<div class="table-scroll"><table class="roster-table"><thead><tr>${['선수 얼굴 · 닉네임 / 이름','구분','소속 팀','나이','게임 레이팅','OVR','인지도','국적','포지션','연봉','시장가치','계약년도','만료',...(moveEnabled?['선수단 이동']:[])].map(t=>`<th>${t}</th>`).join('')}</tr></thead><tbody>${people.map(p=>{
     const c=contracts[p.id],d=development[p.id],r=records[p.id],eco=p.economics||{};const ratings=p.game_evaluation?.ratings||p.stats;const values=ratings?Object.values(ratings).filter(Number.isFinite):[];const ovr=d?.ovr??(values.length?Math.round(values.reduce((a,b)=>a+b,0)/values.length):null)
     const start=c?.start_turn?`${2026+Math.floor((c.start_turn-1)/150)}년 · ${Math.floor((c.start_turn-1)/150)+1}시즌`:'미기록'
     const expiry=c?`${2026+Math.floor((c.end_turn-1)/150)}년 · ${Math.floor((c.end_turn-1)/150)+1}시즌 ${((c.end_turn-1)%150)+1}주`:p.contract_end||'확인 중'
     const group=p.kind==='player'?(p.real_person?'실존 선수':'생성 선수'):(p.real_person?'실존 프런트':'생성 프런트');const assignment=rosterStatus(p)
-    return `<tr><td>${personLink(p)}</td><td><span class="identity-tag ${p.real_person?'real':'generated'}">${group}</span><small>${esc(assignment)}</small></td><td>${logoImg(p.league,p.team)}${esc(p.team||'무소속')}</td><td><b title="${esc(personAge(p).source)}">${esc(personAge(p).label)}</b></td><td><b class="rating">${eco.rating??'미평가'}</b><small>${r?.rating!=null?'게임 경기 평점 '+Number(r.rating).toFixed(1):'능력·경력 평가'}</small></td><td><b>${d?.ovr??eco.ovr??ovr??'미평가'}</b></td><td><b>${eco.fame??'미평가'}</b></td><td>${flagAndCountry(p)}</td><td>${esc(ROLE[p.role]||'확인 중')}</td><td>${money(c?.annual_salary??eco.annual_salary??p.salary)}<small>${c?'구단 계약':'연봉 추정'}</small></td><td>${money(eco.market_value)}</td><td>${start}</td><td>${esc(expiry)}${!c&&p.contract_estimated?'<small>예상</small>':''}</td></tr>`
+    const canAssign=moveEnabled&&!isOperator&&p.kind==='player'&&['first','reserve','academy'].includes(p.assignment)&&Object.keys(ROLE).includes(p.role)
+    const moveControls=!canAssign?'':p.assignment==='academy'?
+      '<button class="act" data-lineup-person="'+esc(p.id)+'" data-lineup-role="'+esc(p.role)+'" data-lineup-target="first">1군 주전 등록</button>':
+      p.assignment==='first'?
+      '<button class="act" data-lineup-person="'+esc(p.id)+'" data-lineup-role="'+esc(p.role)+'" data-lineup-target="academy">2군 이동</button>':
+      '<button class="act" data-lineup-person="'+esc(p.id)+'" data-lineup-role="'+esc(p.role)+'" data-lineup-target="first">1군 주전</button> '+
+      '<button class="act" data-lineup-person="'+esc(p.id)+'" data-lineup-role="'+esc(p.role)+'" data-lineup-target="academy">2군 이동</button>'
+    return `<tr><td>${personLink(p)}</td><td><span class="identity-tag ${p.real_person?'real':'generated'}">${group}</span><small>${esc(assignment)}</small></td><td>${logoImg(p.league,p.team)}${esc(p.team||'무소속')}</td><td><b title="${esc(personAge(p).source)}">${esc(personAge(p).label)}</b></td><td><b class="rating">${eco.rating??'미평가'}</b><small>${r?.rating!=null?'게임 경기 평점 '+Number(r.rating).toFixed(1):'능력·경력 평가'}</small></td><td><b>${d?.ovr??eco.ovr??ovr??'미평가'}</b></td><td><b>${eco.fame??'미평가'}</b></td><td>${flagAndCountry(p)}</td><td>${esc(ROLE[p.role]||'확인 중')}</td><td>${money(c?.annual_salary??eco.annual_salary??p.salary)}<small>${c?'구단 계약':'연봉 추정'}</small></td><td>${money(eco.market_value)}</td><td>${start}</td><td>${esc(expiry)}${!c&&p.contract_estimated?'<small>예상</small>':''}</td>${moveEnabled?'<td>'+moveControls+'</td>':''}</tr>`
   }).join('')}</tbody></table></div>`
 }
 async function squad(which) {
   const current=await requireCareer();if(!current)return
   const [data,manage,train,stats]=await Promise.all([api('/recruitment?id='+current.id),api('/management?id='+current.id),api('/training?id='+current.id),api('/analytics?id='+current.id+'&season='+current.season)])
-  const index=(items,key='id')=>Object.fromEntries(items.map(x=>[key==='person'?x.person.id:x.id,x]));const records=index(stats.players||[]),dev=index(train.players||[],'person'),contracts=index((manage.contracts||[]).filter(c=>c.active),'person')
+  const index=(items,key='id')=>Object.fromEntries(items.map(x=>[key==='person'?x.person.id:x.id,x]));const records=index(stats.players||[]),dev=index(train.players||[],'person'),contracts=index(manage.contracts||[],'person')
   const registered=(data.people||[]).filter(p=>p.kind==='player' || p.kind==='unclassified')
   const shown=registered.filter(p=>which==='academy'?p.assignment==='academy':['first','reserve'].includes(p.assignment))
   const extra=registered.filter(p=>which==='academy'?p.assignment==='candidate':p.assignment==='unclassified')
   const sort=(a,b)=>Object.keys(ROLE).indexOf(a.role)-Object.keys(ROLE).indexOf(b.role)||nickname(a).localeCompare(nickname(b),'ko')
-  shell(`<div class="page-heading"><div><p class="eyebrow">SQUAD REGISTRATION</p><h1>${which==='academy'?'2군 · 육성 선수단':'1군 선수단'}</h1><p>${esc(current.name)} · ${shown.length}명</p></div><a class="text-link" href="/app/${which==='academy'?'squad':'academy'}">${which==='academy'?'1군 보기':'2군 보기'}</a></div><section class="panel">${rosterTable(shown.sort(sort),records,dev,contracts)}</section>${extra.length?`<section class="panel"><h2>${which==='academy'?'영입·육성 후보':'등록 분류 확인 중'}</h2>${rosterTable(extra.sort(sort),records,dev,contracts)}</section>`:''}${data.complete?'':'<p>경기 참가를 위해 각 포지션의 1군 주전 선수를 등록하세요.</p>'}`,which==='academy'?'/app/academy':'/app/squad')
+  shell(`<div class="page-heading"><div><p class="eyebrow">SQUAD REGISTRATION</p><h1>${which==='academy'?'2군 · 육성 선수단':'1군 선수단'}</h1><p>${esc(current.name)} · ${shown.length}명</p></div><a class="text-link" href="/app/${which==='academy'?'squad':'academy'}">${which==='academy'?'1군 보기':'2군 보기'}</a></div><section class="panel">${rosterTable(shown.sort(sort),records,dev,contracts,data.complete&&!isOperator&&current.role==='admin')}</section>${extra.length?`<section class="panel"><h2>${which==='academy'?'영입·육성 후보':'등록 분류 확인 중'}</h2>${rosterTable(extra.sort(sort),records,dev,contracts)}</section>`:''}${data.complete?'':'<p>경기 참가를 위해 각 포지션의 1군 주전 선수를 등록하세요.</p>'}`,which==='academy'?'/app/academy':'/app/squad')
   if(data.mode==='create' && !data.complete){
     const selectable=(data.people||[]).filter(p=>p.assignment==='candidate'&&p.kind==='player'&&p.solo?.path==='pro')
     document.getElementById('view').insertAdjacentHTML('afterbegin',`<section class="panel"><h2>창단 선수단 구성 · ${data.roster.length} / 5</h2><p>포지션마다 주전 한 명을 선택한 뒤 등록을 완료하세요. 아래 후보는 생성 선수입니다.</p>${data.roster.map(p=>`<div class="row">${personLink(p)}<b>${esc(ROLE[p.role])}</b><button class="act" data-recruit="${esc(p.id)}" data-enabled="false">선택 취소</button></div>`).join('')}${Object.entries(ROLE).map(([role,label])=>`<details class="recruit-role"><summary>${label} · 후보 ${selectable.filter(p=>p.role===role).length}명</summary>${selectable.filter(p=>p.role===role).map(p=>`<div class="row">${personLink(p)}<span>OVR ${dev[p.id]?.ovr??'미평가'} · 연봉 ${money(p.salary)}</span><button class="act" data-recruit="${esc(p.id)}" data-enabled="true" ${data.roster.some(r=>r.role===role)?'disabled':''}>주전 선택</button></div>`).join('')}</details>`).join('')}<button class="act" id="finalize-roster" ${data.roster.length===5?'':'disabled'}>주전 5명 등록 완료</button><p class="err" id="recruit-error"></p></section>`)
@@ -439,6 +446,35 @@ async function squad(which) {
     document.querySelectorAll('[data-recruit]').forEach(b=>b.onclick=()=>action('/recruitment-select',{person:b.dataset.recruit,enabled:b.dataset.enabled==='true'}))
     document.getElementById('finalize-roster').onclick=()=>action('/recruitment-finalize',{})
   }
+  const selected=(data.people||[]).filter(p=>p.kind==='player')
+  const now=(current.season-1)*150+current.week
+  const issues=[]
+  const lineup=(data.roster||[]).filter(p=>p.kind==='player'&&p.assignment==='first')
+  const positions=new Set(lineup.map(p=>p.role))
+  Object.entries(ROLE).forEach(([key,label])=>{if(!positions.has(key))issues.push(label+' 주전 누락')})
+  for(const p of lineup){
+    const c=contracts[p.id]
+    if(!c||!c.active)issues.push(nickname(p)+' 계약 없음')
+    else if(c.end_turn<now)issues.push(nickname(p)+' 계약 만료')
+    if(c?.injury_turns>0)issues.push(nickname(p)+' 부상')
+  }
+  if(which==='first')document.getElementById('view').insertAdjacentHTML('afterbegin',
+    '<section class="panel"><h2>밴픽 출전 점검</h2>'+
+    (issues.length?'<p class="err">'+issues.map(esc).join(' · ')+'</p>':'<p>주전 5명 등록 및 계약·부상 상태 양호</p>')+
+    '<p>2군 선수를 1군 주전으로 바꾸면 동일 포지션 기존 주전은 2군으로 이동합니다.</p>'+
+    '<a class="act" href="/app/draft">밴픽 탭으로 이동</a></section>')
+  document.querySelectorAll('[data-lineup-person]').forEach(button=>button.onclick=async()=>{
+    const person=button.dataset.lineupPerson,target=button.dataset.lineupTarget,role=button.dataset.lineupRole
+    const found=selected.find(p=>p.id===person)
+    if(!found)return
+    const message=target==='first'?
+      nickname(found)+' 선수를 '+(ROLE[role]||role)+' 1군 주전으로 등록할까요? 기존 주전은 2군으로 이동합니다.':
+      nickname(found)+' 선수를 2군으로 이동할까요? 빈 포지션이 생기면 밴픽을 시작할 수 없습니다.'
+    if(!confirm(message))return
+    button.disabled=true
+    try{await api('/club-lineup',{id:current.id,person,assignment:target,role});await squad(which)}
+    catch(error){alert(error.message);button.disabled=false}
+  })
   await topbar()
 }
 async function tactics() {

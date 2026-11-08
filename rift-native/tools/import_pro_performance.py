@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Aggregate observed 2026 professional LoL game results for game rating.
 
-Open statistical dataset: ChainCC (CC BY 4.0) https://chaincc.lol/free/data
+Open individual match statistics: Oracle's Elixir 2026 public CSV snapshot.
 All saved figures are retrospective pro-match results (not salary disclosures).
 Join only when a competitive nickname is unique in the local roster AND role
 is consistent. Otherwise leave it unmatched; never create fictional matches.
@@ -19,7 +19,7 @@ ROOT=pathlib.Path(__file__).resolve().parents[1]
 INPUT=ROOT/'assets'/'people.json'
 OUTPUT=ROOT/'assets'/'pro-performance-2026.json'
 REPORT=ROOT/'pro-performance-2026-report.json'
-DATA_URL='https://chaincc.lol/data/chaincc-players-2026.csv.gz'
+DATA_URL='https://raw.githubusercontent.com/twodotone/lolproj/main/Data/csv/2026_LoL_esports_match_data_from_OraclesElixir.csv'
 
 ROLES={'top':'TOP','jng':'JUNGLE','jungle':'JUNGLE',
        'mid':'MID','middle':'MID','bot':'ADC','bottom':'ADC','adc':'ADC',
@@ -132,14 +132,14 @@ def generate(people,df):
     return out,report
 
 def main():
-    df=pd.read_csv(DATA_URL,compression='gzip',low_memory=False)
+    df=pd.read_csv(DATA_URL,low_memory=False)
     people=json.loads(INPUT.read_text(encoding='utf8'))['people']
     out,report=generate(people,df)
     if not out:
         raise RuntimeError('No attributable pro match data; refusing empty import')
     OUTPUT.write_text(json.dumps(dict(
-        description='CC BY 4.0 ChainCC 2026 pro match dataset; aggregate game evidence only',
-        attribution='ChainCC. League of Legends esports match dataset. https://chaincc.lol/free/data',
+        description='2026 Oracle’s Elixir pro match CSV snapshot; aggregated game evidence only',
+        attribution='Oracle’s Elixir; data snapshot mirrored at https://github.com/twodotone/lolproj',
         people=out),ensure_ascii=False,indent=2)+'\n',encoding='utf8')
     REPORT.write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf8')
     print(json.dumps(report,ensure_ascii=False,indent=2),flush=True)

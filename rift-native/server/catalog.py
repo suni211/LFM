@@ -4,6 +4,7 @@ import os
 from collections import defaultdict
 import nationality
 import leadership
+import academy_clubs
 from pathlib import Path
 
 PEOPLE=Path(os.environ.get('RIFT_PEOPLE',Path(__file__).resolve().parent.parent/'assets'/'people.json'))
@@ -29,13 +30,10 @@ def load():
     # Repair only generic *league buckets* in the game view. A bucket is not
     # a real club. The chosen destination is fictional game placement.
     aliases={'LCK 2군':'LCK CL','LCK CL 2군':'LCK CL','LDL 2군':'LDL'}
-    destinations={}
-    for dest in set(aliases.values()):
-        names=sorted({p.get('team') for p in people if p.get('league')==dest
-                      and p.get('team') and p.get('team') not in aliases})
-        if len(names)<2:
-            names=[dest+' Academy North (AI)',dest+' Academy South (AI)',dest+' Academy West (AI)']
-        destinations[dest]=names
+    # Only confirmed academy clubs; no arbitrary AI placeholder teams.
+    destinations={dest:list(academy_clubs.teams(dest)) for dest in set(aliases.values())}
+    if any(not names for names in destinations.values()):
+        raise ValueError('missing verified academy club roster')
     used=defaultdict(set)
     for person in sorted((p for p in people if p.get('team') in aliases),
                          key=lambda p:(str(p.get('role') or ''),p['id'])):
@@ -81,6 +79,23 @@ def apply_game_club(person,changes):
         elif role in ('TOP','JUNGLE','MID','ADC','SUPPORT'):p['kind']='player'
     return p
 
+def display_academy_affiliation(person,changes=None):
+    """Display a registered LCK academy member under their genuine LCK CL team.
+
+    Preserve base ownership: top-division team and academy share one roster
+    internally, but public competitive affiliation is the verified academy.
+    A real transfer/club override takes precedence over affiliation.
+    """
+    if changes and person.get('id') in changes and person.get('assignment') not in ('academy',):
+        return person
+    if person.get('league')=='LCK' and person.get('squad')=='academy':
+        mapped=academy_clubs.child_of('LCK',person.get('team'))
+        if mapped:
+            return dict(person,league=mapped[0],team=mapped[1],
+                        parent_league='LCK',parent_team=person['team'],
+                        academy_affiliation=True)
+    return person
+
 def detail(db,career,person_id):
     data=load()
     person=next((p.copy() for p in data['people'] if p['id']==person_id),None)
@@ -91,7 +106,7 @@ def detail(db,career,person_id):
         row=db.execute('SELECT payload FROM solo_people WHERE person_id=?',(person_id,)).fetchone()
         if row: person=json.loads(row[0])
     if person is None: raise KeyError(person_id)
-    person=apply_game_club(person,game_clubs(db))
+    person=display_academy_affiliation(apply_game_club(person,game_clubs(db)),game_clubs(db))
     person['display_name']=display(person)
     person['catalog_retrieved']=data.get('retrieved')
     override=db.execute('SELECT value FROM person_overrides WHERE career_id=? AND person_id=?',(career,person_id)).fetchone()
@@ -114,7 +129,7 @@ def search(db,career,page=0,query='',team='',kind='',league='',origin='all'):
     amateurs=[json.loads(raw) for raw, in db.execute('SELECT payload FROM solo_people')] if db.execute("SELECT 1 FROM sqlite_master WHERE name='solo_people'").fetchone() else []
     unique={p['id']:p for p in amateurs+generated+data['people']}
     for raw_person in unique.values():
-        p=apply_game_club(raw_person,changes)
+        p=display_academy_affiliation(apply_game_club(raw_person,changes),changes)
         if origin=='real' and not p.get('real_person') or origin=='generated' and p.get('real_person'): continue
         if team and p.get('assignment')=='candidate': continue
         if team and p.get('team')!=team or kind=='staff' and p.get('kind') not in ('coach','staff') or kind and kind!='staff' and p.get('kind')!=kind or league and p.get('league')!=league: continue
@@ -133,6 +148,11 @@ def teams():
         if not key[1] or key[1].strip().casefold() in ('ldl 2군','lck 2군','lck cl 2군','ldl reserves','lck reserves'): continue
         group=groups.setdefault(key,dict(league=key[0],team=key[1],players=0,staff=0,unclassified=0))
         group['players' if p.get('kind')=='player' else 'staff' if p.get('kind') in ('coach','staff') else 'unclassified']+=1
+    for entry in academy_clubs.entries():
+        key=(entry['league'],entry['team'])
+        groups.setdefault(key,dict(league=key[0],team=key[1],players=0,staff=0,unclassified=0,
+                                   parent_team=entry['parent_team'],parent_league=entry['parent_league'],
+                                   source=entry['source'],verified_academy=True))
     return list(sorted(groups.values(),key=lambda row:(row['league'],row['team'])))
 
 def evaluate(db,career,person_id,ratings,form,note):

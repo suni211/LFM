@@ -30,7 +30,7 @@ Vigilance Bluejay Windward Solstice Argon
 """.split()
 
 def valid(name):
-    return bool(re.fullmatch(r'[A-Za-z]{3,20}',name))
+    return bool(re.fullmatch(r'[A-Za-z]{4,8}',name))
 
 def too_similar(name, used):
     candidate=name.casefold()

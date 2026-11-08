@@ -84,7 +84,7 @@ async function topbar() {
   input.onkeydown=e=>{if(e.key==='Escape')results.hidden=true};input.onblur=()=>setTimeout(()=>{results.hidden=true},160)
 }
 function login() {
-  document.getElementById('app').innerHTML = `<form class="login" id="gate"><small>ONLINE LEAGUE MANAGEMENT</small><h1>R/M</h1><p>당신의 구단, 당신의 다음 시즌.</p><p class="err" id="err" role="alert"></p><label for="name">감독 계정</label><input id="name" autocomplete="username" maxlength="30" required/><label for="password">비밀번호 · 10~128자</label><input id="password" type="password" autocomplete="current-password" minlength="10" maxlength="128" required/><button class="act" id="in">로그인</button><button class="act" id="up">계정 만들기</button></form>`
+  document.getElementById('app').innerHTML = `<div class="entry"><section class="entry-story"><span class="entry-mark">R/M · CAREER MODE</span><h1>당신의 팀.<br><em>당신의 역사.</em></h1><p>하부 리그의 작은 구단에서 출발해 국제 무대까지 올라가세요.</p><div class="entry-facts"><span>104 WEEKS / SEASON</span><span>CLUB MANAGEMENT</span><span>ONLINE CAREER</span></div></section><form class="login" id="gate"><small>MANAGER ACCESS</small><h1>RIFT MANAGER</h1><p>감독 계정을 만들고 커리어를 시작하세요.</p><p class="err" id="err" role="alert"></p><label for="name">계정 이름</label><input id="name" autocomplete="username" maxlength="30" required placeholder="계정 ID"/><label for="password">비밀번호 · 10~128자</label><input id="password" type="password" autocomplete="current-password" minlength="10" maxlength="128" required placeholder="비밀번호"/><div class="entry-actions"><button class="act" type="button" id="in">로그인</button><button class="act" type="button" id="up">새 감독 계정 만들기</button></div><small>감독 닉네임은 가입 후 영문 2~20자로 설정합니다.</small></form></div>`
   let submitting=false
   const send = async (path) => {
     if(submitting || !document.getElementById('gate').reportValidity())return
@@ -93,22 +93,38 @@ function login() {
       const result = await api(path, {name:document.getElementById('name').value.trim(), password:document.getElementById('password').value})
       localStorage.setItem('rift-token', result.token)
       localStorage.setItem('rift-name', document.getElementById('name').value.trim())
-      careerCache=null;managerProfile=null;localStorage.removeItem('rift-career');go('/app/manager')
+      careerCache=null;managerProfile=null;localStorage.removeItem('rift-career');go('/app')
     } catch (error) { const el=document.getElementById('err');if(el)el.textContent=error.message } finally {submitting=false;document.querySelectorAll('#gate button').forEach(b=>b.disabled=false)}
   }
   document.getElementById('gate').onsubmit=event=>{event.preventDefault();send('/login')}
   document.getElementById('in').onclick = event => { event.preventDefault(); send('/login') }
   document.getElementById('up').onclick = event => { event.preventDefault(); send('/register') }
 }
+async function continueCareer() {
+  const mine=await api('/careers')
+  if(!mine.careers.length) return go('/app/clubs')
+  const selected=mine.careers.find(c=>c.id===careerId())||mine.careers[0]
+  localStorage.setItem('rift-career',selected.id)
+  const league=selected.club_profile?.league||''
+  let position='순위 집계 전'
+  try {
+    const result=await api('/dashboard?id='+selected.id)
+    const mineRow=(result.standings||[]).find(row=>row.team===selected.name)
+    if(mineRow)position=mineRow.rank+'위'
+  } catch(e) { /* Continue works even without completed standings. */ }
+  shell(`<div class="continue-landing"><p class="eyebrow">CONTINUE CAREER</p><div class="continue-club">${logoImg(league,selected.name)}<div><h1>${esc(selected.name)}</h1><p>${esc(league)} · ${selected.season}시즌 ${selected.week}주차</p><strong>리그 순위 · ${esc(position)}</strong></div></div><div class="continue-actions"><button class="act" id="resume">이어하기</button><a class="act" href="/app/manager">감독 프로필</a></div></div>`, '/app/home')
+  document.getElementById('resume').onclick=()=>go('/app/home')
+  await topbar()
+}
 async function operatorDesk(path='/app/home') {
   const data=await api('/operator/world'),q=data.qualification
   const fixtures=data.fixtures.map(g=>`<tr><td>${g.season}시즌 ${g.week}주</td><td>${esc(g.competition)} · ${esc(g.stage)}</td><td>${esc(g.team)} vs ${esc(g.opponent)}</td><td>BO${g.best_of}</td><td>${esc({scheduled:'예정',queued:'진행 중',finished:'종료',failed:'처리 확인 필요'}[g.state]||g.state)}</td></tr>`).join('')
-  shell(`<div class="page-heading"><div><p class="eyebrow">LEAGUE OPERATIONS</p><h1>${path==='/app/schedule'?'전체 경기 일정':'리그 운영 현황'}</h1><p>운영자 전용 · 팀을 맡거나 선수단·전술을 조작할 수 없습니다.</p></div></div><div class="grid3"><section class="panel"><h2>온라인 리그</h2><b>${data.world.season}시즌 ${data.world.week}주</b></section><section class="panel"><h2>구단</h2><b>${data.clubs.length}개 · 유저 구단 ${data.clubs.filter(c=>c.kind==='user').length}개</b></section><section class="panel"><h2>등록 경기</h2><b>${data.fixtures.length}경기</b></section></div><section class="panel"><h2>국제대회 일정</h2>${q.events.map(e=>`<div class="event-card"><b>${esc(e.name)} · ${e.entrants}팀</b><p>${esc(e.start)} ~ ${esc(e.end)}</p><small>${esc(e.format)}</small></div>`).join('')}</section><section class="panel"><h2>서버에 등록된 경기 일정</h2>${fixtures?`<div class="table-scroll"><table><thead><tr><th>시즌 · 주차</th><th>대회</th><th>대진</th><th>방식</th><th>상태</th></tr></thead><tbody>${fixtures}</tbody></table></div>`:'<p class="empty">아직 생성된 경기 일정이 없습니다.</p>'}</section><p><a class="act" href="/app/competition">리그 순위·출전권 보기</a> · <a href="/app/clubs">구단 조회</a></p>`,path)
+  shell(`<div class="page-heading"><div><p class="eyebrow">LEAGUE OPERATIONS</p><h1>${path==='/app/schedule'?'전체 경기 일정':'리그 운영 현황'}</h1><p>운영자 전용 · 팀을 맡거나 선수단·전술을 조작할 수 없습니다.</p></div></div><div class="grid3"><section class="panel"><h2>온라인 리그</h2><b>${data.world.season}시즌 ${data.world.week}주</b></section><section class="panel"><h2>구단</h2><b>${data.clubs.length}개 · 유저 구단 ${data.clubs.filter(c=>c.kind==='user').length}개</b></section><section class="panel"><h2>등록 경기</h2><b>${data.fixtures.length}경기</b></section></div><section class="panel"><h2>국제대회 일정</h2>${q.events.map(e=>`<div class="event-card"><b>${esc(e.name)} · ${e.entrants}팀</b><p>${data.world.season}시즌 ${e.start_week}주 ~ ${e.end_week}주</p><small>${esc(e.format)}</small></div>`).join('')}</section><section class="panel"><h2>서버에 등록된 경기 일정</h2>${fixtures?`<div class="table-scroll"><table><thead><tr><th>시즌 · 주차</th><th>대회</th><th>대진</th><th>방식</th><th>상태</th></tr></thead><tbody>${fixtures}</tbody></table></div>`:'<p class="empty">아직 생성된 경기 일정이 없습니다.</p>'}</section><p><a class="act" href="/app/competition">리그 순위·출전권 보기</a> · <a href="/app/clubs">구단 조회</a></p>`,path)
   await topbar()
 }
 async function managerSetup() {
   const profile=managerProfile||await api('/manager-profile');const owned=await career()
-  shell(`<div class="page-heading"><div><p class="eyebrow">MANAGER PROFILE</p><h1>${profile.complete?'감독 프로필':'감독 만들기'}</h1><p>닉네임과 이름을 정하고 능력치 60점을 배분하세요.</p></div></div><form id="manager-setup" class="panel manager-setup"><label>닉네임<input name="nickname" autocomplete="nickname" maxlength="30" required value="${esc(profile.nickname)}" placeholder="리그에서 사용할 닉네임"/></label><label>감독 이름<input name="managerName" autocomplete="name" maxlength="30" required value="${esc(profile.name)}" placeholder="감독 이름"/></label><h2>감독 능력치 <span id="stat-total"></span></h2><p>각 능력치 1~20 · 합계 60</p>${profile.attributes.map(key=>`<label class="stat-allocation"><span>${esc(key)}</span><input type="range" min="1" max="20" step="1" data-stat="${esc(key)}" value="${profile.stats[key]}"/><output>${profile.stats[key]}</output></label>`).join('')}<p class="err" id="manager-error" role="alert"></p><button class="act" id="save-manager">${owned?'프로필 저장':'저장하고 구단 선택'}</button></form>`,'/app/manager')
+  shell(`<div class="page-heading"><div><p class="eyebrow">MANAGER PROFILE</p><h1>${profile.complete?'감독 프로필':'감독 만들기'}</h1><p>닉네임과 이름을 정하고 능력치 60점을 배분하세요.</p></div></div><form id="manager-setup" class="panel manager-setup"><label>닉네임<input name="nickname" autocomplete="nickname" maxlength="30" required value="${esc(profile.nickname)}" placeholder="English nickname (e.g. Raven)" pattern="[A-Za-z]{2,20}" title="영문 2~20자"/></label><label>감독 이름<input name="managerName" autocomplete="name" maxlength="30" required value="${esc(profile.name)}" placeholder="감독 이름"/></label><h2>감독 능력치 <span id="stat-total"></span></h2><p>각 능력치 1~20 · 합계 60</p>${profile.attributes.map(key=>`<label class="stat-allocation"><span>${esc(key)}</span><input type="range" min="1" max="20" step="1" data-stat="${esc(key)}" value="${profile.stats[key]}"/><output>${profile.stats[key]}</output></label>`).join('')}<p class="err" id="manager-error" role="alert"></p><button class="act" id="save-manager">${owned?'프로필 저장':'저장하고 구단 선택'}</button></form>`,'/app/manager')
   const form=document.getElementById('manager-setup'),inputs=[...form.querySelectorAll('[data-stat]')],button=document.getElementById('save-manager')
   const update=()=>{const total=inputs.reduce((sum,i)=>sum+Number(i.value),0);inputs.forEach(i=>i.nextElementSibling.value=i.value);document.getElementById('stat-total').textContent=`${total} / 60 · ${total===60?'배분 완료':total<60?(60-total)+'점 남음':(total-60)+'점 초과'}`;button.disabled=total!==60}
   inputs.forEach(i=>i.oninput=update);update()
@@ -440,7 +456,7 @@ async function draw() {
     if(!managerProfile)managerProfile=await api('/manager-profile')
     if(!isOperator && !managerProfile.complete && path!=='/app/manager')return go('/app/manager')
     if(path==='/app/manager')return await managerSetup()
-    if (path === '/' || path === '/app' || path === '/app/') return go('/app/home')
+    if (path === '/' || path === '/app' || path === '/app/') return await continueCareer()
     const entityPath=path.match(/^\/app\/entity\/(manager|owner)\/(\d+)$/)
     if(entityPath){const item=await api('/entity?kind='+entityPath[1]+'&entity='+entityPath[2]);shell(`<div class="page-heading"><div><p class="eyebrow">${entityPath[1]==='owner'?'CLUB OWNER':'MANAGER'}</p><h1>${esc(item.name)}</h1></div></div><section class="panel"><h2>${esc(item.club||item.company||'인물 정보')}</h2>${Object.entries(item.stats||{}).map(([key,value])=>`<div class="metric-pair"><span>${esc(key)}</span><b>${value} / 20</b></div>`).join('')}</section>`,path);await topbar();return}
     if (path === '/app/clubs') return await clubs()

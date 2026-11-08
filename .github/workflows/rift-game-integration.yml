@@ -33,3 +33,5 @@ jobs:
         run: python3 -m unittest discover -s rift-native/tests -p 'test_http_career_smoke.py' -v
       - name: Migrate older solo player nicknames and Master floor
         run: python3 -m unittest discover -s rift-native/tests -p 'test_short_nickname_migration.py' -v
+      - name: Player FM dossier attributes and recorded match analytics
+        run: python3 -m unittest discover -s rift-native/tests -p 'test_player_dossier.py' -v

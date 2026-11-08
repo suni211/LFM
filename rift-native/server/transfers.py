@@ -25,7 +25,7 @@ def init(db):
 
 def owner(db,p):
     row=db.execute('SELECT career_id,club_key FROM person_ownership WHERE person_id=?',(p['id'],)).fetchone()
-    if row: return row
+    if row: return (None,None) if row==(None,'free-agent') else row
     roster=db.execute("SELECT career_id FROM club_roster WHERE person_id=? AND assignment!='departed'",(p['id'],)).fetchone()
     generated=db.execute('SELECT career_id,assignment FROM generated_people WHERE id=?',(p['id'],)).fetchone()
     if roster: result=(roster[0],None)

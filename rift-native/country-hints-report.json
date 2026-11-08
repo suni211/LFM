@@ -1,0 +1,15 @@
+{
+  "total": 1088,
+  "source_rows": 20859,
+  "alias_rows": 75995,
+  "matched_hints": 522,
+  "citizenship_explicit": 62,
+  "missing_country_hints": 566,
+  "conflicts": [],
+  "unmatched_source_breakdown": {
+    "name-mismatch": 798,
+    "source-incomplete": 90,
+    "country-unknown": 32
+  },
+  "warning": "GPTilt region is NationalityPrimary OR Country; DO NOT treat as verified citizenship."
+}

@@ -360,31 +360,38 @@ async function players(query='',page=0,origin='all') {
   document.getElementById('next-page').onclick=()=>players(query,page+1,origin)
   await topbar()
 }
+function scoutStars(value) {
+  if (value == null) return '<span class="unknown-rating">미평가</span>'
+  const n=Math.round(Number(value)*2)/2
+  const full=Math.floor(n), half=n%1!==0
+  return `<span class="scout-stars" aria-label="5점 만점 ${n.toFixed(1)}점">${'★'.repeat(full)}${half?'½':''}<span class="stars-empty">${'☆'.repeat(Math.max(0,5-full-(half?1:0)))}</span><small>${n.toFixed(1)} / 5.0</small></span>`
+}
+function ratingGrid(values) {
+  return `<div class="ability-grid">${Object.entries(values||{}).map(([key,v])=>`<div class="ability-line"><div><span>${esc(key)}</span><b>${Number(v).toFixed(0)}</b></div><div class="ability-track"><i style="width:${Math.max(0,Math.min(100,Number(v)||0))}%"></i></div></div>`).join('')||'<p>평가 데이터가 없습니다.</p>'}</div>`
+}
 async function player(id, tab) {
-  const current = await requireCareer(); if (!current) return
-  const [detail, train, manage] = await Promise.all([
-    api('/person?id=' + current.id + '&person=' + encodeURIComponent(id)),
-    isOperator?Promise.resolve({players:[]}):api('/training?id=' + current.id).catch(() => ({players:[]})),
-    isOperator?Promise.resolve({}):api('/management?id=' + current.id).catch(() => ({}))
-  ])
-  const person = detail.person
-  const dev = (train.players || []).find(row => row.person.id === id)
-  const contract = (manage.contracts || []).find(item => item.person.id === id)
-  const tabs = [['overview','개요'],['personal','개인'],['contract','계약'],['history','이력'],['report','보고'],['career','커리어'],['compare','비교']]
-  const links = `<div class="tabs">${tabs.map(([key, label]) => `<a class="${tab === key ? 'on' : ''}" href="/app/player/${esc(id)}/${key}">${label}</a>`).join('')}</div>`
-  const ratings = person.game_evaluation?.ratings || {}
-  const bars = Object.entries(ratings).map(([name, value]) => `<div class="row">${esc(name)} <span class="bars"><span style="width:${value}px"></span></span> ${value}</div>`).join('') || '<p>운영자 평가가 없습니다.</p>'
-  const pool = dev ? dev.pool.map(name => `<b>${esc(name)} 수준급</b>`).join('') : ''
-  let main = ''
-  if (tab === 'overview') main = `<div class="hero">${face(person.id,Boolean(person.photo)).replace('class="face"', 'class="portrait"')}<div><h1>${esc(nickname(person))}</h1><p>${esc(person.real_name || '')} · ${esc(ROLE[person.role] || person.role || person.raw_role || '')}</p><p>${logoImg(person.league, person.team)} ${esc(person.league || '')} ${esc(person.team || '')}</p><p>OVR ${dev ? dev.ovr : '기록 없음'}</p><div class="pool">${pool}</div><p>폭 밖 챔피언은 그럭저럭 다룹니다.</p>${bars}</div></div>`
-  if (tab === 'personal') main = `<p>본명 ${esc(person.real_name || '기록 없음')}</p><p>닉네임 ${esc(person.nickname || '')}</p><p>리그 ${esc(person.league || '')}</p><p>지역 ${esc(person.region || '기록 없음')}</p><p>솔로 ${esc(person.solo?.label || '기록 없음')} ${esc(person.solo?.path_name || '')}</p>`
-  if (tab === 'contract') main = `<p>계약 종료 ${esc(person.contract_end || '기록 없음')}</p><p>게임 연봉 ${contract ? money(contract.annual_salary) : money(person.salary)}</p><p>남은 턴 ${contract ? contract.remaining_turns : '우리 구단 계약 아님'}</p>`
-  if (tab === 'history') main = `<p>원 소속 ${esc(person.registered_team || person.team || '')}</p><p>출처 ${esc(person.source || '')}</p>`
-  if (tab === 'report') main = bars + `<p>${esc(person.game_evaluation?.note || '평가 근거 없음')}</p>`
-  if (tab === 'career') main = `<p>배정 ${esc(person.assignment || '명단 밖')}</p><p>경로 ${esc(person.solo?.path_name || person.kind || '')}</p>`
-  if (tab === 'compare') main = `<p>같은 역할 비교는 선수 DB에서 ${esc(ROLE[person.role] || '')} 검색으로 엽니다.</p><a href="/app/players">선수 DB</a>`
-  shell(`<div class="panel">${links}${main}<p><a href="/app/team/${encodeURIComponent(person.league || '')}/${encodeURIComponent(person.team || '')}">구단 정보</a></p></div>`, '/app/player/' + id)
-  document.querySelectorAll('a[href^="/app"]').forEach(link => link.addEventListener('click', event => { event.preventDefault(); go(link.getAttribute('href')) }))
+  const current=await requireCareer();if(!current)return
+  const [detail,train,manage]=await Promise.all([api('/person?id='+current.id+'&person='+encodeURIComponent(id)),isOperator?Promise.resolve({players:[]}):api('/training?id='+current.id).catch(()=>({players:[]})),isOperator?Promise.resolve({}):api('/management?id='+current.id).catch(()=>({}))])
+  const person=detail.person,scout=detail.scouting?.scout,agency=detail.scouting?.agency
+  const development=(train.players||[]).find(row=>row.person.id===id)
+  const contract=(manage.contracts||[]).find(row=>row.person.id===id)
+  const tabs=[['overview','선수 개요'],['personal','개인 정보'],['contract','계약'],['history','이력'],['report','스카우트 보고'],['career','커리어'],['compare','선수 비교']]
+  const links=`<div class="tabs player-tabs">${tabs.map(([k,l])=>`<a class="${tab===k?'on':''}" href="/app/player/${esc(id)}/${k}">${l}</a>`).join('')}</div>`
+  const values=person.game_evaluation?.ratings||person.stats||{}
+  const joined=person.team?`${logoImg(person.league,person.team)}${esc(person.team)} · ${esc(person.league||'')}`:'FA · 무소속'
+  const top=`<div class="player-profile-heading"><div class="player-profile-face">${face(person.id,Boolean(person.photo))}</div><div><p class="eyebrow">PLAYER DATABASE / ${esc(person.role||'')}</p><h1>${esc(person.nickname||person.display_name||person.real_name||'선수')}</h1><p>${esc(person.real_name||'이름 정보 없음')} · ${esc(ROLE[person.role]||person.role||'포지션 미상')}</p><p class="player-team-line">${joined}</p><div class="player-overview-stats"><span>솔로랭크 <strong>${esc(person.solo?.label||'기록 없음')}</strong></span><span>소속 <strong>${esc(person.assignment||person.squad||'미등록')}</strong></span>${development?`<span>OVR <strong>${development.ovr}</strong></span>`:''}</div></div></div>`
+  let main=''
+  if(tab==='overview') main=`<div class="player-info-grid"><section class="panel"><h2>현재 능력</h2>${ratingGrid(values)}</section><section class="panel"><h2>구단 스카우팅 요약</h2><p>현재 실력</p>${scoutStars(scout?.current_stars)}<p>예상 잠재력</p>${scoutStars(scout?.potential_stars)}<p class="muted-note">${esc(scout?.summary||'스카우팅 기록 없음')}</p></section><section class="panel"><h2>커리어 정보</h2><p>역할: ${esc(ROLE[person.role]||person.role||'미상')}</p><p>구단: ${joined}</p><p>게임 내 소속: ${esc(person.assignment||'등록 정보 없음')}</p><p>계약: ${esc(person.contract_end||'기록 없음')}</p></section></div>`
+  else if(tab==='personal') main=`<section class="panel"><h2>개인 정보</h2><div class="info-pairs"><p>영문 닉네임 <b>${esc(person.nickname||'기록 없음')}</b></p><p>본명 <b>${esc(person.real_name||'기록 없음')}</b></p><p>리그 <b>${esc(person.league||'무소속')}</b></p><p>지역 <b>${esc(person.region||person.nationality_name_ko||'정보 없음')}</b></p><p>포지션 <b>${esc(ROLE[person.role]||person.role||'정보 없음')}</b></p><p>솔로랭크 <b>${esc(person.solo?.label||'정보 없음')}</b></p></div></section>`
+  else if(tab==='contract') main=`<section class="panel"><h2>계약 및 연봉</h2><div class="info-pairs"><p>계약 종료 <b>${esc(person.contract_end||'정보 없음')}</b></p><p>게임 내 연봉 <b>${contract?money(contract.annual_salary):money(person.salary)}</b></p><p>계약 기간 <b>${contract?contract.remaining_turns+'주 남음':'구단 계약 정보 없음'}</b></p><p>현재 상태 <b>${contract?(contract.active?'계약 중':'계약 종료'):'외부 구단 또는 FA'}</b></p></div></section>`
+  else if(tab==='history') main=`<section class="panel"><h2>선수 이력</h2><p>현재 소속 ${joined}</p><p>최초 등록 구단: ${esc(person.registered_team||person.team||'정보 없음')}</p><p class="muted-note">내부 DB 출처 코드 대신 실제 경기 및 이적 기록을 표시할 예정입니다.</p></section>`
+  else if(tab==='report') main=`<div class="report-grid"><section class="panel scout-report-card"><p class="eyebrow">PRIVATE SCOUTING</p><h2>내 구단 스카우터 보고서</h2><p>현재 능력</p>${scoutStars(scout?.current_stars)}<p>잠재력</p>${scoutStars(scout?.potential_stars)}<div class="info-pairs"><p>평가 시즌 <b>${scout?.season||'-'}시즌</b></p><p>평가 역량 <b>${scout?.scout_skill??'-'} / 20</b></p><p>보고 신뢰도 <b>${esc(scout?.confidence||'미평가')}</b></p></div><p class="muted-note">${esc(scout?.summary||'스카우팅 자료가 없습니다.')}</p></section><section class="panel"><p class="eyebrow">ANNUAL REPORT</p><h2>기관 연례 평가</h2><p>${esc(agency?.source||'게임 내 가상 평가 기관')}</p>${scoutStars(agency?.current_stars)}<p>${esc(agency?.season||'-')}시즌 · 연 1회 발표</p><p class="muted-note">${esc(agency?.summary||'아직 발표된 평가가 없습니다.')}</p></section></div><section class="panel"><h2>세부 능력치</h2>${ratingGrid(values)}<p class="muted-note">세부 수치는 게임 데이터입니다. 스카우트 별점은 관찰 능력에 따라 다르게 산출됩니다.</p></section>`
+  else if(tab==='career') main=`<section class="panel"><h2>현재 선수 경력</h2><div class="info-pairs"><p>등록 구단 <b>${esc(person.team||'FA')}</b></p><p>선수단 분류 <b>${esc(person.assignment||person.squad||'기록 없음')}</b></p><p>프로 여부 <b>${esc(person.solo?.path_name||'확인되지 않음')}</b></p><p>개인 랭크 <b>${esc(person.solo?.label||'기록 없음')}</b></p></div><p class="muted-note">솔로랭크 성적과 공식 프로 경기 성적은 별도로 집계됩니다.</p></section>`
+  else if(tab==='compare') {
+    const result=await api('/player-comparisons?id='+current.id+'&person='+encodeURIComponent(id))
+    main=`<section class="panel"><h2>동일 포지션 선수 비교</h2><p>${esc(ROLE[person.role]||person.role||'')} 포지션 · 게임 내 능력 수치가 가까운 선수</p><div class="table-scroll"><table><thead><tr><th>선수</th><th>구단</th><th>종합</th><th>기준 선수 대비</th><th>상세 보기</th></tr></thead><tbody>${(result.comparisons||[]).map(p=>`<tr><td><b>${esc(p.nickname)}</b></td><td>${esc(p.team)}</td><td>${p.rating}</td><td class="${p.gap>=0?'positive-gap':'negative-gap'}">${p.gap>0?'+':''}${p.gap}</td><td><a href="/app/player/${encodeURIComponent(p.id)}/compare">비교 대상 열기</a></td></tr>`).join('')}</tbody></table></div></section><section class="panel"><h2>기준 선수 능력치</h2>${ratingGrid(values)}</section>`
+  } else return go('/app/player/'+encodeURIComponent(id)+'/overview')
+  shell(`<div class="player-profile">${top}${links}${main}<div class="player-footer"><a href="/app/players">선수 DB로 돌아가기</a>${person.team?`<a href="/app/team/${encodeURIComponent(person.league||'')}/${encodeURIComponent(person.team)}">구단 보기</a>`:''}</div></div>`,'/app/player/'+id)
   await topbar()
 }
 async function team(league, name, tab) {

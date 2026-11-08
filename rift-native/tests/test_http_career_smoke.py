@@ -104,7 +104,10 @@ class HttpCareerSmokeTests(unittest.TestCase):
         status,data=self.call('/league-overview?league=LCK%20CL',token=token)
         self.assertEqual(200,status,data)
         status,data=self.call('/training?id='+str(career),token=token)
-        self.assertEqual(200,status,data)
+        if status!=200:
+            self.log.flush()
+            with open(self.log.name,encoding='utf-8') as stream:
+                raise AssertionError('Training '+str(status)+': '+str(data)+'\nServer trace:\n'+stream.read()[-7000:])
         self.assertIn('players',data)
         image='data:image/png;base64,'+base64.b64encode(
             bytes.fromhex('89504e470d0a1a0a')+b'test-small').decode()

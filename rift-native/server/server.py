@@ -204,7 +204,8 @@ class Handler(BaseHTTPRequestHandler):
                     cid=int(query['id'][0])
                     if not 1<=cid<=2**63-1: raise ValueError()
                     if not news.member(db,uid,cid): return self.reply(404,{'error':'not found'})
-                    return self.reply(200,solo.ladder(db,cid,query.get('role',[''])[0]))
+                    return self.reply(200,solo.ladder(db,cid,query.get('role',[''])[0],
+                        query.get('region',['KR'])[0],query.get('scope',['all'])[0]))
                 except ValueError: return self.reply(400,{'error':'invalid request'})
             if url.path=='/league-overview':
                 league_name=parse_qs(url.query).get('league',[''])[0]

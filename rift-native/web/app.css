@@ -30,3 +30,80 @@
 .career-choice-grid{display:grid;grid-template-columns:minmax(330px,0.85fr) minmax(380px,1.3fr);gap:18px;align-items:start}.club-creation{background:linear-gradient(150deg,#173452,#111a29);border-color:#4a6d98}.club-creation form{display:grid;gap:13px}.club-creation label{display:grid;gap:6px;color:#bcc9de}.club-creation input,.club-creation select{width:100%;min-height:41px}.club-creation input[type=color]{max-width:120px;height:45px;padding:5px;cursor:pointer}.club-creation input[type=file]{font-size:11px;padding:9px}.club-creation button[type=submit]{margin-top:8px;padding:14px;font-weight:bold;background:#2a6b70;border-color:#3e9993}.club-choice-list{max-height:660px;overflow:auto;display:grid;gap:8px}.club-choice{display:grid;grid-template-columns:38px minmax(0,1fr) auto;gap:12px;align-items:center;background:#25304780;border:1px solid #4c597766;border-radius:8px;padding:12px}.club-choice>.logo,.club-choice>.club-monogram{width:34px;height:34px;margin:0}.club-choice small{display:block;margin-top:3px}.club-choice p{color:#e5a7ab;font-size:11px}.club-choice button.act{white-space:nowrap}.club-locked{opacity:.62}.club-locked button.act{cursor:not-allowed}.onboarding-wizard{max-width:1000px;margin:3vh auto}.onboarding-wizard>h1{font-size:32px}.onboarding-wizard .panel .row>span{margin-left:auto}.onboarding-wizard .panel .row{flex-wrap:wrap}
 @media(max-width:960px){.career-choice-grid{grid-template-columns:1fr}}
 @media(max-width:580px){.club-choice{grid-template-columns:28px minmax(0,1fr)}.club-choice button.act{grid-column:2;justify-self:start}}
+
+
+/* FM-inspired league and club portal: compact, readable information panels */
+.country-badge{display:inline-flex;align-items:center;gap:7px;vertical-align:middle;white-space:nowrap;color:inherit;max-width:100%}
+.country-badge .country-flag{width:24px;height:16px;object-fit:cover;flex:none;border-radius:2px;border:1px solid #ffffff40;box-shadow:0 1px 2px #0007}
+.roster-table .country-badge{font-size:12px}
+.fm-team-page,.fm-league-page{max-width:1650px;margin:0 auto}
+.fm-team-header{display:flex;align-items:center;gap:22px;min-height:126px;padding:22px 26px;background:linear-gradient(105deg,#123962,#141c2e 70%);border:1px solid #435a77;border-radius:12px 12px 0 0}
+.fm-team-header>.logo,.fm-team-header>.club-monogram{width:86px;height:86px;flex-shrink:0;object-fit:contain;border-radius:8px}
+.fm-team-header h1{font-size:clamp(25px,3vw,40px);margin:5px 0 9px}
+.fm-team-header p{margin:4px 0;color:#b5c7df}
+.fm-team-header>a.act{margin-left:auto;padding:11px 15px;white-space:nowrap}
+.fm-metrics,.fm-league-metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1px;background:#42516a;border:1px solid #42516a;margin-bottom:14px}
+.fm-metrics>div,.fm-league-metrics>div{background:#19243a;min-width:0;padding:15px 18px}
+.fm-metrics small,.fm-league-metrics small{display:block;font-size:12px;color:#a4b9d3;margin-bottom:5px}
+.fm-metrics strong,.fm-league-metrics strong{font-size:19px;overflow-wrap:anywhere}
+.fm-team-page .team-tabs{margin-bottom:15px}
+.fm-club-dashboard{display:grid;grid-template-columns:minmax(280px,1.1fr) minmax(240px,.85fr) minmax(280px,1fr);gap:14px;align-items:start}
+.fm-club-dashboard>.panel{min-width:0;margin:0}
+.fm-club-dashboard .panel h2 a{font-size:12px;margin-left:auto;color:#8fd3ff}
+.fm-dashboard-standing{grid-column:1;grid-row:1 / span 2}
+.fm-dashboard-squad{grid-column:2}
+.fm-dashboard-news{grid-column:3;grid-row:1 / span 2}
+.fm-dashboard-front{grid-column:2}
+.fm-dashboard-finance{grid-column:1 / span 2}
+.fm-dashboard-form{grid-column:3}
+.fm-team-page .league-table th,.fm-team-page .league-table td,.fm-league-page .league-table th,.fm-league-page .league-table td{padding:9px 8px;white-space:nowrap;text-align:center;font-size:12px}
+.fm-team-page .league-table td:nth-child(2),.fm-league-page .league-table td:nth-child(2){text-align:left;min-width:145px}
+.league-table .logo,.league-table .club-monogram{height:23px;width:23px;object-fit:contain;margin-right:7px;vertical-align:middle}
+.league-table tr.mine{background:#254a5a88;box-shadow:inset 3px 0 #79dda8}
+.league-table td a{color:inherit;text-decoration:none}
+.league-table td a:hover{color:#a4d9ff}
+.front-office-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.front-person{background:#1d2a3e;border:1px solid #42516b;border-radius:9px;padding:13px;display:flex;flex-direction:column;gap:6px;min-height:108px}
+.front-person .front-role{font-size:11px;color:#9ab9ec;text-transform:uppercase;letter-spacing:.3px}
+.front-person strong{font-size:16px}
+.front-person small{font-size:11px;color:#95a7c0}
+.front-person .country-badge{font-size:12px}
+.fm-player-line{display:flex;align-items:center;gap:12px;padding:8px 2px;border-bottom:1px solid #ffffff20;color:inherit;text-decoration:none}
+.fm-player-line .face-frame,.fm-player-line .face{width:40px;height:40px;object-fit:cover}
+.fm-player-line span{display:flex;flex-direction:column;gap:4px}
+.fm-player-line small{color:#9faeca;font-size:11px}
+.fm-news-row{border-bottom:1px solid #53607960;padding:12px 2px}
+.fm-news-row small,.fm-news-row b{display:block}
+.fm-news-row small{color:#9fb1cd;font-size:11px;margin-bottom:5px}
+.fm-news-row p{color:#a8b5cc;font-size:12px;margin:5px 0 0;line-height:1.55}
+.fm-finance-totals{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.fm-finance-totals>div{padding:10px;background:#1c2a40;border-radius:6px}
+.fm-finance-totals small,.fm-finance-totals strong{display:block}
+.fm-finance-totals small{color:#a4b6cc}
+.fm-finance-totals strong{font-size:14px;margin-top:5px}
+.form-result-row{display:flex;align-items:center;gap:12px;border-bottom:1px solid #ffffff24;padding:9px 0}
+.form-result-row>span{border-radius:5px;padding:5px 9px;background:#324961;font-weight:700}
+.form-result-row>span.win{background:#206c53}
+.form-result-row>span.loss{background:#77333f}
+.form-result-row>div{display:flex;flex-direction:column;gap:3px}
+.form-result-row small{font-size:11px;color:#9aafc9}
+.fm-club-finance{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fm-league-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}
+.fm-league-index{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:13px}
+.fm-league-index a.panel{text-decoration:none;color:inherit;display:block}
+.fm-league-index a.panel:hover{border-color:#66a2e2}
+.fm-league-dashboard{display:grid;grid-template-columns:minmax(320px,1.2fr) minmax(300px,1fr);gap:14px;align-items:start}
+.fm-league-ranking{grid-column:1}
+.fm-league-games{grid-column:2}
+.fm-league-clubs{grid-column:1 / -1}
+.fm-match-item{border-bottom:1px solid #ffffff24;padding:11px 4px}
+.fm-match-item small{display:block;color:#9cb2d0;margin-bottom:6px}
+.fm-match-item>div{display:grid;grid-template-columns:1fr 70px 1fr;gap:8px;align-items:center;text-align:center}
+.fm-match-item strong{background:#243650;border-radius:4px;padding:7px 2px}
+.fm-league-club-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.fm-league-club{display:flex;align-items:center;gap:10px;background:#1c2940;border:1px solid #394761;border-radius:7px;padding:9px 12px;color:inherit;text-decoration:none}
+.fm-league-club .logo,.fm-league-club .club-monogram{width:32px;height:32px;object-fit:contain}
+.fm-league-club span{flex:1}.fm-league-club small{color:#92aecb}
+@media(max-width:1200px){.fm-club-dashboard{grid-template-columns:1fr 1fr}.fm-dashboard-standing,.fm-dashboard-news,.fm-dashboard-squad,.fm-dashboard-front,.fm-dashboard-finance,.fm-dashboard-form{grid-column:auto;grid-row:auto}}
+@media(max-width:850px){.fm-team-header{flex-wrap:wrap}.fm-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.fm-club-dashboard,.fm-club-finance,.fm-league-dashboard{grid-template-columns:1fr}.fm-league-ranking,.fm-league-games,.fm-league-clubs{grid-column:1}}
+@media(max-width:550px){.fm-metrics,.fm-league-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.fm-team-header{padding:16px}.fm-team-header>.logo,.fm-team-header>.club-monogram{width:60px;height:60px}.fm-team-header>a.act{margin-left:0}.fm-league-club-list{grid-template-columns:1fr}}

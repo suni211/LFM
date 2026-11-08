@@ -5,6 +5,7 @@ import secrets
 import uuid
 import catalog
 import staffing
+import handles
 
 ROLES=('TOP','JUNGLE','MID','ADC','SUPPORT')
 RETIRED={'ambition','score','bengi','marin','bang','wolf','mata','madlife','pray','gorilla',
@@ -32,11 +33,13 @@ def generate(db,career,club):
         ('김','이','박','최','정','강','조','윤','장','임','한','오','서','신','권','황','안','송','유','홍'),
         ('민','서','도','시','지','예','준','현','하','태','수','건','진','성','재','우','승','정','찬','영'),
         ('준','윤','우','호','빈','혁','성','현','훈','원','민','진','환','겸','찬','율','영','재','수','석')) if ''.join(parts) not in used_names]
-    prefixes=('Aero','Ash','Blue','Cinder','Dawn','Ember','Frost','Gale','Haze','Iron','Jade','Lunar','Mist','Night','Opal','Pine','Quartz','Raven','Silver','Thorn','Violet')
-    suffixes=('Arc','Bloom','Crest','Drift','Echo','Flare','Grove','Hawk','Iris','Jet','Knight','Leaf','Moon','Nova','Oath','Peak','Quill','Rise','Storm','Vale')
-    nicks=[a+b for a,b in itertools.product(prefixes,suffixes) if (a+b).casefold() not in used_nicks]
-    if min(len(names),len(nicks))<60: raise ValueError('unique prospect identities exhausted')
-    names=rng.sample(names,60);nicks=rng.sample(nicks,60)
+    if len(names)<60: raise ValueError('unique prospect identities exhausted')
+    names=rng.sample(names,60)
+    nicks=[]
+    for i,name in enumerate(names):
+        nick=handles.choose(f'{career}:{name}:{i}', used_nicks)
+        used_nicks.add(nick.casefold())
+        nicks.append(nick)
     season=db.execute('SELECT season FROM careers WHERE id=?',(career,)).fetchone()[0]
     for index in range(60):
         ratings={key:rng.randint(35,78) for key in catalog.ATTRIBUTES}
@@ -44,7 +47,7 @@ def generate(db,career,club):
         person_id='generated-'+uuid.uuid4().hex
         coach=index>=50
         selected_league=db.execute('SELECT league FROM club_profiles WHERE career_id=?',(career,)).fetchone()[0]
-        person=dict(id=person_id,real_name=names[index],display_name_ko=names[index],display_name=names[index],nickname=nicks[index],
+        person=dict(id=person_id,real_name=names[index],display_name_ko=names[index],display_name=names[index],nickname=nicks[index],nickname_scheme='distinct-en-v1',
                     team=club,league=selected_league,region='KR',nationality_name_ko='대한민국',
                     kind='coach' if coach else 'player',role='COACH' if coach else ROLES[index//10],
                     raw_role='코치' if coach else ROLES[index//10],real_person=False,
@@ -109,38 +112,25 @@ def finalize(db,career):
 
 
 def repair_generated_handles(db):
-    """Migrate generated Korean nicknames to unique English handles, preserving IDs."""
-    import hashlib
-    import re
-    rows=db.execute('SELECT id,payload FROM generated_people').fetchall()
+    """Migrate in-game generated handles once, without touching real players or IDs."""
+    rows=db.execute('SELECT id,payload FROM generated_people ORDER BY id').fetchall()
+    generated=[(pid,json.loads(raw)) for pid,raw in rows]
     used={str(p.get('nickname') or '').casefold() for p in catalog.load()['people']}
-    used.update(str(n).casefold() for n, in db.execute('SELECT nickname_key FROM generated_people'))
-    prefixes=('Aero','Ash','Blue','Cinder','Dawn','Ember','Frost','Gale','Haze','Iron','Jade','Lunar','Mist','Night','Opal','Pine','Quartz','Raven','Silver','Thorn','Violet')
-    suffixes=('Arc','Bloom','Crest','Drift','Echo','Flare','Grove','Hawk','Iris','Jet','Knight','Leaf','Moon','Nova','Oath','Peak','Quill','Rise','Storm','Vale')
-    for pid,raw in rows:
-        person=json.loads(raw)
-        old=str(person.get('nickname') or '')
-        if person.get('real_person') or re.fullmatch(r'[A-Za-z]{2,20}',old):
+    # Keep already migrated names, but discard old template names from the collision pool.
+    for _,p in generated:
+        if p.get('nickname_scheme')=='distinct-en-v1':
+            used.add(str(p.get('nickname') or '').casefold())
+    for pid,p in generated:
+        if p.get('real_person') or p.get('nickname_scheme')=='distinct-en-v1':
             continue
-        seed=int(hashlib.sha256(pid.encode()).hexdigest(),16)
-        for offset in range(100000):
-            i=seed+offset
-            nick=prefixes[i%len(prefixes)]+suffixes[(i//len(prefixes))%len(suffixes)]
-            if offset>=len(prefixes)*len(suffixes):
-                # Alphabetic suffix keeps handles English-only.
-                n=offset//(len(prefixes)*len(suffixes))
-                letters=''
-                while n:
-                    n,r=divmod(n-1,26);letters=chr(65+r)+letters
-                nick+=letters
-            if nick.casefold() not in used:break
-        else: raise ValueError('generated nickname space exhausted')
+        old=str(p.get('nickname') or '')
+        nick=handles.choose(pid,used)
         used.add(nick.casefold())
-        person['original_nickname']=old
-        person['nickname']=nick
-        person.pop('nickname_ko',None)
+        p.setdefault('original_nickname',old)
+        p.update(nickname=nick,nickname_scheme='distinct-en-v1')
+        p.pop('nickname_ko',None)
         db.execute('UPDATE generated_people SET nickname_key=?,payload=? WHERE id=?',
-                   (nick.casefold(),json.dumps(person,ensure_ascii=False),pid))
+                   (nick.casefold(),json.dumps(p,ensure_ascii=False),pid))
         if db.execute("SELECT 1 FROM sqlite_master WHERE name='solo_ranks'").fetchone():
             db.execute('UPDATE solo_ranks SET nickname=? WHERE person_id=?',(nick,pid))
 

@@ -1322,4 +1322,28 @@ async function draw() {
 document.addEventListener('click',event=>{const a=event.target.closest('a[href]');if(!a||event.ctrlKey||event.metaKey||event.button!==0)return;let href=a.getAttribute('href');if(href.startsWith(BASE+'/app')||href.startsWith('/app')){event.preventDefault();event.stopImmediatePropagation();document.querySelectorAll('details[open]').forEach(d=>d.open=false);go(href)}},true)
 new MutationObserver(()=>{if(!BASE)return;document.querySelectorAll('a[href^="/app"],img[src^="/media"]').forEach(el=>{const attr=el.tagName==='A'?'href':'src';el.setAttribute(attr,BASE+el.getAttribute(attr))})}).observe(document.getElementById('app'),{childList:true,subtree:true})
 window.addEventListener('popstate', draw)
+
+// A single authoritative online clock is shared by every connected account.
+// Re-check it automatically rather than requiring users to refresh the site.
+// Background tabs catch up immediately when brought back to the foreground.
+let worldSyncBusy=false
+let worldRedrawBusy=false
+async function syncGlobalTurn() {
+  if(!token()||worldSyncBusy||worldRedrawBusy)return
+  worldSyncBusy=true
+  try {
+    const fresh=await api('/world')
+    if(!worldState){worldState=fresh;return}
+    if(fresh.version===worldState.version&&fresh.season===worldState.season&&fresh.week===worldState.week)return
+    worldState=fresh
+    careerCache=null
+    worldRedrawBusy=true
+    try {await draw()} finally {worldRedrawBusy=false}
+  } catch(_error) {
+    // Offline or temporarily unavailable: retry on the next poll.
+  } finally {worldSyncBusy=false}
+}
+setInterval(syncGlobalTurn,2000)
+window.addEventListener('focus',syncGlobalTurn)
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncGlobalTurn()})
 draw()

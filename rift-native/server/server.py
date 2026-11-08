@@ -446,7 +446,7 @@ class Handler(BaseHTTPRequestHandler):
                         return self.reply(409,{'error':'account name already exists'})
                     salt=secrets.token_bytes(16); digest=derive(password,salt)
                     db.execute('INSERT INTO users(name,salt,password) VALUES(?,?,?)',(name,salt,digest))
-                    db.execute('INSERT OR IGNORE INTO league_operators SELECT id FROM users WHERE id=(SELECT MIN(id) FROM users)')
+                    # New accounts always begin as managers, never automatic operators.
                     user_id=db.execute('SELECT id FROM users WHERE name=?',(name,)).fetchone()[0]
                 else:
                     row=db.execute('SELECT id,salt,password FROM users WHERE name=?',(name,)).fetchone()

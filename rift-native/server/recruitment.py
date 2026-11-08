@@ -41,18 +41,22 @@ def generate(db,career,club):
         used_nicks.add(nick.casefold())
         nicks.append(nick)
     season=db.execute('SELECT season FROM careers WHERE id=?',(career,)).fetchone()[0]
+    selected_league=db.execute('SELECT league FROM club_profiles WHERE career_id=?',(career,)).fetchone()[0]
     for index in range(60):
-        ratings={key:rng.randint(35,78) for key in catalog.ATTRIBUTES}
+        # Lower-league expansion teams receive mostly raw prospects, with rare gems.
+        gem=index<50 and rng.random()<.045
+        ratings={key:rng.randint(52,79) if gem else rng.randint(32,66) for key in catalog.ATTRIBUTES}
+        overall=round(sum(ratings.values())/len(ratings))
+        potential_ovr=min(99,overall+rng.randint(4,18)+(rng.randint(14,25) if rng.random()<.08 else 0))
         salary=round((sum(ratings.values())/6)*24000/10000)*10000
         person_id='generated-'+uuid.uuid4().hex
         coach=index>=50
-        selected_league=db.execute('SELECT league FROM club_profiles WHERE career_id=?',(career,)).fetchone()[0]
         person=dict(id=person_id,real_name=names[index],display_name_ko=names[index],display_name=names[index],nickname=nicks[index],nickname_scheme='distinct-en-v1',
                     team=club,league=selected_league,region='KR',nationality_name_ko='대한민국',
                     kind='coach' if coach else 'player',role='COACH' if coach else ROLES[index//10],
                     raw_role='코치' if coach else ROLES[index//10],real_person=False,
                     contract_end='시즌 '+str(season)+' 종료',contract_estimated=True,salary=salary,salary_estimated=True,
-                    stats=ratings,form=None,source='solo-queue',source_updated='솔로랭크',
+                    stats=ratings,potential_ovr=potential_ovr,rare_prospect=gem,form=None,source='solo-queue',source_updated='솔로랭크',
                     game_evaluation=dict(ratings=ratings,form=50,note='솔로랭크를 도는 일반인',origin='solo-queue',year=2026))
         if coach:
             person['staff_role']='HEAD_COACH' if index<54 else 'COACH'

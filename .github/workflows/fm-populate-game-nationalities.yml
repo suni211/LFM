@@ -1,0 +1,42 @@
+name: Populate LFM in-game nationalities
+on:
+  push:
+    branches:
+      - feat/gcp-existing-vm-lfm-deploy-20261108
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  game-nationalities:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate names, duplicates and country fallback policies
+        run: cd rift-native/server && python -m unittest test_game_nationalities -v
+      - name: Populate remaining in-game country fields
+        run: python3 rift-native/tools/complete_game_nationalities.py --apply
+      - name: Verify all 1088 game-country fields
+        run: |
+          cd rift-native
+          python3 tools/audit_country_gap.py
+          python3 - <<'PY'
+          import json
+          result=json.load(open('nationality-gap-report.json',encoding='utf8'))
+          assert result['missing']==0,result
+          PY
+      - name: Commit country updates to feature branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add rift-native/assets/nationality-overrides.json rift-native/game-nationality-fill-report.json
+          if ! git diff --staged --quiet; then
+            git commit -m 'Populate remaining game nationality labels by player ID'
+            git fetch origin feat/gcp-existing-vm-lfm-deploy-20261108
+            git rebase origin/feat/gcp-existing-vm-lfm-deploy-20261108
+            git push origin HEAD:feat/gcp-existing-vm-lfm-deploy-20261108
+          fi

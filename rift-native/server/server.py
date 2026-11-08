@@ -23,6 +23,7 @@ import staffing
 import search
 import dashboard
 import solo
+import player_departures
 import series_state
 import manual_draft
 from highlight_recording import clip_path
@@ -60,6 +61,7 @@ def init():
         staffing.init(db)
         search.init(db)
         solo.init(db)
+        player_departures.init(db)
         solo.repair_legacy_handles(db)
         recruitment.repair_initial_pool(db)
         import training
@@ -125,6 +127,10 @@ class Handler(BaseHTTPRequestHandler):
             if url.path=='/manager-profile': return self.reply(200,manager_identity.view(db,uid))
             if url.path=='/clubs': return self.reply(200,{'clubs':clubs.directory(db),'leagues':sorted({p['league'] for p in catalog.load()['people'] if p.get('league')})})
             if url.path=='/world': return self.reply(200,online_world.status(db,uid))
+            if url.path=='/departure-requests':
+                cid=int(parse_qs(url.query)['id'][0])
+                if not transfers.can_manage(db,uid,cid): return self.reply(403,{'error':'forbidden'})
+                return self.reply(200,{'requests':player_departures.pending(db,cid)})
             if url.path=='/solo-ladder':
                 query=parse_qs(url.query)
                 try:
@@ -518,6 +524,14 @@ class Handler(BaseHTTPRequestHandler):
                     except PermissionError: return self.reply(403,{'error':'forbidden'})
                 db.execute('COMMIT')
                 return self.reply(200,{'id':offer,'offers':transfers.offers(db,cid)})
+            if self.path=='/departure-decision':
+                cid=data['id']
+                if type(cid) is not int or not 1<=cid<=2**63-1: raise ValueError()
+                if not transfers.can_manage(db,uid,cid): return self.reply(403,{'error':'forbidden'})
+                db.execute('BEGIN IMMEDIATE')
+                decision=player_departures.resolve(db,cid,data['person'],data['approve'])
+                db.execute('COMMIT')
+                return self.reply(200,decision)
             if self.path=='/management':
                 cid=data['id']
                 if type(cid) is not int or not 1<=cid<=2**63-1: raise ValueError()

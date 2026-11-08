@@ -103,7 +103,7 @@ def roster(db,career):
 def refresh_catalog(db):
     """Repair imported empty roles once; retain transfers and user lineup decisions."""
     db.execute('CREATE TABLE IF NOT EXISTS roster_import_revisions(revision TEXT PRIMARY KEY)')
-    revision='official-roles-20261105-v2'
+    revision='verified-staff-roster-classification-20261108-v3'
     if db.execute('SELECT 1 FROM roster_import_revisions WHERE revision=?',(revision,)).fetchone(): return
     latest={p['id']:p for p in catalog.load()['people']}
     for cid,pid,raw,assignment,role in db.execute('SELECT career_id,person_id,payload,assignment,role FROM club_roster').fetchall():
@@ -112,9 +112,15 @@ def refresh_catalog(db):
         if assignment=='unclassified' and not role and p.get('kind')=='player' and p.get('role'):
             role=p['role']
             occupied=db.execute("SELECT 1 FROM club_roster WHERE career_id=? AND role=? AND assignment='first'",(cid,role)).fetchone()
-            assignment='academy' if p.get('squad')=='academy' else 'reserve' if occupied else 'first'
+            assignment='academy' if p.get('squad')=='academy' else 'reserve' if p.get('squad')=='reserve' or occupied else 'first'
         if assignment=='unclassified' and p.get('kind') in ('coach','staff'):
+            # All verified front-office personnel belong to staff, never first team.
             assignment,role='staff','COACH'
+        if assignment=='unclassified' and p.get('kind')=='player' and p.get('squad') in ('reserve','academy'):
+            # Imported "Sub" people with unknown roles are still reserve players.
+            assignment=p['squad']
+        if assignment=='staff' and p.get('kind') in ('coach','staff') and role=='':
+            role='COACH'
         db.execute('UPDATE club_roster SET payload=?,assignment=?,role=? WHERE career_id=? AND person_id=?',
                    (json.dumps(dict(json.loads(raw),**p),ensure_ascii=False),assignment,role,cid,pid))
     for cid, in db.execute("SELECT career_id FROM club_profiles WHERE mode='takeover'").fetchall():

@@ -31,3 +31,5 @@ jobs:
         run: python3 -m unittest discover -s rift-native/tests -p 'test_rookie_career_features.py' -v
       - name: Run real API integration smoke test with temporary DB
         run: python3 -m unittest discover -s rift-native/tests -p 'test_http_career_smoke.py' -v
+      - name: Migrate older solo player nicknames and Master floor
+        run: python3 -m unittest discover -s rift-native/tests -p 'test_short_nickname_migration.py' -v

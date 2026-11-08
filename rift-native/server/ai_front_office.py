@@ -1,8 +1,7 @@
-"""AI club transfer decisions favor net playing value and merchandise income.
+"""AI player acquisitions favor expected game sporting gains and merchandise.
 
-AI clubs may sign independently documented free agents, never hijack a
-player under contract to a human or another club. Interest in a contracted
-player is a scouting observation, not a completed transfer.
+Only AI-owned or unclaimed NPC sources can be transferred without an offer;
+existing human-club player contracts are protected from unilateral transfers.
 """
 import json
 import math
@@ -54,6 +53,38 @@ def is_unattached(db,person):
         AND assignment NOT IN ('departed')""",(person_id,)).fetchone():return False
     return True
 
+def source_club(db,person,buyer):
+    """Transferable source: true FA or AI-managed/unclaimed NPC club only.
+
+    Player contracts on human-managed clubs cannot be bought by AI silently.
+    """
+    row=db.execute("SELECT career_id,club_key FROM person_ownership WHERE person_id=?",
+                   (person['id'],)).fetchone()
+    if row:
+        if row==(None,'free-agent'):return dict(kind='free-agent',seller=None)
+        seller,club_key=row
+        if seller is not None:
+            if seller==buyer or clubs.human_owner(db,seller):return None
+            return dict(kind='npc-club',seller=seller)
+        if not club_key or club_key=='free-agent':return dict(kind='free-agent',seller=None)
+        found=db.execute("SELECT career_id FROM club_profiles WHERE team_key=?",
+                         (club_key,)).fetchone()
+        if found:
+            if found[0]==buyer or clubs.human_owner(db,found[0]):return None
+            return dict(kind='npc-club',seller=found[0])
+        return dict(kind='npc-club',seller=None)
+    current=person.get('team') or ''
+    if not current or current.casefold() in ('fa','free agent','무소속'):
+        return dict(kind='free-agent',seller=None)
+    source_key=clubs.key(person.get('league',''),current)
+    owner=db.execute("SELECT career_id FROM club_profiles WHERE team_key=?",
+                     (source_key,)).fetchone()
+    if owner:
+        if owner[0]==buyer or clubs.human_owner(db,owner[0]):return None
+        return dict(kind='npc-club',seller=owner[0])
+    return dict(kind='npc-club',seller=None)
+
+
 def _choose(db,cid,season,week,market):
     if db.execute("SELECT 1 FROM ai_transfer_decisions WHERE career_id=? AND season=? AND week=?",
                   (cid,season,week)).fetchone():return
@@ -78,27 +109,28 @@ def _choose(db,cid,season,week,market):
     payroll=db.execute("""SELECT COALESCE(SUM(annual_salary),0)
        FROM club_contracts WHERE career_id=? AND active=1""",(cid,)).fetchone()[0]
     candidates=[]
+    belonging={q['id'] for q in state}
+    budget=db.execute("SELECT transfer_budget FROM club_finances WHERE career_id=?",(cid,)).fetchone()[0]
     for p in market:
         role=p.get('role')
-        if role not in positions:continue
-        if p.get('league') not in (league,'','FA','Free Agent'):
-            continue
-        # Players already in this squad are not external transfer targets.
-        if any(q.get('id')==p['id'] for q in state):continue
+        if role not in positions or not p.get('real_person'):continue
+        if p.get('league') not in (league,'','FA','Free Agent'):continue
+        if p['id'] in belonging:continue
+        source=source_club(db,p,cid)
         scored=scoring(p,known[role],fans)
-        if not scored:continue
-        if scored['projected_net_value']<=0:continue
-        free=is_unattached(db,p)
-        can_afford=free and cash>=scored['annual_salary']//104 and (
-            payroll+scored['annual_salary']<=wages)
-        candidates.append((scored['projected_net_value'],
-                           int(can_afford),p['id'],p,scored))
+        if not scored or scored['projected_net_value']<=0:continue
+        fee=0 if source and source['kind']=='free-agent' else int(
+            (p.get('economics') or player_economy.estimate(p))['market_value']*.18)
+        net=scored['projected_net_value']-fee//2
+        if net<=0:continue
+        affordable=bool(source and cash>=fee+scored['annual_salary']//104
+            and budget>=fee and payroll+scored['annual_salary']<=wages)
+        candidates.append((int(affordable),net,p['id'],p,scored,source,fee))
     if not candidates:return
-    candidates.sort(key=lambda item:(-item[1],-item[0],item[2]))
-    _,can_sign,pid,p,score=candidates[0]
+    candidates.sort(key=lambda item:(-item[0],-item[1],item[2]))
+    can_sign,_,pid,p,score,source,fee=candidates[0]
     signed=False
     if can_sign:
-        # An ordinary AI career is allowed to hire a genuinely free player.
         import solo
         try:
             solo.require_pro(db,pid)
@@ -111,6 +143,12 @@ def _choose(db,cid,season,week,market):
                 (cid,pid,json.dumps(dict(p,team=team,league=league),ensure_ascii=False),
                  'reserve',p['role'])).rowcount>0
             if signed:
+                seller=source['seller']
+                if seller is not None:
+                    db.execute("UPDATE club_roster SET assignment='departed' WHERE career_id=? AND person_id=?",
+                               (seller,pid))
+                    db.execute("UPDATE club_contracts SET active=0 WHERE career_id=? AND person_id=?",
+                               (seller,pid))
                 db.execute("""INSERT INTO person_ownership(person_id,career_id,club_key)
                     VALUES(?,?,NULL) ON CONFLICT(person_id)
                     DO UPDATE SET career_id=excluded.career_id,club_key=NULL""",(pid,cid))
@@ -120,16 +158,26 @@ def _choose(db,cid,season,week,market):
                 db.execute("""INSERT OR IGNORE INTO contract_signings VALUES(?,?,?)""",(cid,pid,now))
                 db.execute("""INSERT OR IGNORE INTO club_health(career_id,person_id)
                     VALUES(?,?)""",(cid,pid))
+                if fee:
+                    import management
+                    management.ledger(db,cid,'ai-transfer-buy:'+str(season)+':'+str(week)+':'+pid,
+                        -fee,'transfer','AI 구단 선수 영입',season,week)
+                    db.execute("UPDATE club_finances SET transfer_budget=MAX(0,transfer_budget-?) WHERE career_id=?",
+                               (fee,cid))
+                    if seller is not None:
+                        management.ledger(db,seller,
+                            'ai-transfer-sale:'+str(season)+':'+str(week)+':'+pid,
+                            fee,'transfer','AI 구단 선수 판매',season,week)
     db.execute("""INSERT INTO ai_transfer_decisions VALUES(?,?,?,?,?,?,?,?,?,?,?,?)""",
         (cid,season,week,pid,p.get('nickname') or p.get('real_name') or pid,
-         'signed-free-agent' if signed else 'scouting-interest',
+         'signed-free-agent' if signed and source['kind']=='free-agent' else 'signed-ai-transfer' if signed else 'scouting-interest',
          score['predicted_merch_profit'],score['annual_salary'],
          score['player_rating'],score['reputation'],
          score['playing_benefit'],score['projected_net_value']))
     if signed:
         import club_messages
         club_messages.publish(db,cid,'ai-signed:'+pid+':'+str(season)+':'+str(week),
-            season,week,'AI 구단 FA 영입',team+'이 '+(p.get('nickname') or pid)+
+            season,week,'AI 구단 영입',team+'이 '+(p.get('nickname') or pid)+
             ' 선수를 연봉·경기력·굿즈 예상 수익을 비교해 영입했습니다.')
 
 def weekly(db,season,week):

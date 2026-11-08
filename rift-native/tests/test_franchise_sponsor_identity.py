@@ -64,7 +64,9 @@ class BrandAndLeagueTests(unittest.TestCase):
         offer=sponsorship.offer(self.db,1,4)
         self.assertEqual('fictional-game-contract',offer['source'])
         self.assertIn('실제 후원 관계가 아닙니다',sponsorship.DISCLAIMER)
-        self.assertEqual(1,len(sponsorship.proposals(self.db,1)['offers']))
+        offers=sponsorship.proposals(self.db,1)['offers']
+        self.assertTrue(any(o['tier']=='main' for o in offers))
+        self.assertTrue(any(o['tier']=='support' for o in offers))
 
     def test_sponsor_accept_updates_finances_only_once(self):
         offer=sponsorship.offer(self.db,1,4)

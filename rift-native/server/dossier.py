@@ -60,14 +60,23 @@ def view(db, user, league, team):
     staff=[p for p in rows if p.get('kind') in ('coach','staff')]
     other=[p for p in rows if p not in players and p not in academy and p not in staff]
     season=online_world.clock(db)['season']
+    standings=dashboard.league_table(db,league,season)
+    ranking=next((row for row in standings if row['team']==team),None)
+    manager_name=next((catalog.display(p) for p in staff if p.get('kind')=='coach'),None)
     body=dict(identity=identity(league,team),players=players,academy=academy,staff=staff,other=other,
-              career=None,finances=None,standings=dashboard.league_table(db,league,season),recent=dashboard.last_five(db,team))
+              manager=manager_name,season=season,standing=ranking,news=[],cash_history=[],
+              career=None,finances=None,standings=standings,recent=dashboard.last_five(db,team))
     if not career:
         return body
     member = db.execute('SELECT role FROM members WHERE career_id=? AND user_id=?', (career['id'], user)).fetchone()
     operator = online_world.operator(db, user)
     career['role'] = member[0] if member else ('operator' if operator else '')
     body['career'] = career
+    manager_row=db.execute('SELECT name FROM manager_profiles WHERE career_id=?',(career['id'],)).fetchone()
+    if manager_row:body['manager']=manager_row[0]
+    body['news']=[dict(season=sn,week=wk,headline=headline,body=summary)
+        for sn,wk,headline,summary in db.execute(
+            'SELECT season,week,headline,body FROM career_news WHERE career_id=? ORDER BY season DESC,week DESC,id DESC LIMIT 8',(career['id'],))]
     if member or operator:
         try:
             money = __import__('management').snapshot(db, career['id'])
@@ -83,4 +92,7 @@ def view(db, user, league, team):
         season = career['season']
         body['standings'] = dashboard.league_table(db, league, season)
         body['recent'] = dashboard.last_five(db, career['name'])
+        body['standing']=next((row for row in body['standings'] if row['team']==team),None)
+        if money.get('initialized'):
+            body['cash_history']=dashboard.cash_history(db,career['id'])
     return body

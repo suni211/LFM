@@ -61,7 +61,7 @@ def active(db,career,at_turn=None):
 
 def generate_candidates(db,career):
     import secrets,json,uuid,itertools
-    import catalog,recruitment
+    import catalog,recruitment,handles
     if db.execute('SELECT 1 FROM staff_candidate_batches WHERE career_id=?',(career,)).fetchone():return
     used_names={p.get('display_name_ko') or p.get('real_name') for p in catalog.load()['people']}
     used_nicks={str(p.get('nickname') or '').casefold() for p in catalog.load()['people']}|recruitment.RETIRED
@@ -69,18 +69,21 @@ def generate_candidates(db,career):
     names=[''.join(p) for p in itertools.product(('고','남','류','문','백','성','심','양','원','전','차','표','김','이','박','최','정','강','조','윤'),
         ('민','서','도','시','지','예','준','현','하','태','수','건','진','성','재','우','승','정','찬','영'),
         ('준','윤','우','호','빈','혁','성','현','훈','원','민','진','환','겸','찬','율','영','재','수','석')) if ''.join(p) not in used_names]
-    nicks=[''.join(p) for p in itertools.product(('Calm','Clear','Deep','Ever','Fair','Fine','Green','High','Kind','Lake','Light','Mellow','North','Quiet','River','Soft','Stone','True','Vast','Wise'),
-        ('Arrow','Bridge','Cloud','Crown','Dawn','Field','Flame','Glory','Harbor','Hill','Island','Keeper','Light','Maple','Oak','Path','Quill','Rose','Shore','Trail'),
-        ('','Wing','Leaf','Bloom','Sky','Vale')) if ''.join(p).casefold() not in used_nicks]
-    if min(len(names),len(nicks))<40:raise ValueError('unique staff identities exhausted')
-    rng=secrets.SystemRandom();names=rng.sample(names,40);nicks=rng.sample(nicks,40)
+    if len(names)<40:raise ValueError('unique staff identities exhausted')
+    rng=secrets.SystemRandom();names=rng.sample(names,40)
+    nicks=[]
+    for idx,name in enumerate(names):
+        nick=handles.choose('front:'+str(career)+':'+name+':'+str(idx),used_nicks)
+        used_nicks.add(nick.casefold())
+        nicks.append(nick)
     club,season=db.execute('SELECT name,season FROM careers WHERE id=?',(career,)).fetchone()
+    selected_league=db.execute('SELECT league FROM club_profiles WHERE career_id=?',(career,)).fetchone()[0]
     for i in range(40):
         position=('GM','COMMUNITY','ANALYST','DOCTOR')[i//10];pid='generated-'+uuid.uuid4().hex
         salary=rng.randrange(12,31)*100000
         person=dict(id=pid,real_name=names[i],display_name_ko=names[i],display_name=names[i],nickname=nicks[i],
-            team=club,league='LCK CL',kind='staff',role='STAFF',raw_role=ROLES[position]['name'],staff_role=position,staff_role_name=ROLES[position]['name'],
-            real_person=False,source='game-generated',source_updated='게임 생성',contract_end='시즌 '+str(season)+' 종료',contract_estimated=True,
+            team=club,league=selected_league,kind='staff',role='STAFF',raw_role=ROLES[position]['name'],staff_role=position,staff_role_name=ROLES[position]['name'],
+            real_person=False,nickname_scheme='distinct-en-v1',source='game-generated',source_updated='게임 생성',contract_end='시즌 '+str(season)+' 종료',contract_estimated=True,
             salary=salary,salary_estimated=True,nationality_name_ko='대한민국',game_evaluation=None)
         db.execute('INSERT INTO generated_people(id,real_name,nickname_key,career_id,payload) VALUES(?,?,?,?,?)',(pid,names[i],nicks[i].casefold(),career,json.dumps(person,ensure_ascii=False)))
     db.execute('INSERT INTO staff_candidate_batches VALUES(?)',(career,))

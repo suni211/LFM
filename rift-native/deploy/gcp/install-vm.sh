@@ -34,7 +34,7 @@ if missing and sys.argv[2]=='1':
 PY
 # Test imports and the quota rules before touching the live release.
 python3 -m compileall -q "$src/server"
-(cd "$src/server" && python3 -m unittest test_import_rules -v)
+(cd "$src/server" && python3 -m unittest test_import_rules test_world_transfers -v)
 if ! id riftmanager >/dev/null 2>&1; then
   sudo useradd --system --home-dir "$DATA_ROOT" --shell /usr/sbin/nologin riftmanager
 fi

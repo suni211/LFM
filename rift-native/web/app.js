@@ -954,6 +954,206 @@ async function draftMatch(id) {
   }
   await topbar()
 }
+// The match tab consumes the actual server-side engine's saved match series,
+// player box scores and gzip-compressed replay clips; never fabricates results.
+let matchWatch=null
+let matchPollBusy=false
+let activeReplayAnimation=null
+function matchStatusSignature(game){
+  const s=game?.series||{}
+  return JSON.stringify([game?.state,s.phase,s.score,s.sets?.length,
+    s.feedback_until,game?.result?.score,game?.result?.winner])
+}
+async function pollMatchEngine(){
+  const m=location.pathname.match(/^\/(?:rift\/)?app\/match\/(\d+)$/)
+  if(!m||!token()||!matchWatch||matchPollBusy||matchWatch.id!==Number(m[1]))return
+  if(matchWatch.completed)return
+  matchPollBusy=true
+  try{
+    const response=await api('/fixtures?id='+matchWatch.careerId)
+    const game=(response.fixtures||[]).find(item=>item.id===matchWatch.id)
+    if(game&&matchStatusSignature(game)!==matchWatch.signature)
+      await matchEnginePage(matchWatch.id)
+  }catch(_error){
+    // A temporary HTTP error should not close the match view.
+  }finally{matchPollBusy=false}
+}
+setInterval(pollMatchEngine,2500)
+window.addEventListener('focus',pollMatchEngine)
+
+function stopMatchReplay(){
+  if(activeReplayAnimation!==null){
+    cancelAnimationFrame(activeReplayAnimation)
+    activeReplayAnimation=null
+  }
+}
+async function playMatchHighlight(fixture,index){
+  stopMatchReplay()
+  const viewer=document.getElementById('match-replay-viewer')
+  if(!viewer)return
+  viewer.hidden=false
+  viewer.innerHTML='<p>엔진 하이라이트를 불러오는 중입니다.</p>'
+  try{
+    const replay=await api('/highlight?id='+fixture+'&clip='+index)
+    if(!replay||!Array.isArray(replay.frames)||replay.frames.length===0){
+      viewer.innerHTML='<p>이 하이라이트에는 재생 가능한 프레임이 없습니다.</p>'
+      return
+    }
+    const frames=replay.frames,units=new Map((replay.units||[]).map(u=>[u.id,u]))
+    viewer.innerHTML='<div class="match-replay-heading"><b>'+esc(replay.clip?.label||'경기 하이라이트')+'</b>'+
+      '<button class="act" id="replay-play-again">처음부터 재생</button></div>'+
+      '<canvas id="match-replay-canvas" width="512" height="512" aria-label="경기 엔진의 기록된 미니맵 하이라이트"></canvas>'+
+      '<div class="row"><small id="match-replay-clock">00:00</small>'+
+      '<span>저장된 엔진 위치·체력 데이터의 미니맵 재생</span></div>'
+    const canvas=document.getElementById('match-replay-canvas')
+    const context=canvas.getContext('2d')
+    if(!context){viewer.innerHTML='<p>이 브라우저에서는 미니맵 재생이 지원되지 않습니다.</p>';return}
+    const background=new Image()
+    background.src=BASE+'/media/replay-map.png'
+    let baseTime=frames[0][0]
+    const drawFrame=i=>{
+      const frame=frames[i]
+      context.clearRect(0,0,512,512)
+      context.fillStyle='#0b1a28'
+      context.fillRect(0,0,512,512)
+      if(background.complete&&background.naturalWidth)context.drawImage(background,0,0,512,512)
+      else{
+        context.strokeStyle='#274158'
+        context.lineWidth=14
+        context.beginPath()
+        context.moveTo(45,467);context.lineTo(45,45);context.lineTo(467,45)
+        context.moveTo(45,467);context.lineTo(467,467);context.lineTo(467,45)
+        context.moveTo(45,467);context.lineTo(467,45)
+        context.stroke()
+      }
+      for(const item of frame[1]){
+        const [id,x,y,hp]=item
+        const meta=units.get(id)
+        if(!meta||meta.kind!=='champion')continue
+        const px=Number(x),py=Number(y)
+        if(!Number.isFinite(px)||!Number.isFinite(py))continue
+        const safeX=Math.max(5,Math.min(507,px)),safeY=Math.max(5,Math.min(507,py))
+        context.beginPath()
+        context.arc(safeX,safeY,8,0,Math.PI*2)
+        context.fillStyle=meta.team===0?'#46b5fa':'#fb6a70'
+        context.fill()
+        context.strokeStyle='#e5e9f4'
+        context.lineWidth=1.4;context.stroke()
+        context.fillStyle='#0a1019'
+        context.fillRect(safeX-10,safeY+10,20,4)
+        context.fillStyle=Number(hp)>30?'#70e0a5':'#ffbd68'
+        context.fillRect(safeX-10,safeY+10,Math.max(0,Math.min(20,Number(hp)*.2)),4)
+      }
+      const seconds=Math.floor(frame[0])
+      const label=document.getElementById('match-replay-clock')
+      if(label)label.textContent=String(Math.floor(seconds/60)).padStart(2,'0')+':'+
+        String(seconds%60).padStart(2,'0')
+    }
+    const play=()=>{
+      stopMatchReplay()
+      baseTime=performance.now()
+      const startAt=frames[0][0]
+      let nextFrame=0
+      const animate=now=>{
+        if(!canvas.isConnected){stopMatchReplay();return}
+        const time=startAt+(now-baseTime)/1000*2
+        while(nextFrame+1<frames.length&&frames[nextFrame+1][0]<=time)nextFrame++
+        drawFrame(nextFrame)
+        if(nextFrame+1<frames.length)activeReplayAnimation=requestAnimationFrame(animate)
+        else activeReplayAnimation=null
+      }
+      activeReplayAnimation=requestAnimationFrame(animate)
+    }
+    document.getElementById('replay-play-again').onclick=play
+    drawFrame(0)
+    play()
+  }catch(error){
+    viewer.innerHTML='<p class="err">'+esc(error.message)+'</p>'
+  }
+}
+
+async function matchEnginePage(id){
+  await loadChampionMeta()
+  const current=await requireCareer();if(!current)return
+  const data=await api('/fixtures?id='+current.id)
+  const game=(data.fixtures||[]).find(item=>item.id===id)
+  if(!game){go('/app/schedule');return}
+  const series=game.series||{}
+  if(['choice','draft_pending','draft','swap'].includes(series.phase))
+    return go('/app/draft/'+id)
+  const sets=series.sets||game.result?.sets||[]
+  const score=game.result?.score||series.score||[0,0]
+  const winner=game.result?.winner
+  const isFinished=game.state==='finished'
+  const isFailed=game.state==='failed'
+  const summary=isFinished?(winner===0?'승리':winner===1?'패배':'경기 종료'):
+    isFailed?'매치 엔진 실행 오류':
+    series.phase==='feedback'?'세트 종료 · 감독 피드백 대기':
+    series.phase==='ready'?'매치 엔진 시뮬레이션 대기 또는 실행 중':
+    '경기 진행 대기'
+  const highlights=game.result?.highlights||
+    sets.flatMap(item=>item.highlights||[])
+  const boxscores=sets.map((set,i)=>{
+    const blueTeam=set.blue??0
+    const own=(set.players||[]).filter(p=>p.team===blueTeam)
+    const opponent=(set.players||[]).filter(p=>p.team!==blueTeam)
+    const players=rows=>rows.map(p=>'<tr>'+
+      '<td>'+esc(p.role||'')+'</td><td>'+esc(p.player_name||p.name||'선수')+'</td>'+
+      '<td>'+esc(p.name||'챔피언')+'</td>'+
+      '<td>'+esc((p.kda||[]).join(' / '))+'</td>'+
+      '<td>'+Number(p.cs||0)+'</td><td>'+Number(p.damage||0).toLocaleString('ko-KR')+'</td>'+
+      '</tr>').join('')
+    const rowHeader='<thead><tr><th>포지션</th><th>선수</th><th>챔피언</th><th>K / D / A</th><th>CS</th><th>피해량</th></tr></thead>'
+    return '<section class="panel match-set-panel"><h2>'+(i+1)+'세트 · '+(set.club_winner===0?'우리 팀 승리':'상대 팀 승리')+
+      '<small>'+Math.floor((set.time||0)/60)+'분 '+Math.round((set.time||0)%60)+'초</small></h2>'+
+      '<h3>우리 팀</h3><div class="table-scroll"><table>'+rowHeader+'<tbody>'+players(own)+'</tbody></table></div>'+
+      '<h3>상대 팀</h3><div class="table-scroll"><table>'+rowHeader+'<tbody>'+players(opponent)+'</tbody></table></div>'+
+      '<p class="muted-note">표시된 선수 기록은 경기 엔진이 저장한 실제 게임 내 시뮬레이션 결과입니다.</p></section>'
+  }).join('')
+  const clips=highlights.map((clip,index)=>
+    '<button class="match-highlight-button" data-match-highlight="'+index+'">'+
+    '<b>하이라이트 '+(index+1)+'</b><span>'+esc(clip.label||'경기 장면')+'</span>'+
+    '<small>'+Math.floor((clip.start||0)/60)+'분 '+Math.floor((clip.start||0)%60)+'초</small></button>').join('')
+  const status='<section class="panel match-status-panel">'+
+    '<div><small>ENGINE STATUS</small><h2>'+esc(summary)+'</h2>'+
+    '<p>'+esc(game.competition||'정규 시즌')+' · '+esc(game.stage||'경기')+
+    ' · BO'+game.best_of+' · '+game.season+'시즌 '+game.week+'주차</p></div>'+
+    '<div class="match-score"><small>현재 세트 스코어</small><strong>'+score[0]+' : '+score[1]+'</strong></div></section>'
+  const feedback=series.phase==='feedback'?
+    '<section class="panel"><h2>감독 세트 피드백</h2>'+
+    '<p>다음 세트가 시작되기 전 피드백을 전달하세요.</p>'+
+    '<div class="row"><input id="match-feedback-input" maxlength="300" placeholder="선수단에게 전달할 세트 피드백"/>'+
+    '<button class="act" id="match-feedback-submit">전달</button></div></section>':''
+  const engineNote=!isFinished&&!isFailed?
+    '<section class="panel"><h2>경기 엔진 실시간 연결</h2>'+
+    '<p>매치 워커가 서버에서 경기를 처리합니다. 진행 상태 및 세트 결과를 약 2.5초마다 확인하여 화면에 자동 반영합니다.</p>'+
+    '<p class="muted-note">엔진 전체 경기를 실시간 영상으로 송출하는 기능은 아직 없습니다. 완료된 주요 장면은 아래 미니맵 하이라이트에서 재생할 수 있습니다.</p></section>':
+    isFailed?'<section class="panel"><h2>매치 엔진 오류</h2><p class="err">경기 처리가 실패했습니다. 관리자에게 워커 로그 확인을 요청하세요.</p></section>':''
+  const html='<div class="page-heading"><div><p class="eyebrow">MATCH ENGINE · SIMULATION</p>'+
+    '<h1>'+esc(current.name)+' vs '+esc(game.opponent)+'</h1>'+
+    '<p>서버 매치 엔진 결과 · 전술 / 선수 능력 / 확정된 챔피언이 적용된 경기</p></div>'+
+    '<a class="act" href="/app/schedule">경기 일정</a></div>'+status+engineNote+
+    feedback+(boxscores||'<section class="panel"><h2>세트 기록</h2><p>첫 세트 결과가 아직 없습니다.</p></section>')+
+    '<section class="panel"><h2>경기 하이라이트 · '+highlights.length+'개</h2>'+
+    (clips||'<p>엔진 하이라이트가 생성되면 여기서 볼 수 있습니다.</p>')+
+    '<div id="match-replay-viewer" class="match-replay-viewer" hidden></div></section>'
+  stopMatchReplay()
+  shell(html,'/app/match/'+id)
+  matchWatch={id,careerId:current.id,signature:matchStatusSignature(game),
+    completed:isFinished||isFailed}
+  document.querySelectorAll('[data-match-highlight]').forEach(button=>button.onclick=()=>{
+    playMatchHighlight(id,Number(button.dataset.matchHighlight))
+  })
+  const feedbackButton=document.getElementById('match-feedback-submit')
+  if(feedbackButton)feedbackButton.onclick=async()=>{
+    const note=document.getElementById('match-feedback-input').value.trim()
+    if(!note){alert('피드백을 입력하세요.');return}
+    feedbackButton.disabled=true
+    try{await api('/set-feedback',{id,note});await matchEnginePage(id)}
+    catch(error){alert(error.message);feedbackButton.disabled=false}
+  }
+  await topbar()
+}
 async function match(id,draftView=false) {
   await loadChampionMeta()
   const current = await requireCareer(); if (!current) return
@@ -1652,7 +1852,7 @@ async function draw() {
     const draftPath=path.match(/^\/app\/draft\/(\d+)$/)
     if(draftPath)return await draftMatch(Number(draftPath[1]))
     let matchPath = path.match(/^\/app\/match\/(\d+)$/)
-    if (matchPath) return await match(Number(matchPath[1]))
+    if (matchPath) return await matchEnginePage(Number(matchPath[1]))
     let personPath = path.match(/^\/app\/player\/([^/]+)(?:\/([^/]+))?$/)
     if (personPath) return await player(decodeURIComponent(personPath[1]), personPath[2] || 'overview')
     let teamPath = path.match(/^\/app\/team\/([^/]+)\/([^/]+)(?:\/([^/]+))?$/)

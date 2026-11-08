@@ -9,8 +9,11 @@ import club_messages
 import news
 
 def league_table(db,league,season):
-    names={p['team'] for p in catalog.teams() if p['league']==league}
-    names.update(row[0] for row in db.execute('SELECT c.name FROM careers c JOIN club_profiles p ON p.career_id=c.id WHERE p.league=?',(league,)))
+    import promotion
+    names={p['team'] for p in catalog.teams()
+           if p['league']==league and promotion.active(db,league,p['team'],season)}
+    names.update(row[0] for row in db.execute('SELECT c.name FROM careers c JOIN club_profiles p ON p.career_id=c.id WHERE p.league=?',(league,))
+                 if promotion.active(db,league,row[0],season))
     table={name:dict(team=name,played=0,wins=0,losses=0,sets_won=0,sets_lost=0) for name in names}
     seen=set()
     for week,home,away,raw in db.execute("SELECT f.week,c.name,f.opponent,f.result FROM fixtures f JOIN careers c ON c.id=f.career_id WHERE f.season=? AND f.competition=? AND f.state='finished' ORDER BY f.id",(season,league)):

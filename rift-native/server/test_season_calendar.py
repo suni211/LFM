@@ -91,6 +91,15 @@ class CalendarAndOperatorTest(unittest.TestCase):
         self.assertEqual({r['winner'] for r in results},{0,1})
         self.assertEqual({tuple(r['score']) for r in results},{(2,1),(1,2)})
 
+    def test_manual_league_rounds_avoid_stove_and_international_windows(self):
+        count=league.create(self.db,10,1,2,['Beta','Gamma','Delta'])
+        self.assertEqual(count,6)
+        weeks=[row[0] for row in self.db.execute(
+            "SELECT DISTINCT week FROM league_games WHERE career_id=10 ORDER BY week")]
+        self.assertEqual(len(weeks),6)
+        self.assertTrue(all(season_structure.phase(week)=='regional' for week in weeks))
+        self.assertGreater(max(weeks)-min(weeks),6)
+
     def test_operator_clock_can_advance_without_readiness_vote(self):
         import server
         import rumors

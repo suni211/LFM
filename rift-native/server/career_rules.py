@@ -90,13 +90,13 @@ def brand(db,career):
 def seed_league(db,career,league,season,week):
     """Create real scheduled fixtures if at least three genuine opponent clubs exist."""
     import league as league_engine
-    if week>=95:return 0
+    if week>=125:return 0
     names={p['team'] for p in catalog.teams() if p['league']==league}
     names.update(r[0] for r in db.execute(
         'SELECT c.name FROM careers c JOIN club_profiles p ON p.career_id=c.id WHERE p.league=?',(league,)))
     own=db.execute('SELECT name FROM careers WHERE id=?',(career,)).fetchone()[0]
     names.discard(own)
-    opponents=sorted(names)[:min(7,max(0,96-week))]
+    opponents=sorted(names)[:min(7,max(0,126-week))]
     # Never invent academy opponents. Fewer than 3 real clubs means no
     # league schedule can be created until the verified directory is fixed.
     if len(opponents)<3:

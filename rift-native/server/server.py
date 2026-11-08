@@ -460,7 +460,7 @@ class Handler(BaseHTTPRequestHandler):
                     'another club is developing this player','already your prospect','this player is in another club tryout',
                     'prospect list is full','talk again later','not your prospect','not ready for pro debut',
                     'debut the prospect before the pro roster','operators choose a team',
-                    '닉네임과 이름을 각각 1~30자로 입력하세요.','감독 닉네임은 영문 2~20자만 사용할 수 있습니다.','이미 사용 중인 감독 닉네임입니다.','감독 능력치는 각각 1~20, 합계 60으로 설정하세요.','invalid shotcallers','오더 담당은 현재 1군 주전 선수 중에서 선택하세요.'}
+                    '닉네임과 이름을 각각 1~30자로 입력하세요.','감독 닉네임은 영문 2~20자만 사용할 수 있습니다.','이미 사용 중인 감독 닉네임입니다.','감독 능력치는 각각 1~20, 합계 60으로 설정하세요.','감독 국적을 목록에서 선택해 주세요.','invalid shotcallers','오더 담당은 현재 1군 주전 선수 중에서 선택하세요.'}
             message=str(error)
             self.reply(400,{'error':message if message in public else 'invalid request'})
         except (TypeError,KeyError): self.reply(400,{'error':'invalid request'})

@@ -3,6 +3,8 @@
 All values are game balancing rules rather than real-world team rankings.
 """
 import re
+import base64
+import binascii
 import json
 import catalog
 
@@ -53,16 +55,25 @@ def valid_brand(name,short,color):
 def init(db):
     db.execute("""CREATE TABLE IF NOT EXISTS club_branding(
         career_id INTEGER PRIMARY KEY REFERENCES careers(id),
-        short TEXT NOT NULL,color TEXT NOT NULL,emblem TEXT NOT NULL DEFAULT 'shield')""")
+        short TEXT NOT NULL,color TEXT NOT NULL,emblem TEXT NOT NULL DEFAULT 'shield',logo_data TEXT NOT NULL DEFAULT '')""")
+    columns={row[1] for row in db.execute('PRAGMA table_info(club_branding)')}
+    if 'logo_data' not in columns:db.execute("ALTER TABLE club_branding ADD COLUMN logo_data TEXT NOT NULL DEFAULT ''")
 
-def store_brand(db,career,short,color,emblem):
+def store_brand(db,career,short,color,emblem,logo_data=''):
     if emblem not in ('shield','star','crown','bolt','diamond'):
         raise ValueError('올바른 엠블럼 형태를 선택하세요.')
-    db.execute('INSERT INTO club_branding VALUES(?,?,?,?)',(career,short,color,emblem))
+    if logo_data:
+        if not isinstance(logo_data,str) or len(logo_data)>110000 or not re.fullmatch(r'data:image/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+',logo_data):
+            raise ValueError('구단 로고는 80KB 이하 PNG/JPEG/WebP 이미지여야 합니다.')
+        try: data=base64.b64decode(logo_data.split(',',1)[1],validate=True)
+        except binascii.Error:raise ValueError('잘못된 로고 이미지입니다.')
+        if len(data)>80000 or not (data.startswith(b'\x89PNG\r\n\x1a\n') or data.startswith(b'\xff\xd8\xff') or data.startswith(b'RIFF') and data[8:12]==b'WEBP'):
+            raise ValueError('잘못된 이미지 형식 또는 80KB 초과 로고입니다.')
+    db.execute('INSERT INTO club_branding(career_id,short,color,emblem,logo_data) VALUES(?,?,?,?,?)',(career,short,color,emblem,logo_data))
 
 def brand(db,career):
-    row=db.execute('SELECT short,color,emblem FROM club_branding WHERE career_id=?',(career,)).fetchone()
-    return dict(zip(('short','color','emblem'),row)) if row else None
+    row=db.execute('SELECT short,color,emblem,logo_data FROM club_branding WHERE career_id=?',(career,)).fetchone()
+    return dict(zip(('short','color','emblem','logo_data'),row)) if row else None
 
 def seed_league(db,career,league,season,week):
     """Create real scheduled fixtures if at least three genuine opponent clubs exist."""

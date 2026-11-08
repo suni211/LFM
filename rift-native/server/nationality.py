@@ -12,6 +12,19 @@ FILE=Path(__file__).resolve().parent.parent/'assets'/'nationality-overrides.json
 def known():
     return json.loads(FILE.read_text(encoding='utf-8')).get('people',{}) if FILE.is_file() else {}
 
+# ISO country-code choices for game managers; user-selected nationality is
+# self-reported, never inferred from location, employer or league.
+COUNTRIES={
+    'KR':'대한민국','CN':'중국','JP':'일본','TW':'대만','HK':'홍콩','MO':'마카오',
+    'VN':'베트남','TH':'태국','PH':'필리핀','ID':'인도네시아','MY':'말레이시아',
+    'SG':'싱가포르','IN':'인도','US':'미국','CA':'캐나다','BR':'브라질',
+    'AR':'아르헨티나','MX':'멕시코','CL':'칠레','GB':'영국','FR':'프랑스',
+    'DE':'독일','ES':'스페인','PT':'포르투갈','IT':'이탈리아',
+    'NL':'네덜란드','BE':'벨기에','DK':'덴마크','SE':'스웨덴','NO':'노르웨이',
+    'FI':'핀란드','PL':'폴란드','CZ':'체코','TR':'튀르키예','UA':'우크라이나',
+    'RU':'러시아','AU':'호주','NZ':'뉴질랜드','ZA':'남아프리카공화국'
+}
+
 def enrich(person):
     """Non-mutating ID-based country annotation; preserves original source values."""
     p=dict(person)

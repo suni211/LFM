@@ -85,6 +85,11 @@ def seed_league(db,career,league,season,week):
     own=db.execute('SELECT name FROM careers WHERE id=?',(career,)).fetchone()[0]
     names.discard(own)
     opponents=sorted(names)[:min(7,max(0,96-week))]
-    if len(opponents)<3:return 0
+    # In fictional expansion divisions, use clearly identified AI clubs instead of
+    # inventing genuine historical second-tier affiliates.
+    for suffix in ('Academy North (AI)','Academy South (AI)','Academy West (AI)'):
+        if len(opponents)>=3:break
+        name=league+' '+suffix
+        if name!=own and name not in opponents:opponents.append(name)
     # All assignments and future fixtures generated in this transaction.
     return league_engine.create(db,career,season,week+1,opponents)

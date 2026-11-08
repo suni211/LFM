@@ -77,18 +77,28 @@ def report(db,career,person):
     return dict(scout=personal(db,career,person,season),agency=annual(db,person,season))
 
 def compare(db,career,person,limit=5):
-    """Compare the same 28 in-game traits visible on player pages.
+    """Compare exactly the current player-dossier rating scale and fields.
 
-    Source is an in-game estimate where the imported roster lacks observed
-    skills; never claim external scouting or verified player performance.
+    Operator-edited ratings take precedence over the game's estimate.
+    All numbers are in-game values, not real-world performance claims.
     """
     import player_analysis
+    import player_attributes
     role=person.get('role')
-    if not role:return []
-    origin=player_analysis.attribute_profile(person)
-    base={v['name']:v['value'] for group in origin['sections']
-          for v in group['attributes']}
-    base_score=origin['overall']
+    if not role or person.get('kind')!='player':return []
+    has_table=bool(db.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='player_attribute_overrides'"
+    ).fetchone())
+    def values_for(candidate):
+        if has_table:
+            report=player_attributes.read(db,candidate)
+            if report:
+                return report['ratings'],report['overall'],report['scale'],report['source']
+        simulation=player_analysis.attribute_profile(candidate)
+        values={v['name']:v['value'] for group in simulation['sections']
+                for v in group['attributes']}
+        return values,simulation['overall'],20,simulation['source']
+    base,base_score,scale,source=values_for(person)
     candidates=catalog.load()['people']
     if db.execute("SELECT 1 FROM sqlite_master WHERE name='generated_people'").fetchone():
         candidates=candidates+[json.loads(raw) for raw, in db.execute(
@@ -100,15 +110,12 @@ def compare(db,career,person,limit=5):
             candidate.get('kind')!='player' or candidate.get('role')!=role):
             continue
         seen.add(candidate['id'])
-        profile=player_analysis.attribute_profile(candidate)
-        values={v['name']:v['value'] for group in profile['sections']
-                for v in group['attributes']}
-        score=profile['overall']
+        values,score,other_scale,other_source=values_for(candidate)
         gaps={key:values[key]-base[key] for key in base}
         ranked.append((abs(score-base_score),candidate.get('nickname') or '',dict(
             id=candidate['id'],nickname=candidate.get('nickname') or candidate.get('real_name') or '',
             team=candidate.get('team') or 'FA',league=candidate.get('league') or '',
             rating=score,gap=round(score-base_score,1),differences=gaps,
-            source='in-game-attribute-model',scale=20)))
+            source=other_source,scale=other_scale)))
     ranked.sort(key=lambda item:(item[0],item[1]))
     return [item[-1] for item in ranked[:max(1,min(int(limit),20))]]

@@ -128,3 +128,40 @@ img.club-primary-image{object-fit:contain;object-position:center}
 .club-choice-list .club-choice.club-locked button.act{background:#293447}
 .front-person .front-source{font-size:11px;color:#8ed3ff;margin-top:auto}
 .front-person .front-source:hover{text-decoration:underline}
+
+
+/* Country-coded league icons (original in-game emblems, not official trademarks) */
+.fm-league-index{grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+.league-choice-card{display:flex;flex-direction:column;gap:18px;min-height:180px;padding:20px;border:1px solid #476180;border-radius:12px;background:linear-gradient(150deg,#192e4b,#141d2c);color:inherit;text-decoration:none;transition:transform .15s,border-color .15s}
+.league-choice-card:hover{transform:translateY(-2px);border-color:#77b4e8}
+.league-choice-card.my-league{border-color:#8ed3bc;box-shadow:inset 0 0 0 1px #3e9377}
+.league-choice-card>div{display:flex;align-items:center;gap:16px}
+.league-choice-card>div>div{display:flex;flex-direction:column;gap:6px}
+.league-choice-card b{font-size:22px}.league-choice-card span{color:#b7c5d7;font-size:13px}
+.league-choice-card p{font-size:12px;color:#a0b4ce;margin-top:auto}
+.league-emblem{display:inline-flex;position:relative;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:76px;width:76px;height:76px;flex-shrink:0;border-radius:18px;background:linear-gradient(135deg,#3366a0,#18243a);border:1px solid #a5c0e384;box-shadow:inset 0 2px 18px #0002,0 6px 15px #0005}
+.league-emblem strong{font-size:15px;letter-spacing:.3px;color:#fff}
+.league-emblem .league-emblem-flag{font-size:25px;color:inherit;filter:drop-shadow(0 2px 2px #0006)}
+.league-emblem-kr{background:linear-gradient(135deg,#2b527a,#132c50)}
+.league-emblem-cn{background:linear-gradient(135deg,#812e38,#3a1729)}
+.league-emblem-na{background:linear-gradient(135deg,#55558c,#292b5b)}
+.league-emblem-eu{background:linear-gradient(135deg,#6751a4,#25254d)}
+.league-emblem-br{background:linear-gradient(135deg,#35775e,#173c3e)}
+.league-emblem-apac{background:linear-gradient(135deg,#4b678d,#2d4660)}
+.fm-team-header>.league-emblem{width:86px;height:86px;border-radius:20px}
+.club-timeline-event{position:relative;padding:12px 14px 13px 26px;border-left:2px solid #3d6284;border-bottom:1px solid #ffffff16}
+.club-timeline-event:before{content:"";position:absolute;top:18px;left:-6px;width:10px;height:10px;border-radius:50%;background:#8ebbe0}
+.club-timeline-event small{display:block;color:#a6bbd4;font-size:11px;margin-bottom:6px}
+.club-timeline-event b{display:block;color:#e6f4ff;font-size:15px;line-height:1.4}
+.club-timeline-event p{font-size:12px;color:#acbad0;margin:6px 0 0}
+.sponsor-company{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:15px 18px;margin:10px 0;background:#1e2c42;border:1px solid #49617f;border-radius:9px}
+.sponsor-company>div{display:flex;flex-direction:column;gap:6px}
+.sponsor-company strong{font-size:16px}.sponsor-company small,.sponsor-company span{font-size:12px;color:#a4b8d4}
+.sponsor-company button{flex-shrink:0}
+.club-brand-manager{display:flex;gap:24px;align-items:center}
+.club-brand-manager>div:first-child .logo{width:135px;height:135px;object-fit:contain}
+.club-brand-manager .club-monogram{width:135px;height:135px;font-size:28px}
+.club-brand-manager>div:last-child{flex:1;min-width:0}
+.club-brand-manager label,#operator-club-editor label{display:flex;flex-direction:column;gap:7px;margin:14px 0}
+.club-brand-manager input[type=file],#operator-club-editor input{width:100%;max-width:530px}
+@media(max-width:600px){.league-choice-card{min-height:145px}.league-emblem{width:60px;height:60px;min-width:60px}.sponsor-company,.club-brand-manager{flex-direction:column;align-items:stretch}}

@@ -7969,6 +7969,78 @@
       "evidence_type": "individual-player-page-country-or-birthplace",
       "citizenship_verified": true,
       "identity_match": "unique competitive nickname and matching player real name"
+    },
+    "6d857973a813c27192b7": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://liquipedia.net/leagueoflegends/Poby",
+      "verified_on": "2026-11-08",
+      "evidence_type": "individual-player-page-country-or-birthplace",
+      "citizenship_verified": true,
+      "identity_match": "specific nickname and matching real person"
+    },
+    "4d67116bd31b2c3f6aaa": {
+      "code": "US",
+      "name": "미국",
+      "source": "https://liquipedia.net/leagueoflegends/Contractz",
+      "verified_on": "2026-11-08",
+      "evidence_type": "individual-player-page-country-or-birthplace",
+      "citizenship_verified": true,
+      "identity_match": "specific nickname and matching real person"
+    },
+    "25c7e0b80060ce69a121": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://liquipedia.net/leagueoflegends/Callme",
+      "verified_on": "2026-11-08",
+      "evidence_type": "individual-player-page-country-or-birthplace",
+      "citizenship_verified": true,
+      "identity_match": "specific nickname and matching real person"
+    },
+    "46fcadc7b72f20ff0507": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://liquipedia.net/leagueoflegends/GIDEON",
+      "verified_on": "2026-11-08",
+      "evidence_type": "individual-player-page-country-or-birthplace",
+      "citizenship_verified": true,
+      "identity_match": "specific nickname and matching real person"
+    },
+    "a7894e2d27d74451e986": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://lol.fandom.com/wiki/Parukia",
+      "verified_on": "2026-11-08",
+      "evidence_type": "individual-player-page-country-or-birthplace",
+      "citizenship_verified": true,
+      "identity_match": "specific nickname and matching real person"
+    },
+    "97c1d1303b7cf952d47f": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://liquipedia.net/leagueoflegends/Castle",
+      "verified_on": "2026-11-08",
+      "evidence_type": "individual-player-page-country-or-birthplace",
+      "citizenship_verified": true,
+      "identity_match": "specific nickname and matching real person"
+    },
+    "225c21bc3abbc730daa0": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://liquipedia.net/leagueoflegends/Guwon",
+      "verified_on": "2026-11-08",
+      "evidence_type": "individual-player-page-country-or-birthplace",
+      "citizenship_verified": true,
+      "identity_match": "specific nickname and matching real person"
+    },
+    "370d3d82c0a4de898b60": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://lol.fandom.com/wiki/About",
+      "verified_on": "2026-11-08",
+      "evidence_type": "individual-player-page-country-or-birthplace",
+      "citizenship_verified": true,
+      "identity_match": "specific nickname and matching real person"
     }
   },
   "country_or_birthplace_accepted": true

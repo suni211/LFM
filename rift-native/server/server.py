@@ -19,6 +19,7 @@ import management
 import manager_identity
 import analytics
 import transfers
+import world_transfers
 import fan_community as community
 import staffing
 import search
@@ -58,6 +59,7 @@ def init():
         clubs.refresh_catalog(db)
         recruitment.repair_generated_handles(db)
         transfers.init(db)
+        world_transfers.init(db)
         community.init(db)
         staffing.init(db)
         search.init(db)
@@ -173,13 +175,18 @@ class Handler(BaseHTTPRequestHandler):
                     return self.reply(200,{'post':community.get(db,uid,int(query['post'][0])),'user_id':0,'operator':False,'read_only':True})
                 except KeyError:return self.reply(404,{'error':'post not found'})
                 except ValueError:return self.reply(400,{'error':'invalid community request'})
-            if url.path in ('/transfer-offers','/transfer-activity'):
+            if url.path in ('/transfer-offers','/transfer-activity','/transfer-rumors'):
                 query=parse_qs(url.query)
                 try:
                     cid=int(query['id'][0])
                     if not 1<=cid<=2**63-1: raise ValueError()
                     if not news.member(db,uid,cid): return self.reply(404,{'error':'not found'})
-                    if url.path=='/transfer-activity': return self.reply(200,{'events':transfers.activity(db,query.get('kind',[''])[0])})
+                    if url.path=='/transfer-activity':
+                        return self.reply(200,{'events':transfers.activity(db,
+                            query.get('kind',[''])[0],query.get('league',[''])[0])})
+                    if url.path=='/transfer-rumors':
+                        import rumors
+                        return self.reply(200,{'events':rumors.feed(db,query.get('league',[''])[0])})
                     return self.reply(200,{'offers':transfers.offers(db,cid)})
                 except (KeyError,ValueError): return self.reply(400,{'error':'invalid transfer request'})
             if url.path=='/analytics':
@@ -752,6 +759,7 @@ class Handler(BaseHTTPRequestHandler):
                     solo.weekly(db,season,week)
                     import rumors
                     rumors.weekly(db,season,week)
+                    world_transfers.weekly(db,season,week)
                 db.execute('COMMIT'); return self.reply(200,{'advanced':advanced,'week':week,'season':season,'version':current,'votes':votes,'members':members})
             if self.path=='/plan':
                 cid=data.get('id')

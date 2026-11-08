@@ -8,6 +8,7 @@ const NAV = [
   ['전술', '/app/tactics', '선수단'],
   ['훈련', '/app/training', '선수단'],
   ['프런트', '/app/staff', '구단'],
+  ['프런트 DB', '/app/front-database', '구단'],
   ['의료', '/app/medical', '선수단'],
   ['관계', '/app/relations', '선수단'],
   ['일정', '/app/schedule', '대회'],
@@ -73,7 +74,7 @@ const FLAG_COUNTRIES={
 }
 function flagAndCountry(person) {
   const p=person||{}
-  const raw=String(p.nationality_name_ko||p.nationality_name||p.country_name_ko||p.country_name||p.nationality||'').trim()
+  const raw=String(p.nationality_name_ko||p.nationality_name||p.country_name_ko||p.country_name||(typeof p.nationality==='string'?p.nationality:'')||'').trim()
   const rawCode=String(p.nationality_code||p.country_code||p.iso2||'').trim()
   const entry=FLAG_COUNTRIES[raw]||FLAG_COUNTRIES[rawCode]
   const code=entry?.[0]||(/^[A-Za-z]{2}$/.test(rawCode)?rawCode.toLowerCase():null)
@@ -119,7 +120,7 @@ async function career() {
   return careerCache
 }
 function shell(body,path) {
-  const categories=isOperator?[['리그 관리',['home','clubs','competition','schedule']],['인물 · 구단',['players']]]:[['구단',['home','inbox','news','finance','vision','community','staff']],['선수단',['squad','academy','medical','relations','players','solo']],['전술·훈련',['tactics','training']],['영입',['transfers','shortlist']],['대회·경기',['schedule','leagues','competition','data']],...(isOperator?[['운영',['clubs']]]:[])]
+  const categories=isOperator?[['리그 관리',['home','clubs','competition','schedule']],['인물 · 구단',['players']]]:[['구단',['home','inbox','news','finance','vision','community','staff','front-database']],['선수단',['squad','academy','medical','relations','players','solo']],['전술·훈련',['tactics','training']],['영입',['transfers','shortlist']],['대회·경기',['schedule','leagues','competition','data']],...(isOperator?[['운영',['clubs']]]:[])]
   const selected=NAV.find(n=>n[1]===path)?.[0]||'구단 관리'
   const menu=categories.map(([label,keys])=>`<details class="nav-category"><summary>${label}<span>⌄</span></summary><div class="dropdown">${keys.map(key=>{const item=NAV.find(n=>n[1]==='/app/'+key)||[key==='clubs'?(isOperator?'구단 조회':'구단 선택'):key,'/app/'+key];return `<a href="${item[1]}" class="${path===item[1]?'on':''}">${item[0]}</a>`}).join('')}</div></details>`).join('')
   document.getElementById('app').innerHTML=`<div id="shell"><header id="masthead"><div id="top"></div><nav id="navigation"><a class="brand" href="/app/home">R/M<span>RIFT MANAGER</span></a>${menu}${isOperator?'<span class="account-link">운영자 · 구단 운영 불가</span>':'<a class="account-link" href="/app/manager">감독 프로필</a>'}<button id="logout" aria-label="로그아웃">로그아웃</button></nav></header><main id="view" aria-label="${esc(selected)}">${body}</main></div>`
@@ -436,6 +437,30 @@ function scoutStars(value) {
 function ratingGrid(values) {
   return `<div class="ability-grid">${Object.entries(values||{}).map(([key,v])=>`<div class="ability-line"><div><span>${esc(key)}</span><b>${Number(v).toFixed(0)}</b></div><div class="ability-track"><i style="width:${Math.max(0,Math.min(100,Number(v)||0))}%"></i></div></div>`).join('')||'<p>평가 데이터가 없습니다.</p>'}</div>`
 }
+function frontRoleLabel(person) {
+  const key=String(person.staff_role||'')
+  const dict={OWNER:'구단주',MANAGER:'감독',HEAD_COACH:'수석코치',COACH:'코치',GM:'단장',ANALYST:'분석관',DOCTOR:'팀 닥터',COMMUNITY:'홍보 담당'}
+  if(dict[key])return dict[key]
+  const raw=String(person.raw_role||'').toLowerCase()
+  if(raw.includes('head')||raw.includes('수석'))return '수석코치'
+  if(raw.includes('감독')||raw.includes('manager')&&!raw.includes('general'))return '감독'
+  if(raw.includes('단장')||raw.includes('general manager'))return '단장'
+  if(raw.includes('analyst')||raw.includes('분석'))return '분석관'
+  if(raw.includes('doctor')||raw.includes('닥터'))return '팀 닥터'
+  return person.kind==='coach'?'코치':'프런트'
+}
+async function frontDirectory(query='',page=0) {
+  const careerItem=await requireCareer()
+  if(!careerItem)return
+  const data=await api('/people?id='+careerItem.id+'&kind=staff&page='+page+'&query='+encodeURIComponent(query))
+  const rows=(data.people||[]).filter(p=>p.kind==='coach'||p.kind==='staff')
+  const contents=rows.map(p=>'<tr><td>'+personLink(p)+'</td><td>'+esc(frontRoleLabel(p))+'</td><td>'+flagAndCountry(p)+'</td><td>'+esc(p.team||'FA / 무소속')+'</td><td>'+(p.real_person?'실존 프런트·코칭스태프':'생성 프런트·코칭스태프')+'</td></tr>').join('')
+  shell('<div class="page-heading"><div><p class="eyebrow">CLUB PERSONNEL DATABASE</p><h1>프런트 · 코칭스태프 DB</h1><p>구단주와 감독은 구단 정보에서 확인하고, 코치·단장·분석관 등은 여기서 검색합니다.</p></div></div><section class="panel"><form id="front-search" class="roster-controls"><input id="front-q" placeholder="프런트 이름 또는 닉네임 검색" value="'+esc(query)+'"/><button class="act">검색</button></form><div class="table-scroll"><table class="roster-table"><thead><tr><th>이름 · 닉네임</th><th>직책</th><th>국적</th><th>소속팀</th><th>분류</th></tr></thead><tbody>'+contents+'</tbody></table></div>'+(rows.length?'':'<p class="empty">검색된 프런트 인물이 없습니다.</p>')+'<div class="roster-controls"><button class="act" id="front-prev" '+(page===0?'disabled':'')+'>이전</button><span>'+(page+1)+'페이지</span><button class="act" id="front-next" '+((page+1)*data.page_size>=data.total?'disabled':'')+'>다음</button></div></section>','/app/front-database')
+  document.getElementById('front-search').onsubmit=e=>{e.preventDefault();frontDirectory(document.getElementById('front-q').value,0)}
+  document.getElementById('front-prev').onclick=()=>frontDirectory(query,page-1)
+  document.getElementById('front-next').onclick=()=>frontDirectory(query,page+1)
+  await topbar()
+}
 async function player(id, tab) {
   const current=await requireCareer();if(!current)return
   const [detail,train,manage]=await Promise.all([api('/person?id='+current.id+'&person='+encodeURIComponent(id)),isOperator?Promise.resolve({players:[]}):api('/training?id='+current.id).catch(()=>({players:[]})),isOperator?Promise.resolve({}):api('/management?id='+current.id).catch(()=>({}))])
@@ -446,7 +471,7 @@ async function player(id, tab) {
   const links=`<div class="tabs player-tabs">${tabs.map(([k,l])=>`<a class="${tab===k?'on':''}" href="/app/player/${esc(id)}/${k}">${l}</a>`).join('')}</div>`
   const values=person.game_evaluation?.ratings||person.stats||{}
   const joined=person.team?`${logoImg(person.league,person.team)}${esc(person.team)} · ${esc(person.league||'')}`:'FA · 무소속'
-  const top=`<div class="player-profile-heading"><div class="player-profile-face">${face(person.id,Boolean(person.photo))}</div><div><p class="eyebrow">PLAYER DATABASE / ${esc(person.role||'')}</p><h1>${esc(person.nickname||person.display_name||person.real_name||'선수')}</h1><p>${esc(person.real_name||'이름 정보 없음')} · ${esc(ROLE[person.role]||person.role||'포지션 미상')}</p><p>${flagAndCountry(person)}</p><p class="player-team-line">${joined}</p><div class="player-overview-stats"><span>솔로랭크 <strong>${esc(person.solo?.label||'기록 없음')}</strong></span><span>소속 <strong>${esc(person.assignment||person.squad||'미등록')}</strong></span>${development?`<span>OVR <strong>${development.ovr}</strong></span>`:''}</div></div></div>`
+  const top=`<div class="player-profile-heading"><div class="player-profile-face">${face(person.id,Boolean(person.photo))}</div><div><p class="eyebrow">${person.kind==='player'?'PLAYER DATABASE':'FRONT OFFICE DATABASE'} / ${esc(person.staff_role_name||frontRoleLabel(person))}</p><h1>${esc(person.nickname||person.display_name||person.real_name||'선수')}</h1><p>${esc(person.real_name||'이름 정보 없음')} · ${esc(ROLE[person.role]||person.role||'포지션 미상')}</p><p>${flagAndCountry(person)}</p><p class="player-team-line">${joined}</p><div class="player-overview-stats"><span>솔로랭크 <strong>${esc(person.solo?.label||'기록 없음')}</strong></span><span>소속 <strong>${esc(person.assignment||person.squad||'미등록')}</strong></span>${development?`<span>OVR <strong>${development.ovr}</strong></span>`:''}</div></div></div>`
   let main=''
   if(tab==='overview') main=`<div class="player-info-grid"><section class="panel"><h2>현재 능력</h2>${ratingGrid(values)}</section><section class="panel"><h2>구단 스카우팅 요약</h2><p>현재 실력</p>${scoutStars(scout?.current_stars)}<p>예상 잠재력</p>${scoutStars(scout?.potential_stars)}<p class="muted-note">${esc(scout?.summary||'스카우팅 기록 없음')}</p></section><section class="panel"><h2>커리어 정보</h2><p>역할: ${esc(ROLE[person.role]||person.role||'미상')}</p><p>국적: ${flagAndCountry(person)}</p><p>구단: ${joined}</p><p>게임 내 소속: ${esc(person.assignment||'등록 정보 없음')}</p><p>계약: ${esc(person.contract_end||'기록 없음')}</p></section></div>`
   else if(tab==='personal') main=`<section class="panel"><h2>개인 정보</h2><div class="info-pairs"><p>영문 닉네임 <b>${esc(person.nickname||'기록 없음')}</b></p><p>본명 <b>${esc(person.real_name||'기록 없음')}</b></p><p>국적 <b>${flagAndCountry(person)}</b></p><p>리그 <b>${esc(person.league||'무소속')}</b></p><p>지역 <b>${esc(person.region||person.nationality_name_ko||'정보 없음')}</b></p><p>포지션 <b>${esc(ROLE[person.role]||person.role||'정보 없음')}</b></p><p>솔로랭크 <b>${esc(person.solo?.label||'정보 없음')}</b></p></div></section>`
@@ -596,6 +621,7 @@ async function draw() {
     if (path === '/app/tactics') return await tactics()
     if (path === '/app/training') return await training()
     if (path === '/app/staff') return await managementPage('staff')
+    if (path === '/app/front-database') return await frontDirectory()
     if (path === '/app/medical') return await managementPage('medical')
     if (path === '/app/relations') return await managementPage('relations')
     if (path === '/app/finance') return await managementPage('finance')

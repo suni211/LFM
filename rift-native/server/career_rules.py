@@ -7,20 +7,22 @@ import base64
 import binascii
 import json
 import catalog
+import academy_clubs
 from functools import lru_cache
 from collections import defaultdict
 
 MAJORS={'LCK','LPL','LEC','LCS'}
 STARTER_FIRST={'CBLOL','LCP'}
-SECOND={'LCK CL','LDL','LCP CL','LCP 2부','LEC ERL','LCS NACL','CBLOL Academy','LPL LDL'}
+SECOND={'LCK CL','LDL','Circuito Desafiante','NACL','PCS','LJL','VCS','LFL','LES','PRM','TCL'}
 
 def is_second(league):
     val=(league or '').casefold()
     return league in SECOND or any(tag in val for tag in ('academy','challenger',' 2부','cl','ldl','erl','nacl'))
 
 def creation_leagues(db):
-    found={p.get('league','') for p in catalog.load()['people']}
-    return sorted({league for league in found if is_second(league)}|{'LCK CL','LDL','LCP 2부','CBLOL Academy'})
+    # Actual 2026-tier regional competitions only; no imaginary "LCP 2부".
+    available={entry['league'] for entry in catalog.teams()}
+    return sorted(available & SECOND)
 
 def power(person):
     eval_=(person.get('game_evaluation') or {}).get('ratings') or person.get('stats') or {}
@@ -95,11 +97,9 @@ def seed_league(db,career,league,season,week):
     own=db.execute('SELECT name FROM careers WHERE id=?',(career,)).fetchone()[0]
     names.discard(own)
     opponents=sorted(names)[:min(7,max(0,96-week))]
-    # In fictional expansion divisions, use clearly identified AI clubs instead of
-    # inventing genuine historical second-tier affiliates.
-    for suffix in ('Academy North (AI)','Academy South (AI)','Academy West (AI)'):
-        if len(opponents)>=3:break
-        name=league+' '+suffix
-        if name!=own and name not in opponents:opponents.append(name)
+    # Never invent academy opponents. Fewer than 3 real clubs means no
+    # league schedule can be created until the verified directory is fixed.
+    if len(opponents)<3:
+        return 0
     # All assignments and future fixtures generated in this transaction.
     return league_engine.create(db,career,season,week+1,opponents)

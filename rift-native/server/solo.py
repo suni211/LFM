@@ -145,28 +145,8 @@ def backfill(db):
             _insert(db, person, path, career, club[0] if club else '')
             if path!='amateur':
                 db.execute('UPDATE solo_ranks SET career_id=?,club_name=? WHERE person_id=?',(career,club[0] if club else '',pid))
-    if db.execute('SELECT COUNT(*) FROM solo_people').fetchone()[0]>=80: return
-    used=set()
-    for name,nick in db.execute('SELECT real_name,nickname FROM solo_ranks'):
-        used.add(name); used.add(nick.casefold())
-    for person in catalog.load().get('people',[]):
-        used.add(person.get('real_name') or ''); used.add(str(person.get('nickname') or '').casefold())
-    names=[''.join(parts) for parts in itertools.product(tuple('김이박최정강조윤장임한오서신권황안송유홍'),tuple('민서도시지예준현하태수건진성재우승정찬영'),tuple('준윤우호빈혁성현훈원민진환겸찬율영재수석'))]
-    nicks=[''.join(parts) for parts in itertools.product(tuple('루라리레로시세소하해호유이아오누나노미모'),('온','엘','안','오','루','리','린','빈','솔','별','율','현','빛','나','노','담','람','하','로','유'))]
-    import random
-    rng=random.Random('online-rookie-identities-2026');rng.shuffle(names);rng.shuffle(nicks)
-    made=0
-    for name,nick in zip(names,nicks):
-        if made>=80: break
-        if name in used or nick.casefold() in used: continue
-        pid='amateur-'+uuid.uuid5(uuid.NAMESPACE_URL,name+nick).hex[:20]
-        if fetch(db,pid): continue
-        role=ROLES[made%5]
-        person=dict(id=pid,real_name=name,display_name_ko=name,display_name=name,nickname=nick,kind='player',role=role,
-                    raw_role=role,team='',league='',real_person=False,nationality_name_ko='대한민국')
-        db.execute('INSERT OR IGNORE INTO solo_people VALUES(?,?)',(pid,json.dumps(person,ensure_ascii=False)))
-        _insert(db, person, 'amateur')
-        used.add(name); used.add(nick.casefold()); made+=1
+    # No random unattached solo-player pool. Recruitable players must come from
+    # the club recruitment system, saved prospects, or registered player data.
 
 def is_pro(db, person_id):
     row=fetch(db, person_id)

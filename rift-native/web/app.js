@@ -646,12 +646,52 @@ async function leagueOverview(league) {
   shell('<div class="fm-league-page"><header class="fm-team-header">'+leagueIcon(league)+'<div><p class="eyebrow">'+esc(leagueInfo(league)[1])+' · '+esc(leagueInfo(league)[2])+'</p><h1>'+esc(league)+'</h1><p>'+data.season+'시즌 '+data.week+'주차 · 참가 구단 '+(data.clubs||[]).length+'팀</p></div><a class="act" href="/app/leagues">리그 목록</a></header><div class="fm-league-metrics"><div><small>참가 구단</small><strong>'+(data.clubs||[]).length+'</strong></div><div><small>종료 경기</small><strong>'+completed.length+'</strong></div><div><small>예정 경기</small><strong>'+upcoming.length+'</strong></div></div><div class="fm-league-dashboard"><section class="panel fm-league-ranking"><h2>'+esc(league)+' 순위표</h2>'+leagueStandingsTable(standings,league)+'</section><section class="panel fm-league-games"><h2>최근 경기 결과</h2>'+games(completed.slice(-8).reverse())+'<h2>다음 일정</h2>'+games(upcoming.slice(0,8))+'</section><section class="panel fm-league-clubs"><h2>참가 구단 · 클릭해서 이동</h2><div class="fm-league-club-list">'+(teams||'<p class="empty">참가 구단이 없습니다.</p>')+'</div></section>'+(headlines?'<section class="panel fm-league-clubs"><h2>리그 주요 소식</h2>'+headlines+'</section>':'')+'</div></div>','/app/leagues')
   await topbar()
 }
+const soloState={region:'KR',scope:'all',role:'',page:0}
+function soloTier(label){
+ if(label.startsWith('챌린저'))return ['챌린저','challenger','👑']
+ if(label.startsWith('그랜드마스터'))return ['그랜드마스터','grandmaster','💎']
+ if(label.startsWith('마스터'))return ['마스터','master','✦']
+ return [label.split(' ')[0],'regular','◆']
+}
 async function solo() {
-  const current = await requireCareer(); if (!current) return
-  const data = await api('/solo-ladder?id=' + current.id)
-  shell(`<div class="panel"><h2>솔로랭크</h2>${(data.rows || []).slice(0, 40).map(row => `<div class="row">${personLink({id:row.id, display_name:row.nickname})}<span>${esc(row.label)} ${esc(row.path_name)}</span>${row.path === 'amateur' ? `<button class="act" data-talk="${esc(row.id)}">대화</button>` : ''}</div>`).join('')}</div>`, '/app/solo')
-  document.querySelectorAll('[data-talk]').forEach(button => button.onclick = () => api('/solo-talk', {id:current.id, person:button.dataset.talk}).then(() => draw()).catch(error => alert(error.message)))
-  await topbar()
+ const current=await requireCareer();if(!current)return
+ const params=new URLSearchParams({id:current.id,region:soloState.region,role:soloState.role,scope:soloState.scope})
+ const data=await api('/solo-ladder?'+params.toString())
+ const rows=data.rows||[], page=soloState.page;
+ const visible=rows.slice(page*100,(page+1)*100)
+ const tabs=(values,key,selected,labels={})=>'<div class="solo-control-tabs">'+values.map(v=>
+   '<button class="solo-filter '+(v===selected?'selected':'')+'" data-solo-'+key+'="'+esc(v)+'">'+esc(labels[v]??v??'전체')+'</button>').join('')+'</div>'
+ const link=row=>'<a class="solo-player-name" href="/app/player/'+encodeURIComponent(row.id)+'">'+face(row.id,true)+'<span><b>'+esc(row.nickname)+'</b><small>'+esc(ROLE[row.role]||row.role)+' · '+esc(row.club||'솔로랭크 전용')+'</small></span></a>'
+ const medal=row=>{const [name,type,symbol]=soloTier(row.label)
+   return '<span class="solo-rank-icon '+type+'">'+symbol+'</span><span class="solo-rank-text"><b>'+name+'</b><small>'+esc(row.label)+'</small></span>'}
+ const actions=row=>row.path==='amateur'?
+   '<button class="act" data-solo-talk="'+esc(row.id)+'">유망주 면담</button>':
+   row.path==='prospect'&&row.career_id===current.id&&row.debut_ready?
+   '<button class="act" data-solo-debut="'+esc(row.id)+'">프로 데뷔</button>':''
+ const roster=(data.mine||[]).map(row=>'<div class="solo-roster-person">'+link(row)+medal(row)+actions(row)+'</div>').join('')||'<p class="empty">아직 영입한 솔로랭크 유망주가 없습니다. 일반인 필터에서 선수를 탐색하고 면담하세요.</p>'
+ const lines=visible.map(row=>'<div class="solo-ladder-row">'+
+   '<strong class="solo-placement">#'+row.rank+'</strong>'+link(row)+
+   '<div class="solo-tier-cell">'+medal(row)+'</div>'+
+   '<div class="solo-games">'+(row.games||0)+'게임<small>'+esc(row.path_name)+'</small></div>'+
+   actions(row)+'</div>').join('')||'<p class="empty">선택한 지역과 조건의 랭크 선수가 없습니다.</p>'
+ shell('<div class="page-heading"><div><p class="eyebrow">RANKED SOLO / DUO</p><h1>솔로랭크 · 상위 500인</h1><p>프로 경기와 독립적인 지역별 개인 랭크 · 프로 선수는 마스터 이상 유지</p></div></div>'+
+   '<section class="panel solo-dashboard"><h2>서버 지역</h2>'+tabs(data.regions||[],'region',soloState.region)+
+   '<div class="solo-dual-controls"><div><h3>랭크 범위</h3>'+tabs(['all','mine','amateur'],'scope',soloState.scope,{all:'지역 전체',mine:'내 구단만',amateur:'일반인·유망주'})+'</div>'+
+   '<div><h3>포지션</h3>'+tabs(['','TOP','JUNGLE','MID','ADC','SUPPORT'],'role',soloState.role,{'':'전체','TOP':'탑','JUNGLE':'정글','MID':'미드','ADC':'원딜','SUPPORT':'서포터'})+'</div></div></section>'+
+   '<div class="solo-multi-column"><section class="panel"><h2>'+esc(data.region)+' 서버 개인 랭킹 · '+rows.length+'명 조회</h2>'+
+   '<div class="solo-rank-board">'+lines+'</div><div class="solo-pagination">'+
+   Array.from({length:Math.ceil(rows.length/100)},(_,i)=>'<button class="'+(i===page?'selected':'')+'" data-solo-page="'+i+'">'+(i+1)+'</button>').join('')+'</div></section>'+
+   '<section class="panel solo-my-prospects"><h2>내 팀의 육성·면담 선수</h2><p class="muted-note">일반인을 면담해 2군 유망주로 만들고 성장시키면 프로 데뷔시킬 수 있습니다.</p>'+roster+'</section></div>','/app/solo')
+ const change=(name,value)=>{soloState[name]=value;soloState.page=0;solo()}
+ document.querySelectorAll('[data-solo-region]').forEach(b=>b.onclick=()=>change('region',b.dataset.soloRegion))
+ document.querySelectorAll('[data-solo-role]').forEach(b=>b.onclick=()=>change('role',b.dataset.soloRole))
+ document.querySelectorAll('[data-solo-scope]').forEach(b=>b.onclick=()=>change('scope',b.dataset.soloScope))
+ document.querySelectorAll('[data-solo-page]').forEach(b=>b.onclick=()=>{soloState.page=Number(b.dataset.soloPage);solo()})
+ document.querySelectorAll('[data-solo-talk]').forEach(b=>b.onclick=()=>api('/solo-talk',{id:current.id,person:b.dataset.soloTalk})
+    .then(()=>solo()).catch(e=>alert(e.message)))
+ document.querySelectorAll('[data-solo-debut]').forEach(b=>b.onclick=()=>api('/solo-debut',{id:current.id,person:b.dataset.soloDebut})
+    .then(()=>solo()).catch(e=>alert(e.message)))
+ await topbar()
 }
 async function transfers() {
   const current = await requireCareer(); if (!current) return

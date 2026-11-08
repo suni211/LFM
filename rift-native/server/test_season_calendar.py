@@ -17,6 +17,8 @@ class CalendarAndOperatorTest(unittest.TestCase):
         self.db.execute("CREATE TABLE league_operators(user_id INTEGER PRIMARY KEY)")
         self.db.execute("CREATE TABLE careers(id INTEGER PRIMARY KEY,name TEXT,season INTEGER,week INTEGER,version INTEGER)")
         self.db.execute("CREATE TABLE members(career_id INTEGER,user_id INTEGER,role TEXT,PRIMARY KEY(career_id,user_id))")
+        self.db.execute("CREATE TABLE online_clock(id INTEGER PRIMARY KEY,season INTEGER,week INTEGER,version INTEGER)")
+        self.db.execute("INSERT INTO online_clock VALUES(1,1,1,1)")
         clubs.init(self.db)
         fixtures.init(self.db)
         self.db.execute("INSERT INTO users VALUES(1,'operator')")
@@ -81,6 +83,18 @@ class CalendarAndOperatorTest(unittest.TestCase):
             WHERE career_id IN (10,11) AND season=1 AND week=? ORDER BY id""",(week,))]
         self.assertEqual({r['winner'] for r in results},{0,1})
         self.assertEqual({tuple(r['score']) for r in results},{(2,1),(1,2)})
+
+    def test_operator_clock_can_advance_without_readiness_vote(self):
+        import server
+        import rumors
+        with patch.object(server.management,'advance'),patch.object(server.fixtures,'enqueue'),\
+             patch.object(server.league,'simulate_ai'),patch.object(server.club_messages,'publish'),\
+             patch.object(server.solo,'weekly'),patch.object(rumors,'weekly'),\
+             patch.object(server.world_transfers,'weekly'):
+            result=server.advance_clock(self.db)
+        self.assertEqual((result['season'],result['week'],result['version']),(1,2,2))
+        self.assertEqual(self.db.execute("SELECT season,week,version FROM online_clock").fetchone(),(1,2,2))
+        self.assertEqual(self.db.execute("SELECT season,week,version FROM careers WHERE id=10").fetchone(),(1,2,2))
 
     def test_operator_can_observe_but_never_becomes_club_admin(self):
         self.assertEqual(clubs.grant(self.db,1,10,read_only=True),'viewer')

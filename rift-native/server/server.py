@@ -25,6 +25,7 @@ import dashboard
 import solo
 import player_departures
 import scouting
+import player_analysis
 import career_rules
 import rookie_offers
 import promotion
@@ -334,7 +335,9 @@ class Handler(BaseHTTPRequestHandler):
                     if url.path=='/person':
                         person=catalog.detail(db,cid,query['person'][0])
                         report=scouting.report(db,cid,person)
-                        return self.reply(200,{'person':person,'scouting':report})
+                        breakdown=player_analysis.report(db,cid,person)
+                        return self.reply(200,{'person':person,'scouting':report,
+                                               'player_analysis':breakdown})
                     return self.reply(200,catalog.search(db,cid,int(query.get('page',['0'])[0]),
                         *[query.get(key,[''])[0] for key in ('query','team','kind','league')],origin=query.get('origin',['all'])[0]))
                 except FileNotFoundError:

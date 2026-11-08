@@ -7,7 +7,7 @@ import series_state
 def init(db):
     db.execute("""CREATE TABLE IF NOT EXISTS fixtures(
         id INTEGER PRIMARY KEY, career_id INTEGER NOT NULL REFERENCES careers(id),
-        season INTEGER NOT NULL, week INTEGER NOT NULL CHECK(week BETWEEN 1 AND 104),
+        season INTEGER NOT NULL, week INTEGER NOT NULL CHECK(week BETWEEN 1 AND 150),
         opponent TEXT NOT NULL, seed INTEGER NOT NULL,
         state TEXT NOT NULL DEFAULT 'scheduled', result TEXT,
         UNIQUE(career_id,season,week))""")
@@ -23,7 +23,7 @@ def init(db):
 def add(db, career_id, season, week, opponent, best_of=3, competition='practice', stage='practice'):
     if type(best_of) is not int or best_of not in (3,5):
         raise ValueError('unsupported series format')
-    if season < 1 or not 1 <= week <= 104 or not 1 <= len(opponent.strip()) <= 40:
+    if season < 1 or not 1 <= week <= 150 or not 1 <= len(opponent.strip()) <= 40:
         raise ValueError('invalid fixture')
     db.execute('BEGIN IMMEDIATE')
     try:
@@ -72,7 +72,7 @@ def list_for_member(db, user_id, career_id):
         return None
     rows = db.execute("""SELECT f.id,f.season,f.week,f.opponent,f.state,f.result,s.state,f.seed,f.best_of,f.competition,f.stage FROM fixtures f
         LEFT JOIN match_series s ON s.fixture_id=f.id
-        WHERE f.career_id=? ORDER BY f.season DESC,f.week DESC LIMIT 104""",(career_id,))
+        WHERE f.career_id=? ORDER BY f.season DESC,f.week DESC LIMIT 150""",(career_id,))
     games = []
     now = time.time()
     for fixture,season,week,opponent,state,result,raw,seed,best_of,competition,stage in rows:

@@ -18,8 +18,9 @@ const NAV = [
   ['이적', '/app/transfers', '영입'],
   ['영입 명단', '/app/shortlist', '영입'],
   ['재정', '/app/finance', '구단'],
-  ['대회', '/app/competition', '구단'],
   ['데이터', '/app/data', '구단'],
+  ['스폰서', '/app/sponsors', '구단'],
+  ['구단 로고', '/app/club-identity-settings', '구단'],
   ['비전', '/app/vision', '구단'],
   ['커뮤니티', '/app/community', '구단']
 ]
@@ -116,6 +117,24 @@ function logoImg(league, team, overrideBrand=null) {
 function careerLogo(careerItem) {
   return logoImg(careerItem?.club_profile?.league||'',careerItem?.name||'',careerItem?.branding||null)
 }
+const LEAGUE_INFO={
+ 'LCK':['🇰🇷','대한민국','1부','kr'],'LCK CL':['🇰🇷','대한민국','2부','kr'],
+ 'LPL':['🇨🇳','중국','1부','cn'],'LDL':['🇨🇳','중국','2부','cn'],
+ 'LCS':['🇺🇸','북미','1부','na'],'NACL':['🇺🇸','북미','2부','na'],
+ 'LEC':['🇪🇺','유럽','1부','eu'],'LFL':['🇫🇷','프랑스','2부','eu'],
+ 'LES':['🇪🇸','스페인','2부','eu'],'PRM':['🇩🇪','독일','2부','eu'],
+ 'TCL':['🇹🇷','튀르키예','2부','eu'],'CBLOL':['🇧🇷','브라질','1부','br'],
+ 'Circuito Desafiante':['🇧🇷','브라질','2부','br'],
+ 'LCP':['🌏','아시아 태평양','1부','apac'],
+ 'PCS':['🌏','아시아 태평양','2부','apac'],
+ 'LJL':['🇯🇵','일본','2부','jp'],'VCS':['🇻🇳','베트남','2부','vn']
+}
+function leagueInfo(league){return LEAGUE_INFO[league]||['🏆','지역 리그','리그','general']}
+function leagueIcon(league){
+ const [flag,region,level,tone]=leagueInfo(league)
+ return '<span class="league-emblem league-emblem-'+tone+'" title="'+esc(region+' '+level)+'"><span class="league-emblem-flag">'+flag+'</span><strong>'+esc(league.length>8?league.slice(0,3).toUpperCase():league)+'</strong></span>'
+}
+function displayTeam(league,team){return media.brandings?.[league+'\n'+team]?.display_name||team}
 function teamColor(league, team) { return media.colors[league + '\n' + team] || '#17324d' }
 function go(href) { history.pushState({}, '', BASE && !href.startsWith(BASE + '/') ? BASE + href : href); draw() }
 async function career() {
@@ -135,7 +154,7 @@ function shell(body,path) {
 }
 async function topbar() {
   const current=isOperator?null:await career();const world=await api('/world');const bar=document.getElementById('top');if(!bar)return
-  const league=current?.club_profile?.league||'',name=isOperator?'리그 운영':current?.name||'구단 선택'
+  const league=current?.club_profile?.league||'',name=isOperator?'리그 운영':current?displayTeam(league,current.name):'구단 선택'
   document.documentElement.style.setProperty('--team',teamColor(league,name))
   const fixtures=current?(await api('/fixtures?id='+current.id)).fixtures:[]
   const due=(fixtures||[]).find(g=>g.state==='queued')
@@ -198,7 +217,7 @@ async function clubs() {
   if(mine.careers.length&&!isOperator)return go('/app')
   const proposals=isOperator?board.clubs.map(c=>({team_key:c.team_key,team:c.team,league:c.league,power:c.power,available:!c.claimed||c.kind==='ai',description:'운영자 구단 조회'})):(jobOffers.offers||[])
   const open=mine.careers.map(c=>`<div class="row">${careerLogo(c)}<b>${esc(c.name)}</b><span>${esc(c.club_profile?.league||'')} · ${c.season}시즌 ${c.week}주</span><button class="act" data-open="${c.id}">이어하기</button></div>`).join('')
-  const available=proposals.map(c=>`<div class="club-choice ${c.available?'':'club-locked'}">${logoImg(c.league,c.team)}<div><b>${esc(c.team)}</b><small>${esc(c.league)} · 파워 ${c.power??'미집계'} · ${isOperator?'운영자 조회':'부임 제안 '+c.ordinal+'/5'}</small><p>${esc(c.description||'')}</p></div><button class="act" data-team="${esc(c.team_key)}" ${c.available?'':'disabled'}>${c.available?'제안 수락':'부임 마감'}</button></div>`).join('')
+  const available=proposals.map(c=>`<div class="club-choice ${c.available?'':'club-locked'}">${logoImg(c.league,c.team)}<div><b>${esc(displayTeam(c.league,c.team))}</b><small>${esc(c.league)} · 파워 ${c.power??'미집계'} · ${isOperator?'운영자 조회':'부임 제안 '+c.ordinal+'/5'}</small><p>${esc(c.description||'')}</p></div><button class="act" data-team="${esc(c.team_key)}" ${c.available?'':'disabled'}>${c.available?'제안 수락':'부임 마감'}</button></div>`).join('')
   const leagues=board.leagues||[]
   shell(`<div class="page-heading"><div><p class="eyebrow">START YOUR CAREER</p><h1>감독 커리어 시작</h1><p>하위 리그 또는 파워랭킹이 낮은 구단에서 시작하세요. 최상위 강팀은 경력이 필요합니다.</p></div></div>${open?`<section class="panel"><h2>내 커리어</h2>${open}</section>`:''}<div class="career-choice-grid"><section class="panel club-creation"><h2>2부 리그 신생 구단 창단</h2><p>구단 이름, 3자 영문 약자, 전용 로고와 홈 컬러를 설정하세요.</p><form id="new-club"><label>구단 이름<input name="clubName" required minlength="2" maxlength="40" placeholder="예: Rising Phoenix"/></label><label>약자 (영문 대문자 3자)<input name="short" required maxlength="3" minlength="3" pattern="[A-Z]{3}" placeholder="RPH" style="text-transform:uppercase"/></label><label>참가할 2부 리그<select name="league">${leagues.map(l=>`<option value="${esc(l)}" ${l==='LCK CL'?'selected':''}>${esc(l)}</option>`).join('')}</select></label><label>홈 컬러<input name="color" type="color" value="#254a7a"/></label><label>엠블럼 모양<select name="emblem"><option value="shield">방패</option><option value="star">별</option><option value="crown">왕관</option><option value="bolt">번개</option><option value="diamond">다이아몬드</option></select></label><label>구단 로고 이미지 (선택, PNG/JPEG/WebP · 최대 80KB)<input name="logo" type="file" accept="image/png,image/jpeg,image/webp"/></label><p class="muted-note">로고 파일이 없으면 선택한 색상과 약자로 기본 엠블럼을 만듭니다.</p><button class="act" type="submit">신생 구단 창단 및 코치 영입</button><p class="err" id="club-err" role="alert"></p></form></section><section class="panel"><h2>신인 감독에게 도착한 제안 · ${proposals.length}개 구단</h2><p>각 구단이 신인 감독에게 부임을 제안했습니다. 하나를 수락하거나 2부 구단을 직접 창단할 수 있습니다.</p><div class="club-choice-list">${available}</div></section></div>`,'/app/clubs')
   document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{localStorage.setItem('rift-career',b.dataset.open);careerCache=null;go('/app')})
@@ -498,7 +517,7 @@ function seasonStanding(row) {
   return {...row,diff:(row.sets_won||0)-(row.sets_lost||0),rank:row.rank==null?'미집계':row.rank+'위'}
 }
 function leagueStandingsTable(rows,league,currentTeam='') {
-  return `<div class="table-scroll"><table class="league-table"><thead><tr><th>순위</th><th>구단</th><th>경기</th><th>승</th><th>패</th><th>세트 득실</th><th>득실차</th></tr></thead><tbody>${(rows||[]).map((r,i)=>`<tr class="${r.team===currentTeam?'mine':''}"><td>${r.rank==null?'—':r.rank}</td><td>${logoImg(league,r.team)}<a href="/app/team/${encodeURIComponent(league)}/${encodeURIComponent(r.team)}">${esc(r.team)}</a></td><td>${r.played||0}</td><td>${r.wins||0}</td><td>${r.losses||0}</td><td>${r.sets_won||0}:${r.sets_lost||0}</td><td>${(r.sets_won||0)-(r.sets_lost||0)>0?'+':''}${(r.sets_won||0)-(r.sets_lost||0)}</td></tr>`).join('')}</tbody></table></div>${(rows||[]).every(r=>!r.played)?'<p class="muted-note">아직 완료된 경기가 없습니다. 첫 경기 이후 순위가 확정됩니다.</p>':''}`
+  return `<div class="table-scroll"><table class="league-table"><thead><tr><th>순위</th><th>구단</th><th>경기</th><th>승</th><th>패</th><th>세트 득실</th><th>득실차</th></tr></thead><tbody>${(rows||[]).map((r,i)=>`<tr class="${r.team===currentTeam?'mine':''}"><td>${r.rank==null?'—':r.rank}</td><td>${logoImg(league,r.team)}<a href="/app/team/${encodeURIComponent(league)}/${encodeURIComponent(r.team)}">${esc(displayTeam(league,r.team))}</a></td><td>${r.played||0}</td><td>${r.wins||0}</td><td>${r.losses||0}</td><td>${r.sets_won||0}:${r.sets_lost||0}</td><td>${(r.sets_won||0)-(r.sets_lost||0)>0?'+':''}${(r.sets_won||0)-(r.sets_lost||0)}</td></tr>`).join('')}</tbody></table></div>${(rows||[]).every(r=>!r.played)?'<p class="muted-note">아직 완료된 경기가 없습니다. 첫 경기 이후 순위가 확정됩니다.</p>':''}`
 }
 function frontOfficeCard(p) {
   const labels={real:'실존 프런트·코칭스태프',generated:'생성 프런트·코칭스태프',verified:'출처 확인됨',simulation:'게임 내 운영진','registered-coach':'등록된 코치진',user:'유저 감독',game:'게임 내 직책'}
@@ -546,17 +565,25 @@ async function team(league,name,tab) {
   if(token()&&careerId())await topbar()
 }
 async function leagueIndex() {
-  const board=await api('/clubs')
-  const leagues=[...new Set((board.clubs||[]).map(c=>c.league).filter(Boolean))].sort()
-  shell(`<div class="page-heading"><div><p class="eyebrow">DOMESTIC COMPETITIONS</p><h1>리그 정보</h1><p>모든 리그의 구단 및 순위를 독립적으로 확인할 수 있습니다.</p></div></div><div class="fm-league-index">${leagues.map(l=>`<a class="panel" href="/app/league/${encodeURIComponent(l)}"><p class="eyebrow">LEAGUE DIRECTORY</p><h2>${esc(l)}</h2><p>${board.clubs.filter(c=>c.league===l).length}개 구단</p></a>`).join('')}</div>`,'/app/leagues')
+  const [board,current]=await Promise.all([api('/clubs'),isOperator?Promise.resolve(null):career()])
+  const mine=current?.club_profile?.league||''
+  const leagues=[...new Set((board.clubs||[]).map(c=>c.league).filter(Boolean))]
+    .sort((a,b)=>(a===mine?-1:b===mine?1:0)||(leagueInfo(a)[2]===leagueInfo(b)[2]?a.localeCompare(b):leagueInfo(a)[2]==='1부'?-1:1))
+  const cards=leagues.map(league=>{
+    const [flag,region,level]=leagueInfo(league)
+    const teams=board.clubs.filter(c=>c.league===league)
+    return '<a class="league-choice-card '+(league===mine?'my-league':'')+'" href="/app/league/'+encodeURIComponent(league)+'"><div>'+leagueIcon(league)+'<div><b>'+esc(league)+'</b><span>'+esc(region)+' · '+esc(level)+(league===mine?' · 내 리그':'')+'</span></div></div><p>참가 구단 '+teams.length+'개 · 순위·일정·구단 정보 보기</p></a>'
+  }).join('')
+  shell('<div class="page-heading"><div><p class="eyebrow">LEAGUES</p><h1>리그 둘러보기</h1><p>내 리그부터 확인하고, 로고를 눌러 다른 리그의 순위·팀·경기 일정을 볼 수 있습니다.</p></div></div><div class="fm-league-index">'+cards+'</div>','/app/leagues')
   await topbar()
 }
 async function leagueOverview(league) {
   const data=await api('/league-overview?league='+encodeURIComponent(league))
   const standings=data.standings||[],completed=(data.fixtures||[]).filter(g=>g.state==='finished'),upcoming=(data.fixtures||[]).filter(g=>g.state!=='finished')
-  const games=(fixtures)=>fixtures.map(g=>`<div class="fm-match-item"><small>${g.season}시즌 ${g.week}주 · ${esc(g.stage||'정규 시즌')}</small><div><b>${esc(g.home)}</b><strong>${g.score?g.score.join(' : '):'VS'}</strong><b>${esc(g.away)}</b></div></div>`).join('')||'<p class="empty">아직 등록된 경기가 없습니다.</p>'
-  const teams=(data.clubs||[]).map(c=>`<a class="fm-league-club" href="/app/team/${encodeURIComponent(league)}/${encodeURIComponent(c.team)}">${logoImg(league,c.team)}<span>${esc(c.team)}</span><small>${c.kind==='user'?'유저 감독':'AI 구단'}</small></a>`).join('')
-  shell(`<div class="fm-league-page"><header class="fm-team-header"><div><p class="eyebrow">LEAGUE & COMPETITION</p><h1>${esc(league)}</h1><p>${data.season}시즌 ${data.week}주차 · 등록 구단 ${(data.clubs||[]).length}팀</p></div><a class="act" href="/app/leagues">전체 리그</a></header><div class="fm-league-metrics"><div><small>등록 구단</small><strong>${(data.clubs||[]).length}</strong></div><div><small>종료된 경기</small><strong>${completed.length}</strong></div><div><small>진행 예정 경기</small><strong>${upcoming.length}</strong></div></div><div class="fm-league-dashboard"><section class="panel fm-league-ranking"><h2>${esc(league)} 순위표</h2>${leagueStandingsTable(standings,league)}</section><section class="panel fm-league-games"><h2>최근 경기 결과</h2>${games(completed.slice(-8).reverse())}<h2>다음 일정</h2>${games(upcoming.slice(0,8))}</section><section class="panel fm-league-clubs"><h2>참가 구단</h2><div class="fm-league-club-list">${teams||'<p class="empty">등록된 구단이 없습니다.</p>'}</div></section></div></div>`,'/app/leagues')
+  const games=fixtures=>fixtures.map(g=>'<div class="fm-match-item"><small>'+g.season+'시즌 '+g.week+'주 · '+esc(g.stage||'정규 시즌')+'</small><div><b>'+esc(displayTeam(league,g.home))+'</b><strong>'+(g.score?g.score.join(' : '):'VS')+'</strong><b>'+esc(displayTeam(league,g.away))+'</b></div></div>').join('')||'<p class="empty">아직 등록된 경기가 없습니다.</p>'
+  const teams=(data.clubs||[]).map(c=>'<a class="fm-league-club" href="/app/team/'+encodeURIComponent(league)+'/'+encodeURIComponent(c.team)+'">'+logoImg(league,c.team)+'<span>'+esc(displayTeam(league,c.team))+'</span><small>'+(c.kind==='user'?'유저 감독':'AI 구단')+'</small></a>').join('')
+  const headlines=(data.franchise_news||[]).map(n=>'<div class="fm-news-row"><small>'+n.season+'시즌 · 프랜차이즈 소식</small><b>'+esc(n.headline)+'</b></div>').join('')
+  shell('<div class="fm-league-page"><header class="fm-team-header">'+leagueIcon(league)+'<div><p class="eyebrow">'+esc(leagueInfo(league)[1])+' · '+esc(leagueInfo(league)[2])+'</p><h1>'+esc(league)+'</h1><p>'+data.season+'시즌 '+data.week+'주차 · 참가 구단 '+(data.clubs||[]).length+'팀</p></div><a class="act" href="/app/leagues">리그 목록</a></header><div class="fm-league-metrics"><div><small>참가 구단</small><strong>'+(data.clubs||[]).length+'</strong></div><div><small>종료 경기</small><strong>'+completed.length+'</strong></div><div><small>예정 경기</small><strong>'+upcoming.length+'</strong></div></div><div class="fm-league-dashboard"><section class="panel fm-league-ranking"><h2>'+esc(league)+' 순위표</h2>'+leagueStandingsTable(standings,league)+'</section><section class="panel fm-league-games"><h2>최근 경기 결과</h2>'+games(completed.slice(-8).reverse())+'<h2>다음 일정</h2>'+games(upcoming.slice(0,8))+'</section><section class="panel fm-league-clubs"><h2>참가 구단 · 클릭해서 이동</h2><div class="fm-league-club-list">'+(teams||'<p class="empty">참가 구단이 없습니다.</p>')+'</div></section>'+(headlines?'<section class="panel fm-league-clubs"><h2>리그 주요 소식</h2>'+headlines+'</section>':'')+'</div></div>','/app/leagues')
   await topbar()
 }
 async function solo() {
@@ -648,7 +675,7 @@ async function draw() {
     if (path === '/app/solo') return await solo()
     if (path === '/app/transfers') return await transfers()
     if (path === '/app/shortlist') return await shortlist()
-    if (path === '/app/competition') return await competition()
+    if (path === '/app/competition') return go('/app/leagues')
     if (path === '/app/leagues') return await leagueIndex()
     const leaguePath=path.match(/^\/app\/league\/(.+)$/)
     if(leaguePath)return await leagueOverview(decodeURIComponent(leaguePath[1]))

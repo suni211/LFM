@@ -168,11 +168,7 @@ class Handler(BaseHTTPRequestHandler):
                     branding=club_history.visual(db,league_name,team),
                     history=club_history.history(db,league_name,team),
                     can_manage_name=online_world.operator(db,uid),
-                    can_manage_logo=online_world.operator(db,uid) or bool(
-                       db.execute("""SELECT 1 FROM careers c JOIN club_profiles p ON p.career_id=c.id
-                         JOIN members m ON m.career_id=c.id WHERE c.name=? AND p.league=?
-                         AND m.user_id=? AND m.role='admin'""",
-                         (team,league_name,uid)).fetchone())))
+                    can_manage_logo=online_world.operator(db,uid)))
             if url.path=='/sponsor-offers':
                 cid=int(parse_qs(url.query)['id'][0])
                 if not news.member(db,uid,cid):return self.reply(404,{'error':'not found'})
@@ -561,18 +557,9 @@ class Handler(BaseHTTPRequestHandler):
                 db.execute('COMMIT')
                 return self.reply(200,dict(result,updated=True))
             if self.path=='/club-logo':
-                cid=data.get('id')
-                if type(cid)!=int or not transfers.can_manage(db,uid,cid):
-                    return self.reply(403,{'error':'본인 구단의 로고만 변경할 수 있습니다.'})
-                row=db.execute("""SELECT c.name,p.league FROM careers c
-                    JOIN club_profiles p ON p.career_id=c.id WHERE c.id=?""",(cid,)).fetchone()
-                if not row:return self.reply(404,{'error':'not found'})
-                clock=online_world.clock(db)
-                db.execute('BEGIN IMMEDIATE')
-                club_history.update_logo(db,row[1],row[0],data.get('logo_data',''),
-                                         clock['season'],clock['week'])
-                db.execute('COMMIT')
-                return self.reply(200,{'updated':True})
+                # Once an account selects or founds a club, its identity is
+                # locked. Only the operator's audited editor may change it.
+                return self.reply(403,{'error':'구단 선택·창단 후 이름과 로고는 변경할 수 없습니다. 운영자에게 문의하세요.'})
             if self.path=='/sponsor-accept':
                 cid=data.get('id')
                 if type(cid)!=int or not transfers.can_manage(db,uid,cid):

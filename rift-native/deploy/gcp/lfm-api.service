@@ -1,0 +1,21 @@
+[Unit]
+Description=Rift Manager local API
+After=network.target
+[Service]
+Type=simple
+User=lfm
+Group=lfm
+WorkingDirectory=/opt/lfm
+Environment=RIFT_DB=/var/lib/lfm/server.db
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=RIFT_PORT=8871
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/lfm/.venv/bin/python /opt/lfm/server/server.py
+Restart=on-failure
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/lfm
+[Install]
+WantedBy=multi-user.target

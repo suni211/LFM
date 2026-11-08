@@ -147,3 +147,6 @@ def assign(db,career,person_id,assignment,role):
     if generated:
         raw=json.loads(db.execute('SELECT payload FROM generated_people WHERE id=?',(person_id,)).fetchone()[0]);raw['role']=role
         db.execute('UPDATE generated_people SET assignment=?,payload=? WHERE id=?',(assignment,json.dumps(raw,ensure_ascii=False),person_id))
+    if assignment=='first':
+        import import_rules
+        import_rules.for_career(db,career)

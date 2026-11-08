@@ -2,6 +2,7 @@
 import hashlib
 import json
 import catalog
+import academy_clubs
 
 def init(db):
     db.executescript('''CREATE TABLE IF NOT EXISTS club_profiles(
@@ -63,7 +64,9 @@ def create(db,career,mode,team_key=None,league='LCK CL'):
     db.execute('INSERT INTO club_profiles VALUES(?,?,?,?,?)',(career,mode,team['league'],team_key,catalog.load().get('source','GCD')))
     occupied=set()
     academy_players=0
-    for person in catalog.load()['people']:
+    academy_division=team['league'] in ('LCK CL','LDL')
+    for raw_person in catalog.load()['people']:
+        person=catalog.display_academy_affiliation(raw_person)
         if (person.get('league'),person.get('team'))!=(team['league'],team['team']): continue
         if db.execute("SELECT 1 FROM sqlite_master WHERE name='person_ownership'").fetchone():
             moved=db.execute('SELECT career_id FROM person_ownership WHERE person_id=?',(person['id'],)).fetchone()
@@ -72,15 +75,23 @@ def create(db,career,mode,team_key=None,league='LCK CL'):
         assignment='unclassified'
         if person.get('kind') in ('coach','staff'): assignment='staff'
         elif person.get('kind')=='player':
-            if person.get('squad')=='academy':
+            if person.get('squad')=='academy' and not academy_division:
                 assignment='academy'
                 academy_players+=1
             else:
+                # 2nd-division starters *are* the academy roster's starters.
                 assignment='first' if role in ('TOP','JUNGLE','MID','ADC','SUPPORT') and role not in occupied else 'reserve'
                 if assignment=='first': occupied.add(role)
         db.execute('INSERT INTO club_roster VALUES(?,?,?,?,?)',
                    (career,person['id'],json.dumps(person,ensure_ascii=False),assignment,role))
-    db.execute('INSERT INTO recruitment_state VALUES(?,?)',(career,int(len(occupied)==5 or (academy_players>0 and not occupied))))
+    import recruitment
+    if academy_division and len(occupied)<5:
+        # A real team with an incomplete imported roster must recruit the
+        # remaining roles; candidates are explicitly generated, not fake clubs.
+        recruitment.generate(db,career,team['team'])
+    else:
+        db.execute('INSERT INTO recruitment_state VALUES(?,?)',
+                   (career,int(len(occupied)==5 or (academy_players>0 and not occupied))))
     import solo
     solo.claim_club(db,career,team['team'])
 

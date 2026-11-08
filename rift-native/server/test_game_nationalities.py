@@ -13,8 +13,8 @@ class GameNationalityTest(unittest.TestCase):
             people[0]['id']:{'code':'ZZ','name':'fixture', 'source':'test-existing'}
         }}
         result,report=fill_game.fill(people,existing)
-        self.assertEqual(report['with_country'],len(people))
         self.assertEqual(report['missing_after'],[])
+        self.assertEqual(report['with_country'],len(people))
         self.assertEqual(result['people'][people[0]['id']]['code'],'ZZ')
         self.assertEqual(report['reassigned_existing'],0)
 

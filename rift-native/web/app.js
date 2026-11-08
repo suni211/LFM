@@ -320,11 +320,48 @@ async function inbox() {
   document.querySelectorAll('[data-mail]').forEach(button => button.onclick = () => api('/read-mail', {id:current.id, mail:Number(button.dataset.mail)}).then(() => inbox()))
   await topbar()
 }
+const newsState={scope:'home',league:''}
 async function news() {
-  const current = await requireCareer(); if (!current) return
-  const data = await api('/news?id=' + current.id)
-  shell(`<div class="panel"><h2>뉴스</h2>${(data.news || []).map(item => `<article class="row"><div><b>${esc(item.headline)}</b><p>${esc(item.body || '')}</p></div></article>`).join('') || '<p>기사가 없습니다.</p>'}</div>`, '/app/news')
-  await topbar()
+ const current=await requireCareer();if(!current)return
+ const league=current.club_profile?.league||''
+ if(!newsState.league)newsState.league=league
+ const [feed,follows,board]=await Promise.all([
+   api('/news?id='+current.id+'&scope='+encodeURIComponent(newsState.scope)+'&competition='+encodeURIComponent(newsState.league)),
+   api('/follows?id='+current.id),
+   api('/clubs')
+ ])
+ const tracked=follows.follows||[]
+ const leagues=[...new Set((board.clubs||[]).map(c=>c.league).filter(Boolean))]
+ const followed=(kind,entity)=>tracked.some(f=>f.kind===kind&&f.entity===entity)
+ const filterTabs=[['home','내 소식·리그 전체'],['league','리그 뉴스'],['following','팔로우 뉴스']].map(([key,title])=>
+   '<button class="news-filter-tab '+(newsState.scope===key?'selected':'')+'" data-news-scope="'+key+'">'+title+'</button>').join('')
+ const leagueFilters=leagues.map(l=>'<div class="news-league-chip">'+
+   '<button class="'+(newsState.league===l?'selected':'')+'" data-news-league="'+esc(l)+'">'+
+   leagueIcon(l)+'<b>'+esc(l)+'</b></button><button class="news-follow-toggle '+(followed('competition',l)?'following':'')+'" data-news-follow="'+esc(l)+'">'+
+   (followed('competition',l)?'팔로우 중 ✓':'＋ 팔로우')+'</button></div>').join('')
+ const items=(feed.news||[]).map(n=>'<article class="headline-card">'+
+   '<span class="headline-category">'+(n.own_team?'내 구단 · ':n.competition+' · ')+n.season+'시즌 '+n.week+'주</span>'+
+   '<h3>'+esc(n.headline)+'</h3>'+
+   '<div class="headline-footer"><span>'+esc(n.label||'게임 내 뉴스')+'</span></div></article>').join('')
+ const personal=tracked.filter(f=>f.kind==='player'||f.kind==='team').map(f=>
+   '<button class="followed-person" data-news-unfollow="'+esc(f.kind)+'" data-news-entity="'+esc(f.entity)+'">'+esc(f.entity)+' · 팔로우 해제 ✕</button>').join('')
+ shell('<div class="page-heading"><div><p class="eyebrow">NEWSROOM</p><h1>리그 뉴스·팔로우</h1>'+
+  '<p>내 구단과 현재 리그는 항상 뉴스에 포함됩니다. 선수·구단·리그를 추가 팔로우할 수 있습니다.</p></div></div>'+
+  '<div class="news-filter-tabs">'+filterTabs+'</div><div class="newsroom-grid"><section class="panel">'+
+  '<h2>이번 주 헤드라인</h2><div class="news-headlines">'+(items||'<p class="empty">현재 등록된 뉴스가 없습니다. 경기를 진행하면 새로운 기사가 발행됩니다.</p>')+'</div></section>'+
+  '<aside class="panel newsroom-follows"><h2>리그 팔로우</h2><div class="league-follow-grid">'+leagueFilters+'</div>'+
+  '<h2>팔로우한 선수·구단</h2>'+(personal||'<p class="empty">선수 프로필에서 팔로우할 수 있습니다.</p>')+
+  '</aside></div>','/app/news')
+ document.querySelectorAll('[data-news-scope]').forEach(b=>b.onclick=()=>{newsState.scope=b.dataset.newsScope;news()})
+ document.querySelectorAll('[data-news-league]').forEach(b=>b.onclick=()=>{newsState.league=b.dataset.newsLeague;news()})
+ document.querySelectorAll('[data-news-follow]').forEach(b=>b.onclick=async()=>{
+   const entity=b.dataset.newsFollow
+   try{await api('/follows',{id:current.id,kind:'competition',entity,enabled:!followed('competition',entity)});await news()}
+   catch(e){alert(e.message)}
+ })
+ document.querySelectorAll('[data-news-unfollow]').forEach(b=>b.onclick=()=>api('/follows',{
+   id:current.id,kind:b.dataset.newsUnfollow,entity:b.dataset.newsEntity,enabled:false}).then(()=>news()).catch(e=>alert(e.message)))
+ await topbar()
 }
 function nickname(person) {return person.nickname || person.nickname_ko || person.display_name || person.name || '이름 확인 중'}
 function personLink(person) {
@@ -637,13 +674,15 @@ async function player(id, tab) {
   const current=await requireCareer();if(!current)return
   const [detail,train,manage]=await Promise.all([api('/person?id='+current.id+'&person='+encodeURIComponent(id)),isOperator?Promise.resolve({players:[]}):api('/training?id='+current.id).catch(()=>({players:[]})),isOperator?Promise.resolve({}):api('/management?id='+current.id).catch(()=>({}))])
   const person=detail.person,scout=detail.scouting?.scout,agency=detail.scouting?.agency
+  const follows=isOperator?{follows:[]}:await api('/follows?id='+current.id)
+  const following=(follows.follows||[]).some(f=>f.kind==='player'&&f.entity===person.nickname)
   const development=(train.players||[]).find(row=>row.person.id===id)
   const contract=(manage.contracts||[]).find(row=>row.person.id===id)
   const tabs=[['overview','선수 개요'],['personal','개인 정보'],['contract','계약'],['history','이력'],['report','스카우트 보고'],['career','커리어'],['compare','선수 비교']]
   const links=`<div class="tabs player-tabs">${tabs.map(([k,l])=>`<a class="${tab===k?'on':''}" href="/app/player/${esc(id)}/${k}">${l}</a>`).join('')}</div>`
   const values=person.game_evaluation?.ratings||person.stats||{}
   const joined=person.team?`${logoImg(person.league,person.team)}${esc(person.team)} · ${esc(person.league||'')}`:'FA · 무소속'
-  const top=`<div class="player-profile-heading"><div class="player-profile-face">${face(person.id,Boolean(person.photo))}</div><div><p class="eyebrow">${person.kind==='player'?'PLAYER DATABASE':'FRONT OFFICE DATABASE'} / ${esc(person.staff_role_name||frontRoleLabel(person))}</p><h1>${esc(person.nickname||person.display_name||person.real_name||'선수')}</h1><p>${esc(person.real_name||'이름 정보 없음')} · ${esc(ROLE[person.role]||person.role||'포지션 미상')}</p><p>${flagAndCountry(person)}</p><p class="player-team-line">${joined}</p><div class="player-overview-stats"><span>솔로랭크 <strong>${esc(person.solo?.label||'기록 없음')}</strong></span><span>소속 <strong>${esc(person.assignment||person.squad||'미등록')}</strong></span>${development?`<span>OVR <strong>${development.ovr}</strong></span>`:''}</div></div></div>`
+  const top=`<div class="player-profile-heading"><div class="player-profile-face">${face(person.id,Boolean(person.photo))}</div><div><p class="eyebrow">${person.kind==='player'?'PLAYER DATABASE':'FRONT OFFICE DATABASE'} / ${esc(person.staff_role_name||frontRoleLabel(person))}</p><h1>${esc(person.nickname||person.display_name||person.real_name||'선수')}</h1><p>${esc(person.real_name||'이름 정보 없음')} · ${esc(ROLE[person.role]||person.role||'포지션 미상')}</p><p>${flagAndCountry(person)}</p><p class="player-team-line">${joined}</p>${!isOperator?'<button class="act player-follow-btn" id="player-follow">'+(following?'★ 팔로우 중':'☆ 뉴스 팔로우')+'</button>':''}<div class="player-overview-stats"><span>솔로랭크 <strong>${esc(person.solo?.label||'기록 없음')}</strong></span><span>소속 <strong>${esc(person.assignment||person.squad||'미등록')}</strong></span>${development?`<span>OVR <strong>${development.ovr}</strong></span>`:''}</div></div></div>`
   let main=''
   if(tab==='overview') main=`<div class="player-info-grid"><section class="panel"><h2>현재 능력</h2>${ratingGrid(values)}</section><section class="panel"><h2>구단 스카우팅 요약</h2><p>현재 실력</p>${scoutStars(scout?.current_stars)}<p>예상 잠재력</p>${scoutStars(scout?.potential_stars)}<p class="muted-note">${esc(scout?.summary||'스카우팅 기록 없음')}</p></section><section class="panel"><h2>커리어 정보</h2><p>역할: ${esc(ROLE[person.role]||person.role||'미상')}</p><p>국적: ${flagAndCountry(person)}</p><p>구단: ${joined}</p><p>게임 내 소속: ${esc(person.assignment||'등록 정보 없음')}</p><p>계약: ${esc(person.contract_end||'기록 없음')}</p></section></div>`
   else if(tab==='personal') main=`<section class="panel"><h2>개인 정보</h2><div class="info-pairs"><p>영문 닉네임 <b>${esc(person.nickname||'기록 없음')}</b></p><p>본명 <b>${esc(person.real_name||'기록 없음')}</b></p><p>국적 <b>${flagAndCountry(person)}</b></p><p>리그 <b>${esc(person.league||'무소속')}</b></p><p>지역 <b>${esc(person.region||person.nationality_name_ko||'정보 없음')}</b></p><p>포지션 <b>${esc(ROLE[person.role]||person.role||'정보 없음')}</b></p><p>솔로랭크 <b>${esc(person.solo?.label||'정보 없음')}</b></p></div></section>`
@@ -656,6 +695,9 @@ async function player(id, tab) {
     main=`<section class="panel"><h2>동일 포지션 선수 비교</h2><p>${esc(ROLE[person.role]||person.role||'')} 포지션 · 게임 내 능력 수치가 가까운 선수</p><div class="table-scroll"><table><thead><tr><th>선수</th><th>구단</th><th>종합</th><th>기준 선수 대비</th><th>상세 보기</th></tr></thead><tbody>${(result.comparisons||[]).map(p=>`<tr><td><b>${esc(p.nickname)}</b></td><td>${esc(p.team)}</td><td>${p.rating}</td><td class="${p.gap>=0?'positive-gap':'negative-gap'}">${p.gap>0?'+':''}${p.gap}</td><td><a href="/app/player/${encodeURIComponent(p.id)}/compare">비교 대상 열기</a></td></tr>`).join('')}</tbody></table></div></section><section class="panel"><h2>기준 선수 능력치</h2>${ratingGrid(values)}</section>`
   } else return go('/app/player/'+encodeURIComponent(id)+'/overview')
   shell(`<div class="player-profile">${top}${links}${main}<div class="player-footer"><a href="/app/players">선수 DB로 돌아가기</a>${person.team?`<a href="/app/team/${encodeURIComponent(person.league||'')}/${encodeURIComponent(person.team)}">구단 보기</a>`:''}</div></div>`,'/app/player/'+id)
+  const fb=document.getElementById('player-follow')
+  if(fb)fb.onclick=()=>api('/follows',{id:current.id,kind:'player',entity:person.nickname,enabled:!following})
+    .then(()=>player(id,tab)).catch(e=>alert(e.message))
   await topbar()
 }
 function seasonStanding(row) {

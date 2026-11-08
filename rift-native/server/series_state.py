@@ -77,17 +77,25 @@ def prepare_draft(state,seed,kits,roles,now):
     draft=auto_draft(seed+len(state['sets']),kits,roles,state['first'],state['blue'],blocked,
                      max(0,state.get('best_of',3)-len(state['sets'])-1))
     state.update(phase='swap',draft=list(draft.actions),roster=[list(team) for team in draft.roster],
-                 swap_until=now+(0 if state.get('autoplay') else 30),swap_version=0,role_options={name:list(kits[name].roles) for team in draft.roster for name in team})
+                 swap_until=now+(0 if state.get('autoplay') else 90),swap_version=0,role_options={name:list(kits[name].roles) for team in draft.roster for name in team})
 
 def swap(state,first,second,version,now):
     roles=('TOP','JUNGLE','MID','ADC','SUPPORT')
-    if state['phase']!='swap' or now>=state['swap_until']:raise ValueError('swap period closed')
-    if type(version) is not int or version!=state['swap_version']:raise ValueError('stale swap version')
-    if first not in roles or second not in roles or first==second:raise ValueError('invalid swap roles')
+    if state['phase']!='swap' or now>=state['swap_until']:raise ValueError('스왑 시간이 종료됐습니다. 경기 진행 화면을 확인하세요.')
+    if type(version) is not int or version!=state['swap_version']:raise ValueError('다른 스왑이 먼저 적용됐습니다. 최신 배치를 확인하세요.')
+    if first not in roles or second not in roles or first==second:raise ValueError('서로 다른 두 포지션을 선택해야 합니다.')
     a,b=roles.index(first),roles.index(second);side=state['blue'];roster=state['roster'][side]
     if second not in state['role_options'][roster[a]] or first not in state['role_options'][roster[b]]:
-        raise ValueError('champions cannot fill swapped roles')
+        raise ValueError('두 챔피언의 플레이 가능 포지션이 맞지 않아 스왑할 수 없습니다.')
     roster[a],roster[b]=roster[b],roster[a];state['swap_version']+=1
+
+def complete_swap(state,now):
+    """Manager can confirm player-champion assignment before timeout."""
+    if state.get('phase')!='swap':
+        raise ValueError('이미 스왑 단계가 종료됐습니다.')
+    state['swap_until']=now
+    state['phase']='ready'
+
 
 def finish_swap(state,now):
     if state['phase']=='swap' and now>=state['swap_until']:

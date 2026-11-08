@@ -650,6 +650,11 @@ class Handler(BaseHTTPRequestHandler):
                     career_rules.valid_brand(name,short,color)
                     career_rules.store_brand(db,cid,short,color,emblem,data.get('logo_data',''))
                 clubs.create(db,cid,mode,data.get('team_key'),requested_league)
+                if mode=='create':
+                    club_history.record(db,requested_league,name.strip(),world['season'],world['week'],
+                        'club-founded','구단 창단… '+name.strip()+' 출범',
+                        '구단명·약자·대표 로고를 창단 시 확정했습니다. 이후 운영자만 수정할 수 있습니다.',
+                        'game-user-action')
                 db.execute('INSERT INTO members VALUES(?,?,?)',(cid,uid,'admin'))
                 manager=manager_identity.view(db,uid)['name']
                 news.appointment(db,cid,manager,name.strip(),selected['league'] if selected else requested_league,'KR',0,80 if selected else 0)

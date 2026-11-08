@@ -6,7 +6,7 @@ import secrets
 def init(db):
     db.execute("""CREATE TABLE IF NOT EXISTS league_games(
         career_id INTEGER NOT NULL REFERENCES careers(id),
-        season INTEGER NOT NULL, week INTEGER NOT NULL CHECK(week BETWEEN 1 AND 104),
+        season INTEGER NOT NULL, week INTEGER NOT NULL CHECK(week BETWEEN 1 AND 150),
         home TEXT NOT NULL, away TEXT NOT NULL, fixture_id INTEGER UNIQUE REFERENCES fixtures(id),
         home_wins INTEGER, away_wins INTEGER,
         PRIMARY KEY(career_id,season,week,home,away))""")
@@ -40,7 +40,7 @@ def create(db, career, season, first_week, opponents):
         raise ValueError('duplicate clubs')
     schedule = list(rounds(teams))
     schedule += [[(away,home) for home,away in games] for games in schedule]
-    if first_week < 1 or first_week+len(schedule)-1 > 104:
+    if first_week < 1 or first_week+len(schedule)-1 > 150:
         raise ValueError('league exceeds season')
     if db.execute('SELECT 1 FROM league_games WHERE career_id=? AND season=?',(career,season)).fetchone():
         raise ValueError('league already exists')

@@ -45,7 +45,7 @@ def generate(db,career,club):
         person_id='generated-'+uuid.uuid4().hex
         coach=index>=50
         person=dict(id=person_id,real_name=names[index],display_name_ko=names[index],display_name=names[index],nickname=nicks[index],
-                    team=club,league='LCK CL',region='KR',nationality_name_ko='대한민국',
+                    team=club,league='LCK CL',region='KR',nationality_code='KR',nationality_name_ko='대한민국',
                     kind='coach' if coach else 'player',role='COACH' if coach else ROLES[index//10],
                     raw_role='코치' if coach else ROLES[index//10],real_person=False,
                     contract_end='시즌 '+str(season)+' 종료',contract_estimated=True,salary=salary,salary_estimated=True,
@@ -105,6 +105,8 @@ def finalize(db,career):
         raise ValueError('five players, one per role, required')
     for position in staffing.summary(state['staff']):
         if position['count']>position['limit']:raise ValueError('staff position quota exceeded')
+    import import_rules
+    import_rules.for_career(db,career)
     db.execute('UPDATE recruitment_state SET complete=1 WHERE career_id=?',(career,))
 
 

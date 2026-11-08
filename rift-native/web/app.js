@@ -723,17 +723,70 @@ async function player(id, tab) {
   const current=await requireCareer();if(!current)return
   const [detail,train,manage]=await Promise.all([api('/person?id='+current.id+'&person='+encodeURIComponent(id)),isOperator?Promise.resolve({players:[]}):api('/training?id='+current.id).catch(()=>({players:[]})),isOperator?Promise.resolve({}):api('/management?id='+current.id).catch(()=>({}))])
   const person=detail.person,scout=detail.scouting?.scout,agency=detail.scouting?.agency
+  const analysis=detail.player_analysis?.attributes||null
+  const performance=detail.player_analysis?.season||null
+  const statusLabel=rosterStatus(person)
   const follows=isOperator?{follows:[]}:await api('/follows?id='+current.id)
   const following=(follows.follows||[]).some(f=>f.kind==='player'&&f.entity===person.nickname)
   const development=(train.players||[]).find(row=>row.person.id===id)
   const contract=(manage.contracts||[]).find(row=>row.person.id===id)
-  const tabs=[['overview','선수 개요'],['personal','개인 정보'],['contract','계약'],['history','이력'],['report','스카우트 보고'],['career','커리어'],['compare','선수 비교']]
+  const tabs=[['overview','선수 개요'],['stats','시즌 성적'],['report','스카우트 보고'],['personal','개인 정보'],['contract','계약'],['history','이력'],['career','커리어'],['compare','선수 비교']]
   const links=`<div class="tabs player-tabs">${tabs.map(([k,l])=>`<a class="${tab===k?'on':''}" href="/app/player/${esc(id)}/${k}">${l}</a>`).join('')}</div>`
   const values=person.game_evaluation?.ratings||person.stats||{}
   const joined=person.team?`${logoImg(person.league,person.team)}${esc(person.team)} · ${esc(person.league||'')}`:'FA · 무소속'
-  const top=`<div class="player-profile-heading"><div class="player-profile-face">${face(person.id,Boolean(person.photo))}</div><div><p class="eyebrow">${person.kind==='player'?'PLAYER DATABASE':'FRONT OFFICE DATABASE'} / ${esc(person.staff_role_name||frontRoleLabel(person))}</p><h1>${esc(person.nickname||person.display_name||person.real_name||'선수')}</h1><p>${esc(person.real_name||'이름 정보 없음')} · ${esc(ROLE[person.role]||person.role||'포지션 미상')}</p><p>${flagAndCountry(person)}</p><p class="player-team-line">${joined}</p>${!isOperator?'<button class="act player-follow-btn" id="player-follow">'+(following?'★ 팔로우 중':'☆ 뉴스 팔로우')+'</button>':''}<div class="player-overview-stats"><span>솔로랭크 <strong>${esc(person.solo?.label||'기록 없음')}</strong></span><span>소속 <strong>${esc(person.assignment||person.squad||'미등록')}</strong></span>${development?`<span>OVR <strong>${development.ovr}</strong></span>`:''}</div></div></div>`
+  const isPlayer=person.kind==='player'
+  const statsCount=analysis?.count||0
+  const roleName=ROLE[person.role]||person.role||'포지션 미등록'
+  const joinedText=person.team?logoImg(person.league,person.team)+
+    '<a href="/app/team/'+encodeURIComponent(person.league||'')+'/'+encodeURIComponent(person.team)+'">'+esc(displayTeam(person.league,person.team))+'</a>'+
+    '<span class="fm-player-league">'+esc(person.league||'')+'</span>':'<span>FA · 무소속</span>'
+  const top='<header class="player-profile-heading fm-player-profile-heading">'+
+    '<div class="player-profile-face">'+face(person.id,Boolean(person.photo))+'</div>'+
+    '<div class="fm-player-heading-info"><p class="eyebrow">'+
+       (isPlayer?'선수 프로필 · PLAYER REPORT':'구단 프런트 · STAFF REPORT')+'</p>'+
+       '<h1>'+esc(person.nickname||person.display_name||person.real_name||'선수')+'</h1>'+
+       '<p class="fm-player-subname">'+esc(person.real_name||'본명 정보 미등록')+
+          ' · '+esc(roleName)+'</p>'+
+       '<div class="fm-player-identity">'+flagAndCountry(person)+
+          '<span class="fm-squad-badge">'+esc(statusLabel)+'</span></div>'+
+       '<div class="player-team-line">'+joinedText+'</div>'+
+       (!isOperator?'<button class="act player-follow-btn" id="player-follow">'+
+         (following?'★ 선수 뉴스 팔로우 중':'☆ 선수 뉴스 팔로우')+'</button>':'')+
+     '</div>'+
+     '<div class="fm-player-head-stats">'+
+       '<div><small>개인 솔로랭크</small><strong>'+esc(person.solo?.label||'기록 없음')+'</strong></div>'+
+       '<div><small>소속 선수단</small><strong>'+esc(statusLabel)+'</strong></div>'+
+       (isPlayer?'<div><small>게임 내 개별 능력</small><strong>'+
+          (analysis?analysis.overall+' / 20':'평가 없음')+'</strong></div>':'')+
+       (isPlayer?'<div><small>세부 평가 항목</small><strong>'+statsCount+'개</strong></div>':'')+
+       (development?'<div><small>훈련 OVR</small><strong>'+development.ovr+'</strong></div>':'')+
+     '</div></header>'
   let main=''
-  if(tab==='overview') main=`<div class="player-info-grid"><section class="panel"><h2>현재 능력</h2>${ratingGrid(values)}</section><section class="panel"><h2>구단 스카우팅 요약</h2><p>현재 실력</p>${scoutStars(scout?.current_stars)}<p>예상 잠재력</p>${scoutStars(scout?.potential_stars)}<p class="muted-note">${esc(scout?.summary||'스카우팅 기록 없음')}</p></section><section class="panel"><h2>커리어 정보</h2><p>역할: ${esc(ROLE[person.role]||person.role||'미상')}</p><p>국적: ${flagAndCountry(person)}</p><p>구단: ${joined}</p><p>게임 내 소속: ${esc(person.assignment||'등록 정보 없음')}</p><p>계약: ${esc(person.contract_end||'기록 없음')}</p></section></div>`
+  if(tab==='overview') {
+    if(!isPlayer) main='<div class="player-info-grid"><section class="panel"><h2>프런트 정보</h2>'+
+      '<p>'+esc(frontRoleLabel(person))+'</p><p>'+flagAndCountry(person)+'</p>'+
+      '<p>구단: '+joinedText+'</p></section></div>'
+    else main='<div class="fm-player-dashboard">'+
+      '<div class="fm-player-dashboard-main"><div class="fm-section-head"><h2>개별 능력치 · '+statsCount+
+        '개</h2><span>FM 스타일 게임 능력 · 1~20</span></div>'+
+        playerAttributePanel(analysis)+playerSeasonPanel(performance)+'</div>'+
+      '<aside class="fm-player-dashboard-side">'+playerProfileSummary(analysis,scout)+
+       '<section class="panel"><h2>포지션 · 역할 숙련</h2>'+
+         '<div class="fm-position-primary"><span>'+esc(roleName)+'</span><strong>주 포지션</strong></div>'+
+         '<p class="muted-note">'+esc(analysis?.role?.note||'등록된 포지션만 확인할 수 있습니다.')+'</p>'+
+         '<h3>선수단 소속</h3><div class="fm-role-detail"><b>'+esc(statusLabel)+'</b>'+
+           '<span>'+joinedText+'</span></div></section>'+
+       '<section class="panel"><h2>계약 · 정보</h2><div class="fm-quickfacts">'+
+         '<div><span>국적</span>'+flagAndCountry(person)+'</div>'+
+         '<div><span>연봉</span><b>'+money(contract?.annual_salary??person.salary)+'</b></div>'+
+         '<div><span>계약 종료</span><b>'+esc(person.contract_end||'확인 중')+'</b></div>'+
+         '<div><span>출전 세트</span><b>'+String(performance?.games||0)+'세트</b></div>'+
+         '</div></section></aside></div>'
+  }
+  else if(tab==='stats') main=playerSeasonPanel(performance)+
+    (isPlayer?'<section class="panel"><h2>능력치 · 시즌 성적의 차이</h2><p class="muted-note">'+
+      '개별 능력은 게임 평가 모델의 추정값이고, KDA·CS·피해량은 실제로 진행된 LFM 경기만 집계합니다. '+
+      '솔로랭크 전적은 프로 경기 성적에 포함하지 않습니다.</p></section>':'')
   else if(tab==='personal') main=`<section class="panel"><h2>개인 정보</h2><div class="info-pairs"><p>영문 닉네임 <b>${esc(person.nickname||'기록 없음')}</b></p><p>본명 <b>${esc(person.real_name||'기록 없음')}</b></p><p>국적 <b>${flagAndCountry(person)}</b></p><p>리그 <b>${esc(person.league||'무소속')}</b></p><p>지역 <b>${esc(person.region||person.nationality_name_ko||'정보 없음')}</b></p><p>포지션 <b>${esc(ROLE[person.role]||person.role||'정보 없음')}</b></p><p>솔로랭크 <b>${esc(person.solo?.label||'정보 없음')}</b></p></div></section>`
   else if(tab==='contract') main=`<section class="panel"><h2>계약 및 연봉</h2><div class="info-pairs"><p>계약 종료 <b>${esc(person.contract_end||'정보 없음')}</b></p><p>게임 내 연봉 <b>${contract?money(contract.annual_salary):money(person.salary)}</b></p><p>계약 기간 <b>${contract?contract.remaining_turns+'주 남음':'구단 계약 정보 없음'}</b></p><p>현재 상태 <b>${contract?(contract.active?'계약 중':'계약 종료'):'외부 구단 또는 FA'}</b></p></div></section>`
   else if(tab==='history') main=`<section class="panel"><h2>선수 이력</h2><p>현재 소속 ${joined}</p><p>최초 등록 구단: ${esc(person.registered_team||person.team||'정보 없음')}</p><p class="muted-note">내부 DB 출처 코드 대신 실제 경기 및 이적 기록을 표시할 예정입니다.</p></section>`

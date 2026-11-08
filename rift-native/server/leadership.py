@@ -44,6 +44,26 @@ VERIFIED_COACHING={
         'Gismo':('ANALYST','https://team-detonation.net/team/leagueoflegends')},
 }
 
+# 2026 regular-season LCK staff roles, checked against the 2026 LCK
+# press-media lineup and 2026 roster reference. Missing names are not invented.
+LCK_2026_SOURCE='https://www.invenglobal.com/articles/20356/2026-lck-media-day-all-10-teams-vow-improved-performances-ahead-of-regular-season'
+LCK_2026_STAFF={
+    'Hanwha Life Esports':{'Homme':'HEAD_COACH','Sin':'COACH','Mowgli':'COACH','Sensation':'COACH'},
+    'Dplus Kia':{'cvMax':'HEAD_COACH','PoohManDu':'COACH','Hachani':'COACH','Woong':'COACH','Sungmin':'COACH'},
+    'kt Rolster':{'Score':'HEAD_COACH','Museong':'COACH','Sonstar':'COACH','Spark':'COACH','Lilac':'COACH'},
+    'HANJIN BRION':{'Ssong':'HEAD_COACH','Duke':'COACH','Ssumday':'COACH'},
+    'DN SOOPers':{'Ggoong':'COACH','Minit':'COACH','Millimas':'ANALYST','RapidStar':'COACH','Cube':'COACH'},
+    'KRX':{'Joker':'HEAD_COACH','Naehyun':'COACH','Saroo':'ANALYST','Frozen':'COACH','Raise':'COACH','Catch':'COACH'},
+    'NS REDFORCE':{'DanDy':'HEAD_COACH','Chelly':'COACH','Crazy':'COACH','bonO':'COACH'},
+    'BNK FEARX':{'Edo':'HEAD_COACH','Rather':'COACH','Lira':'COACH','Key':'COACH'},
+    'T1':{'kkOma':'COACH','Tom':'HEAD_COACH','Mata':'COACH','Easyhoon':'COACH','DooTi':'COACH','Nagne':'COACH'},
+    'Gen.G':{'Ryu':'HEAD_COACH','Lyn':'COACH','Nova':'COACH','Jerry':'COACH'},
+}
+for _team,_roles in LCK_2026_STAFF.items():
+    _dst=VERIFIED_COACHING.setdefault(('LCK',_team),{})
+    for _nick,_role in _roles.items():
+        _dst.setdefault(_nick,(_role,LCK_2026_SOURCE))
+
 def annotate_verified_staff(league,team,people):
     """Only a game-display correction; original source data remains untouched."""
     corrections=VERIFIED_COACHING.get((league,team),{})
@@ -59,6 +79,18 @@ def annotate_verified_staff(league,team,people):
             person['staff_role_name']=names[role]
             person['raw_role']='Head Coach' if role=='HEAD_COACH' else 'Analyst' if role=='ANALYST' else 'Coach'
             person['staff_role_source']=url
+        elif person.get('kind')=='unclassified':
+            raw_role=str(person.get('raw_role') or '').casefold()
+            if 'coach' in raw_role or '감독' in raw_role:
+                person['kind']='coach'
+            elif 'general manager' in raw_role or 'analyst' in raw_role or '단장' in raw_role:
+                person['kind']='staff'
+            elif raw_role.startswith('sub'):
+                person['kind']='player'
+                person['squad']='academy' if person.get('squad')=='academy' else 'reserve'
+                part=raw_role.split('/',1)[-1] if '/' in raw_role else ''
+                position={'jug':'JUNGLE','sup':'SUPPORT','bot':'ADC','top':'TOP','mid':'MID'}.get(part)
+                if position: person['role']=position
         result.append(person)
     return result
 

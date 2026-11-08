@@ -35,6 +35,26 @@ let managerProfile = null
 let isOperator = false
 let worldState = null
 
+const CHAMP_PATCH='16.22.1'
+let championMeta={}
+let championFetch=null
+async function loadChampionMeta(){
+ if(championFetch)return championFetch
+ championFetch=fetch('https://ddragon.leagueoflegends.com/cdn/'+CHAMP_PATCH+'/data/ko_KR/champion.json')
+  .then(r=>{if(!r.ok)throw Error('Riot champion list unavailable');return r.json()})
+  .then(d=>{championMeta=d.data||{};return championMeta})
+  .catch(()=>{championMeta={};return championMeta})
+ return championFetch
+}
+function championKo(id){return championMeta[id]?.name||id}
+function championIcon(id){
+ const name=String(id||'')
+ if(!/^[A-Za-z0-9]{2,30}$/.test(name))return ''
+ const filename=championMeta[name]?.image?.full||name+'.png'
+ return '<img class="champion-icon" alt="'+esc(championKo(name))+'" loading="lazy" src="https://ddragon.leagueoflegends.com/cdn/'+CHAMP_PATCH+'/img/champion/'+encodeURIComponent(filename)+'" onerror="this.hidden=true"/>'
+}
+
+
 function esc(value) {
   return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))
 }
@@ -388,10 +408,11 @@ async function tactics() {
 }
 async function training() {
   const current = await requireCareer(); if (!current) return
+  await loadChampionMeta()
   const data = await api('/training?id=' + current.id)
   const rows = data.players.map(row => {
     const person = row.person
-    const chips = row.pool.map(name => `<b>${esc(name)} 수준급</b>`).join('')
+    const chips = row.pool.map(name => `<b class="champion-chip">${championIcon(name)}${esc(championKo(name))} · 숙련</b>`).join('')
     return `<div class="panel"><div class="row">${personLink(person)}<span>OVR ${row.ovr}</span><span>폭 ${row.pool.length}/6</span><span>이번 주 ${row.assigned === 'pool' ? '챔프폭' : 'OVR'}</span></div><div class="pool">${chips}</div><p>폭 안의 챔피언은 수준급, 밖은 그럭저럭입니다. 최소 2, 최대 6.</p><select data-person="${esc(person.id)}"><option value="auto" ${row.focus === 'auto' ? 'selected' : ''}>자동 배정</option><option value="ovr" ${row.focus === 'ovr' ? 'selected' : ''}>OVR</option><option value="pool" ${row.focus === 'pool' ? 'selected' : ''}>챔프폭</option></select></div>`
   }).join('')
   shell(`<button class="act" id="auto-all">전원 자동 배정</button>` + rows, '/app/training')
@@ -479,6 +500,7 @@ async function schedule() {
  await topbar()
 }
 async function match(id) {
+  await loadChampionMeta()
   const current = await requireCareer(); if (!current) return
   const data = await api('/fixtures?id=' + current.id)
   const game = data.fixtures.find(item => item.id === id)
@@ -488,7 +510,7 @@ async function match(id) {
   if (series.phase === 'choice') controls += `<button class="act" data-choice="priority" data-value="first">선픽</button><button class="act" data-choice="priority" data-value="second">후픽</button><button class="act" data-choice="side" data-value="blue">블루</button><button class="act" data-choice="side" data-value="red">레드</button>`
   if (series.phase === 'draft') {
     const champs = await api('/champions')
-    controls += `<input id="champ" placeholder="챔피언"/><button class="act" id="pick">선택</button><button class="act" id="auto">남은 픽 자동</button><div class="pool">${champs.champions.slice(0, 40).map(item => `<button class="act" data-champ="${esc(item.name)}">${esc(item.name)}</button>`).join('')}</div>`
+    controls += `<input id="champ" type="hidden"/><div class="champion-search"><input id="champion-pick-filter" placeholder="한국어 챔피언 이름 검색"/><span id="selected-champion">챔피언을 선택하세요</span><button class="act" id="pick">선택</button><button class="act" id="auto">남은 픽 자동</button></div><div class="champion-select-grid">${champs.champions.map(item => `<button class="champion-select-card" data-champ="${esc(item.name)}" data-name="${esc(championKo(item.name))}">${championIcon(item.name)}<span>${esc(championKo(item.name))}</span></button>`).join('')}</div>`
   }
   if (series.phase === 'swap') controls += `<p>스왑은 30초입니다. 역할 번호를 바꿉니다.</p><input id="swap-a" value="0"/><input id="swap-b" value="1"/><button class="act" id="swap">스왑</button>`
   if (series.phase === 'feedback') controls += `<input id="note" maxlength="300" placeholder="세트 피드백"/><button class="act" id="note-save">전달</button>`
@@ -497,7 +519,15 @@ async function match(id) {
   document.querySelectorAll('[data-choice]').forEach(button => button.onclick = () => api('/draft-choice', {id, category:button.dataset.choice, value:button.dataset.value, manual:true}).then(() => draw()).catch(error => alert(error.message)))
   const pick = document.getElementById('pick')
   if (pick) pick.onclick = () => api('/draft-action', {id, champion:document.getElementById('champ').value.trim(), version:series.draft_version}).then(() => draw()).catch(error => alert(error.message))
-  document.querySelectorAll('[data-champ]').forEach(button => button.onclick = () => { document.getElementById('champ').value = button.dataset.champ })
+  document.querySelectorAll('[data-champ]').forEach(button => button.onclick = () => {
+    document.getElementById('champ').value=button.dataset.champ
+    document.getElementById('selected-champion').textContent=button.dataset.name
+    document.querySelectorAll('[data-champ]').forEach(c=>c.classList.toggle('selected',c===button))
+  })
+  const championFilter=document.getElementById('champion-pick-filter')
+  if(championFilter)championFilter.oninput=()=>document.querySelectorAll('[data-champ]').forEach(button=>{
+    button.hidden=!((button.dataset.name+' '+button.dataset.champ).toLowerCase().includes(championFilter.value.toLowerCase()))
+  })
   const auto = document.getElementById('auto')
   if (auto) auto.onclick = () => api('/draft-auto', {id, version:series.draft_version}).then(() => draw()).catch(error => alert(error.message))
   const swap = document.getElementById('swap')

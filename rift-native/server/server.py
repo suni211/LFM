@@ -129,6 +129,17 @@ class Handler(BaseHTTPRequestHandler):
                 if not 1<=season<=10000:raise ValueError('invalid season')
                 return self.reply(200,qualification.snapshot(db,season))
             if url.path=='/manager-profile': return self.reply(200,manager_identity.view(db,uid))
+            if url.path=='/club-brandings':
+                # Public club visual identity only. Uploaded game-club images are
+                # display assets, while emblem and acronym are fallback details.
+                brandings={}
+                for league,name,short,color,emblem,logo_data in db.execute(
+                    """SELECT p.league,c.name,b.short,b.color,b.emblem,b.logo_data
+                    FROM club_branding b JOIN careers c ON c.id=b.career_id
+                    JOIN club_profiles p ON p.career_id=c.id"""):
+                    brandings[league+'\\n'+name]=dict(
+                        short=short,color=color,emblem=emblem,logo_data=logo_data)
+                return self.reply(200,{'brandings':brandings})
             if url.path=='/clubs':
                 directory=clubs.directory(db)
                 for club in directory:

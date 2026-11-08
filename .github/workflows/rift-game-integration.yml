@@ -56,4 +56,4 @@ jobs:
       - name: Player FM dossier attributes and recorded match analytics
         run: python3 -m unittest discover -s rift-native/tests -p 'test_player_dossier.py' -v
       - name: Validate calendars, read-only operator clock and seasonal honors
-        run: cd rift-native/server && python -m unittest test_season_awards test_season_calendar test_season_structure test_player_economy test_renewal_access test_fan_variety test_lineup_readiness -v
+        run: cd rift-native/server && python -m unittest test_season_awards test_season_calendar test_season_structure test_player_economy test_renewal_access test_fan_variety test_lineup_readiness test_draft_swap_identity -v

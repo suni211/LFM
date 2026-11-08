@@ -806,10 +806,30 @@ async function competition(selected='') {
   await topbar()
 }
 async function dataHub() {
-  const current = await requireCareer(); if (!current) return
-  const data = await api('/analytics?id=' + current.id + '&season=' + current.season)
-  shell(`<div class="panel"><h2>데이터</h2><p>세트 ${data.sets} · 시리즈 ${data.series}</p>${(data.players || []).map(player => `<div class="row">${esc(player.name)} ${player.games}경기 ${player.kills}/${player.deaths}/${player.assists} 평점 ${player.rating}</div>`).join('') || '<p>끝난 경기 기록이 없습니다.</p>'}</div>`, '/app/data')
-  await topbar()
+ const current=await requireCareer();if(!current)return
+ await loadChampionMeta()
+ const data=await api('/analytics?id='+current.id+'&season='+current.season)
+ const champs=data.champions||[]
+ const tiles=champs.map(c=>'<div class="champ-meta-card">'+championIcon(c.champion)+
+  '<div class="champ-meta-name"><b>'+esc(championKo(c.champion))+'</b><small>픽 '+c.games+' · 밴 '+c.bans+'</small></div>'+
+  '<div class="champ-meta-tier tier-'+esc(c.tier)+'">'+esc(c.tier)+'</div>'+
+  '<div class="champ-meta-figures"><div><small>승률</small><b>'+(c.win_rate==null?'기록 없음':c.win_rate+'%')+'</b></div>'+
+   '<div><small>픽률</small><b>'+c.pick_rate+'%</b></div><div><small>밴률</small><b>'+c.ban_rate+'%</b></div></div>'+
+  '<div class="champ-meter"><span style="width:'+Math.min(100,Number(c.presence)||0)+'%"></span></div>'+
+  '<small>'+esc(c.tier_source||'')+'</small></div>').join('')
+ const maxBan=Math.max(1,...champs.map(c=>c.bans))
+ const bands=champs.filter(c=>c.bans>0).sort((a,b)=>b.bans-a.bans).slice(0,8).map(c=>
+   '<div class="champ-ban-row">'+championIcon(c.champion)+'<span>'+esc(championKo(c.champion))+'</span>'+
+   '<div class="champ-ban-bar"><span style="width:'+(c.bans/maxBan*100)+'%"></span></div><b>'+c.bans+'</b></div>').join('')
+ shell('<div class="page-heading"><div><p class="eyebrow">CHAMPION DATA LAB</p><h1>챔피언 메타·픽밴 분석</h1><p>게임 내 수집 경기 기준 · '+esc(data.patch||CHAMP_PATCH)+' 패치</p></div><a class="act" href="/app/solo">지역별 솔로랭크 500위 보기</a></div>'+
+  '<div class="fm-league-metrics"><div><small>분석 시리즈</small><strong>'+data.series+'</strong></div><div><small>게임 세트</small><strong>'+data.sets+'</strong></div><div><small>기준 패치</small><strong>'+esc(data.patch||CHAMP_PATCH)+'</strong></div></div>'+
+  '<div class="data-hub-layout"><section class="panel"><h2>챔피언 티어·승률·픽률·밴률</h2>'+
+   '<p class="muted-note">'+esc(data.sample_notice||'리그 전체가 아닌 내 경기 데이터입니다.')+'</p>'+
+   (tiles?'<div class="champ-meta-grid">'+tiles+'</div>':'<p class="empty">아직 완료한 경기가 없습니다. 경기 결과가 누적되면 실제 게임 내 픽·밴 통계가 표시됩니다.</p>')+'</section>'+
+   '<section class="panel"><h2>가장 많이 밴한 챔피언</h2>'+(bands||'<p class="empty">밴 기록이 없습니다.</p>')+
+   '<h2>솔로랭크 랭킹</h2><p>KR · CN · EUW · NA 등 지역별 500위 랭킹과 내 구단 선수별 순위를 확인하세요.</p>'+
+   '<a class="act" href="/app/solo">개인 랭크 데이터 이동</a></section></div>','/app/data')
+ await topbar()
 }
 async function community(postId) {
   const current = await requireCareer(); if (!current) return

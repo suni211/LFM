@@ -8041,6 +8041,186 @@
       "evidence_type": "individual-player-page-country-or-birthplace",
       "citizenship_verified": true,
       "identity_match": "specific nickname and matching real person"
+    },
+    "5928829b161a56acb9a5": {
+      "code": "BR",
+      "name": "브라질",
+      "source": "https://liquipedia.net/leagueoflegends/GUIGO",
+      "verified_on": "2026-11-08",
+      "evidence_type": "public-profile-nationality",
+      "citizenship_verified": false,
+      "identity_match": "player ID + documented nickname, full identity and 2026 team",
+      "reviewed_nickname": "Guigo"
+    },
+    "dfa2d4d9bbd61229f7ff": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://liquipedia.net/leagueoflegends/Raptor",
+      "verified_on": "2026-11-08",
+      "evidence_type": "public-profile-nationality",
+      "citizenship_verified": false,
+      "identity_match": "player ID + documented nickname, full identity and 2026 team",
+      "reviewed_nickname": "Raptor"
+    },
+    "ec67712d24425fb88757": {
+      "code": "AR",
+      "name": "아르헨티나",
+      "source": "https://liquipedia.net/leagueoflegends/Josedeodo",
+      "verified_on": "2026-11-08",
+      "evidence_type": "public-profile-nationality",
+      "citizenship_verified": false,
+      "identity_match": "player ID + documented nickname, full identity and 2026 team",
+      "reviewed_nickname": "Josedeodo"
+    },
+    "87473de5e25e718a74d3": {
+      "code": "ES",
+      "name": "스페인",
+      "source": "https://liquipedia.net/leagueoflegends/Gaax",
+      "verified_on": "2026-11-08",
+      "evidence_type": "public-profile-nationality",
+      "citizenship_verified": false,
+      "identity_match": "player ID + documented nickname, full identity and 2026 team",
+      "reviewed_nickname": "Gaax"
+    },
+    "a8cc1eb7c5eb4d6efba0": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://liquipedia.net/leagueoflegends/Soboro",
+      "verified_on": "2026-11-08",
+      "evidence_type": "public-profile-nationality",
+      "citizenship_verified": false,
+      "identity_match": "player ID + documented nickname, full identity and 2026 team",
+      "reviewed_nickname": "Soboro"
+    },
+    "fcb3efd0724733512924": {
+      "code": "TW",
+      "name": "대만",
+      "source": "https://liquipedia.net/leagueoflegends/Rest",
+      "verified_on": "2026-11-08",
+      "evidence_type": "public-profile-nationality",
+      "citizenship_verified": false,
+      "identity_match": "player ID + documented nickname, full identity and 2026 team",
+      "reviewed_nickname": "Rest"
+    },
+    "d34361b80378e6d9797c": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://liquipedia.net/leagueoflegends/Kingen",
+      "verified_on": "2026-11-08",
+      "evidence_type": "public-profile-nationality",
+      "citizenship_verified": false,
+      "identity_match": "player ID + documented nickname, full identity and 2026 team",
+      "reviewed_nickname": "Kingen"
+    },
+    "67362743c3e782e9c047": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://liquipedia.net/leagueoflegends/Quad",
+      "verified_on": "2026-11-08",
+      "evidence_type": "public-profile-nationality",
+      "citizenship_verified": false,
+      "identity_match": "player ID + documented nickname, full identity and 2026 team",
+      "reviewed_nickname": "Quad"
+    },
+    "d49fd9b9198fdca34761": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://liquipedia.net/leagueoflegends/BAO",
+      "verified_on": "2026-11-08",
+      "evidence_type": "public-profile-nationality",
+      "citizenship_verified": false,
+      "identity_match": "player ID + documented nickname, full identity and 2026 team",
+      "reviewed_nickname": "BAO"
+    },
+    "c72bd3f1365d92c8dfa4": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://liquipedia.net/leagueoflegends/Willer",
+      "verified_on": "2026-11-08",
+      "evidence_type": "public-profile-nationality",
+      "citizenship_verified": false,
+      "identity_match": "player ID + documented nickname, full identity and 2026 team",
+      "reviewed_nickname": "Willer"
+    },
+    "5f0a914b2a49fffbd456": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://liquipedia.net/leagueoflegends/Peter_(Korean_player)",
+      "verified_on": "2026-11-08",
+      "evidence_type": "public-profile-nationality",
+      "citizenship_verified": false,
+      "identity_match": "player ID + documented nickname, full identity and 2026 team",
+      "reviewed_nickname": "Peter"
+    },
+    "6023a64d41eee75e80e7": {
+      "code": "CN",
+      "name": "중국",
+      "source": "https://liquipedia.net/leagueoflegends/Haichao",
+      "verified_on": "2026-11-08",
+      "evidence_type": "public-profile-nationality",
+      "citizenship_verified": false,
+      "identity_match": "player ID + documented nickname, full identity and 2026 team",
+      "reviewed_nickname": "haichao"
+    },
+    "b220140e0f4678c5c8e5": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://liquipedia.net/leagueoflegends/Lehends",
+      "verified_on": "2026-11-08",
+      "evidence_type": "public-profile-nationality",
+      "citizenship_verified": false,
+      "identity_match": "player ID + documented nickname, full identity and 2026 team",
+      "reviewed_nickname": "Lehends"
+    },
+    "c233d32d0f8bb51b631f": {
+      "code": "TR",
+      "name": "튀르키예",
+      "source": "https://liquipedia.net/leagueoflegends/GaKGoS",
+      "verified_on": "2026-11-08",
+      "evidence_type": "public-profile-nationality",
+      "citizenship_verified": false,
+      "identity_match": "player ID + documented nickname, full identity and 2026 team",
+      "reviewed_nickname": "Gakgos"
+    },
+    "d52cefa9063f51a38923": {
+      "code": "PT",
+      "name": "포르투갈",
+      "source": "https://liquipedia.net/leagueoflegends/Rhuckz",
+      "verified_on": "2026-11-08",
+      "evidence_type": "public-profile-nationality",
+      "citizenship_verified": false,
+      "identity_match": "player ID + documented nickname, full identity and 2026 team",
+      "reviewed_nickname": "Rhuckz"
+    },
+    "66ca733f725dc982d19c": {
+      "code": "GB",
+      "name": "영국",
+      "source": "https://liquipedia.net/leagueoflegends/Maxlore",
+      "verified_on": "2026-11-08",
+      "evidence_type": "public-profile-nationality",
+      "citizenship_verified": false,
+      "identity_match": "player ID + documented nickname, full identity and 2026 team",
+      "reviewed_nickname": "Maxlore"
+    },
+    "2a630b29e6f578ff80be": {
+      "code": "KR",
+      "name": "대한민국",
+      "source": "https://liquipedia.net/leagueoflegends/Calix_(Seon_Hyeon-bin)",
+      "verified_on": "2026-11-08",
+      "evidence_type": "public-profile-nationality",
+      "citizenship_verified": false,
+      "identity_match": "player ID + documented nickname, full identity and 2026 team",
+      "reviewed_nickname": "Calix"
+    },
+    "e42bf5665f5992054409": {
+      "code": "BR",
+      "name": "브라질",
+      "source": "https://liquipedia.net/leagueoflegends/Luuukz",
+      "verified_on": "2026-11-08",
+      "evidence_type": "public-profile-nationality",
+      "citizenship_verified": false,
+      "identity_match": "player ID + documented nickname, full identity and 2026 team",
+      "reviewed_nickname": "Luuukz"
     }
   },
   "country_or_birthplace_accepted": true

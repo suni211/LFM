@@ -127,3 +127,25 @@ def weekly(db,season,week):
                         [dict(kind='team',entity=host),dict(kind='player',entity=person['id'])])
     db.execute('INSERT OR IGNORE INTO stove_weeks VALUES(?,?)',(season,week))
     prune(db)
+
+
+def feed(db,league='',limit=150):
+    """Rumors are always unconfirmed; never mix with completed signings."""
+    if not isinstance(league,str) or len(league)>100:
+        raise ValueError('invalid league')
+    if type(limit) is not int or not 1<=limit<=500:
+        raise ValueError('invalid page size')
+    sql='''SELECT id,league,event_key,season,week,headline,body,subjects
+        FROM league_rumors WHERE headline!='' '''
+    params=[]
+    if league:
+        sql+='AND league=? '
+        params.append(league)
+    sql+='ORDER BY season DESC,week DESC,id DESC LIMIT ?'
+    params.append(limit)
+    return [dict(zip(('id','league','event_key','season','week','headline','body','subjects'),row),
+                 status='rumor',confirmed=False)
+            for row in (
+                (id_,comp,key,season,week,headline,body,json.loads(subjects))
+                for id_,comp,key,season,week,headline,body,subjects in db.execute(sql,params)
+            )]

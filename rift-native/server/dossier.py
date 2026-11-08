@@ -64,7 +64,7 @@ def front_office(staff,manager=None,owner=None):
         entries.append(dict(name=manager['name'],role='감독',role_key='MANAGER',
             source=manager.get('source','game'),person_id=manager.get('person_id'),
             nationality_name_ko=manager.get('nationality_name_ko'),
-            nationality_code=manager.get('nationality_code')))
+            nationality_code=manager.get('nationality_code'),source_url=manager.get('source_url')))
     for person in staff:
         if manager and person.get('id')==manager.get('person_id'):
             continue
@@ -87,7 +87,8 @@ def front_office(staff,manager=None,owner=None):
         entries.append(dict(id=person.get('id'),name=catalog.display(person),
             role=label,role_key=key,source='real' if person.get('real_person') else 'generated',
             nationality_name_ko=person.get('nationality_name_ko'),
-            nationality_code=person.get('nationality_code'),nationality=person.get('nationality')))
+            nationality_code=person.get('nationality_code'),nationality=person.get('nationality'),
+            source_url=person.get('staff_role_source')))
     order={'OWNER':0,'EXECUTIVE':1,'MANAGER':2,'HEAD_COACH':3,'COACH':4,'GM':5,
            'ANALYST':6,'DOCTOR':7,'COMMUNITY':8}
     return sorted(entries,key=lambda item:(order.get(item['role_key'],10),item['name']))
@@ -100,6 +101,7 @@ def view(db, user, league, team):
         import recruitment
         rows=recruitment.view(db,career['id'])['people']
         rows=[dict(p,display_name=catalog.display(p)) for p in rows if p.get('assignment') not in ('candidate','departed')]
+    rows=leadership.annotate_verified_staff(league,team,rows)
     def academy_player(p):return p.get('assignment')=='academy' if p.get('assignment') else p.get('squad')=='academy'
     players=[p for p in rows if p.get('kind')=='player' and not academy_player(p)]
     academy=[p for p in rows if p.get('kind')=='player' and academy_player(p)]

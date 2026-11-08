@@ -35,6 +35,10 @@ jobs:
             rift-native/nationality-gap.csv
       - name: Check existing-VM deploy Bash syntax
         run: bash -n rift-native/deploy/gcp/install-vm.sh
+      - name: Install Python match engine dependency
+        run: python3 -m pip install 'pillow>=10,<13'
+      - name: Validate real match engine, saved sets and replay bridge
+        run: cd rift-native/server && python -m unittest test_match_engine_bridge -v
       - name: Validate browser JavaScript
         run: node --check rift-native/web/app.js
       - name: Franchise sponsor and team identity checks

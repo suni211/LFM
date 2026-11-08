@@ -597,7 +597,7 @@ class Handler(BaseHTTPRequestHandler):
         assets,web=self.roots()
         if path.startswith('/media/'):
             rel=path[len('/media/'):]
-            if '..' in rel.split('/') or not (rel.startswith(('portraits/','clubs/')) or rel in ('club-assets.json','club-colors.json','league-logos.json')):
+            if '..' in rel.split('/') or not (rel.startswith(('portraits/','clubs/')) or rel in ('club-assets.json','club-colors.json','league-logos.json','replay-map.png')):
                 self.reply(404,{'error':'not found'}); return True
             target=assets/rel
             if not target.is_file():

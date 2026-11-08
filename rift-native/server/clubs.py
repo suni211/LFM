@@ -54,10 +54,14 @@ def directory(db):
     board.sort(key=lambda row:(row['league'],row['team']))
     return board
 
-def grant(db,user,career):
-    role='viewer' if human_owner(db,career) else 'admin'
+def grant(db,user,career,read_only=False):
+    # Operators can inspect any club without occupying a human manager seat.
+    role='viewer' if read_only or human_owner(db,career) else 'admin'
     current=db.execute('SELECT role FROM members WHERE career_id=? AND user_id=?',(career,user)).fetchone()
     if current:
+        if read_only and current[0]!='viewer':
+            db.execute("UPDATE members SET role='viewer' WHERE career_id=? AND user_id=?",(career,user))
+            return 'viewer'
         if current[0]=='admin' or role=='viewer': return current[0]
         db.execute("UPDATE members SET role='admin' WHERE career_id=? AND user_id=?",(career,user))
         return 'admin'

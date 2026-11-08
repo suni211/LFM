@@ -28,6 +28,8 @@ def game_clubs(db):
         JOIN careers c ON c.id=r.career_id JOIN club_profiles p ON p.career_id=c.id WHERE r.assignment!='departed' '''):
         changes[pid]=(team,league,role,squad)
     if db.execute("SELECT 1 FROM sqlite_master WHERE name='person_ownership'").fetchone():
+        for pid, in db.execute("SELECT person_id FROM person_ownership WHERE career_id IS NULL AND club_key='free-agent'"):
+            changes[pid]=('','',None,None)
         for pid,team,league in db.execute('''SELECT o.person_id,c.name,p.league FROM person_ownership o
             JOIN careers c ON c.id=o.career_id JOIN club_profiles p ON p.career_id=c.id'''):
             if pid not in changes: changes[pid]=(team,league,None,None)

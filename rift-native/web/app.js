@@ -1,6 +1,7 @@
 const BASE = location.pathname.startsWith('/rift') ? '/rift' : ''
 const NAV = [
   ['홈', '/app/home', '경기'],
+  ['리그 운영', '/app/operator', '운영'],
   ['우편', '/app/inbox', '경기'],
   ['뉴스', '/app/news', '경기'],
   ['1군', '/app/squad', '선수단'],
@@ -65,15 +66,15 @@ async function career() {
   return careerCache
 }
 function shell(body,path) {
-  const categories=isOperator?[['리그 관리',['home','clubs','competition','schedule']],['인물 · 구단',['players']]]:[['구단',['home','inbox','news','finance','vision','community']],['선수단',['squad','academy','staff','medical','relations','players','solo']],['전술·훈련',['tactics','training']],['영입',['transfers','shortlist']],['대회·경기',['schedule','competition','data']],...(isOperator?[['운영',['clubs']]]:[])]
+  const categories=[['구단',['home','inbox','news','finance','vision','community']],['선수단',['squad','academy','staff','medical','relations','players','solo']],['전술·훈련',['tactics','training']],['영입',['transfers','shortlist']],['대회·경기',['schedule','competition','data']],...(isOperator?[['운영',['operator','clubs']]]:[])]
   const selected=NAV.find(n=>n[1]===path)?.[0]||'구단 관리'
   const menu=categories.map(([label,keys])=>`<details class="nav-category"><summary>${label}<span>⌄</span></summary><div class="dropdown">${keys.map(key=>{const item=NAV.find(n=>n[1]==='/app/'+key)||[key==='clubs'?(isOperator?'구단 조회':'구단 선택'):key,'/app/'+key];return `<a href="${item[1]}" class="${path===item[1]?'on':''}">${item[0]}</a>`}).join('')}</div></details>`).join('')
-  document.getElementById('app').innerHTML=`<div id="shell"><header id="masthead"><div id="top"></div><nav id="navigation"><a class="brand" href="/app/home">R/M<span>RIFT MANAGER</span></a>${menu}${isOperator?'<span class="account-link">운영자 · 구단 운영 불가</span>':'<a class="account-link" href="/app/manager">감독 프로필</a>'}<button id="logout" aria-label="로그아웃">로그아웃</button></nav></header><main id="view" aria-label="${esc(selected)}">${body}</main></div>`
+  document.getElementById('app').innerHTML=`<div id="shell"><header id="masthead"><div id="top"></div><nav id="navigation"><a class="brand" href="/app/home">R/M<span>RIFT MANAGER</span></a>${menu}${isOperator?'<span class="account-link">운영자 · 관전 모드</span>':'<a class="account-link" href="/app/manager">감독 프로필</a>'}<button id="logout" aria-label="로그아웃">로그아웃</button></nav></header><main id="view" aria-label="${esc(selected)}">${body}</main></div>`
   document.getElementById('logout').onclick=()=>{localStorage.removeItem('rift-token');localStorage.removeItem('rift-career');careerCache=null;location.href=BASE+'/'}
 }
 async function topbar() {
-  const current=isOperator?null:await career();const world=await api('/world');const bar=document.getElementById('top');if(!bar)return
-  const league=current?.club_profile?.league||'',name=isOperator?'리그 운영':current?.name||'구단 선택'
+  const current=await career();const world=await api('/world');const bar=document.getElementById('top');if(!bar)return
+  const league=current?.club_profile?.league||'',name=current?.name||(isOperator?'리그 운영':'구단 선택')
   document.documentElement.style.setProperty('--team',teamColor(league,name))
   const fixtures=current?(await api('/fixtures?id='+current.id)).fixtures:[]
   const due=(fixtures||[]).find(g=>g.state==='queued')
@@ -100,10 +101,29 @@ function login() {
   document.getElementById('in').onclick = event => { event.preventDefault(); send('/login') }
   document.getElementById('up').onclick = event => { event.preventDefault(); send('/register') }
 }
-async function operatorDesk(path='/app/home') {
-  const data=await api('/operator/world'),q=data.qualification
-  const fixtures=data.fixtures.map(g=>`<tr><td>${g.season}시즌 ${g.week}주</td><td>${esc(g.competition)} · ${esc(g.stage)}</td><td>${esc(g.team)} vs ${esc(g.opponent)}</td><td>BO${g.best_of}</td><td>${esc({scheduled:'예정',queued:'진행 중',finished:'종료',failed:'처리 확인 필요'}[g.state]||g.state)}</td></tr>`).join('')
-  shell(`<div class="page-heading"><div><p class="eyebrow">LEAGUE OPERATIONS</p><h1>${path==='/app/schedule'?'전체 경기 일정':'리그 운영 현황'}</h1><p>운영자 전용 · 팀을 맡거나 선수단·전술을 조작할 수 없습니다.</p></div></div><div class="grid3"><section class="panel"><h2>온라인 리그</h2><b>${data.world.season}시즌 ${data.world.week}주</b></section><section class="panel"><h2>구단</h2><b>${data.clubs.length}개 · 유저 구단 ${data.clubs.filter(c=>c.kind==='user').length}개</b></section><section class="panel"><h2>등록 경기</h2><b>${data.fixtures.length}경기</b></section></div><section class="panel"><h2>국제대회 일정</h2>${q.events.map(e=>`<div class="event-card"><b>${esc(e.name)} · ${e.entrants}팀</b><p>${esc(e.start)} ~ ${esc(e.end)}</p><small>${esc(e.format)}</small></div>`).join('')}</section><section class="panel"><h2>서버에 등록된 경기 일정</h2>${fixtures?`<div class="table-scroll"><table><thead><tr><th>시즌 · 주차</th><th>대회</th><th>대진</th><th>방식</th><th>상태</th></tr></thead><tbody>${fixtures}</tbody></table></div>`:'<p class="empty">아직 생성된 경기 일정이 없습니다.</p>'}</section><p><a class="act" href="/app/competition">리그 순위·출전권 보기</a> · <a href="/app/clubs">구단 조회</a></p>`,path)
+async function operatorDesk() {
+  const [data,calendar,competition]=await Promise.all([
+    api('/operator/world'),
+    api('/season-calendar?league=LCK'),
+    api('/competitions?id=0&league=LCK')
+  ])
+  const upcoming=calendar.fixtures.filter(g=>g.week>=data.world.week).slice(0,12)
+  const matchups=upcoming.map(g=>'<div class="row"><b>'+esc(g.season)+'시즌 '+esc(g.week)+'주</b><span>'+esc(g.home)+' vs '+esc(g.away)+'</span><small>BO'+g.best_of+'</small></div>').join('') || '<p>예정 대진이 없습니다.</p>'
+  const newsCards=(data.qualification.events||[]).map(e=>'<div class="event-card"><b>'+esc(e.name)+'</b><p>'+esc(e.start)+' ~ '+esc(e.end)+'</p><small>'+esc(e.format)+'</small></div>').join('')
+  const summary='<div class="page-heading"><div><p class="eyebrow">RIFT MANAGER · ONLINE WORLD</p><h1>리그 대시보드</h1><p>일반 유저와 같은 최신 화면 · 운영자 전용 조회 권한</p></div><a class="text-link" href="/app/clubs">관전 구단 선택 ↗</a></div>'
+  const stats='<div class="grid3"><section class="panel"><h2>현재 시즌</h2><b>'+data.world.season+'시즌 '+data.world.week+'주차</b></section><section class="panel"><h2>리그 구단</h2><b>'+data.clubs.length+'팀</b></section><section class="panel"><h2>등록 계정</h2><b>'+data.accounts+'명</b></section></div>'
+  const main='<div class="fm-overview"><div><section class="panel"><h2>리그 순위 · LCK</h2>'+widget('standings',{standings:competition.standings,club:'',league:'LCK'})+'</section></div><div><section class="panel"><h2>이번 시즌 자동 생성 대진</h2>'+matchups+'<a class="text-link" href="/app/schedule">전체 일정 보기 ↗</a></section></div><div><section class="panel"><h2>국제대회</h2>'+newsCards+'</section></div></div>'
+  shell(summary+stats+main,'/app/operator')
+  await topbar()
+}
+async function worldSchedule(selected='') {
+  const world=worldState||await api('/world')
+  const data=await api('/season-calendar?season='+world.season+(selected?'&league='+encodeURIComponent(selected):'&league=LCK'))
+  const games=data.fixtures.map(g=>'<tr><td>'+g.season+'시즌 '+g.week+'주</td><td>'+esc(g.league)+'</td><td>'+esc(g.home)+' vs '+esc(g.away)+'</td><td>BO'+g.best_of+'</td><td>게임 생성</td></tr>').join('')
+  const heading='<div class="page-heading"><div><p class="eyebrow">LEAGUE CALENDAR</p><h1>전체 경기 일정</h1><p>정규 시즌 대진은 게임 안에서 자동 생성됩니다. 실제 공식 대회 일정과 다를 수 있습니다.</p></div></div>'
+  const filter='<section class="panel"><label for="calendar-league">리그 선택</label><select id="calendar-league">'+data.leagues.map(l=>'<option value="'+esc(l)+'" '+(l===(data.league||'LCK')?'selected':'')+'>'+esc(l)+'</option>').join('')+'</select></section>'
+  shell(heading+filter+'<section class="panel"><h2>시즌별 대진 · '+data.fixtures.length+'경기</h2><div class="table-scroll"><table><thead><tr><th>시즌 · 주차</th><th>리그</th><th>대진</th><th>방식</th><th>구분</th></tr></thead><tbody>'+games+'</tbody></table></div></section>','/app/schedule')
+  document.getElementById('calendar-league').onchange=e=>worldSchedule(e.target.value)
   await topbar()
 }
 async function managerSetup() {
@@ -120,8 +140,8 @@ async function clubs() {
   const [mine, board] = await Promise.all([api('/careers'), api('/clubs')])
   if(mine.careers.length && !isOperator)return go('/app/home')
   const open = mine.careers.map(item => `<div class="row"><button class="act" data-open="${item.id}">${esc(item.name)}</button><span>${esc(item.club_profile?.league || '')} · ${item.season}시즌 ${item.week}주 · ${item.role}</span></div>`).join('') || '<p>맡은 구단이 없습니다.</p>'
-  const take = board.clubs.filter(club=>isOperator || !club.claimed || club.kind==='ai').map(club => `<div class="row">${logoImg(club.league, club.team)}<span>${esc(club.league)} / ${esc(club.team)}</span>${isOperator?'':`<button class="act" data-team="${esc(club.team_key)}">감독 부임</button>`}<a href="/app/team/${encodeURIComponent(club.league)}/${encodeURIComponent(club.team)}">정보</a></div>`).join('')
-  document.getElementById('view').insertAdjacentHTML('beforeend', `${isOperator?'':`<div class="panel"><h2>내 구단</h2>${open}</div>`}<div class="panel"><h2>리그 구단</h2>${take}</div>`)
+  const take = board.clubs.filter(club=>isOperator || !club.claimed || club.kind==='ai').map(club => `<div class="row">${logoImg(club.league, club.team)}<span>${esc(club.league)} / ${esc(club.team)}</span><button class="act" data-team="${esc(club.team_key)}">${isOperator?'구단 관전':'감독 부임'}</button><a href="/app/team/${encodeURIComponent(club.league)}/${encodeURIComponent(club.team)}">정보</a></div>`).join('')
+  document.getElementById('view').insertAdjacentHTML('beforeend', `<div class="panel"><h2>${isOperator?'관전한 구단':'내 구단'}</h2>${open}</div><div class="panel"><h2>리그 구단</h2>${take}</div>`)
   document.querySelectorAll('[data-open]').forEach(button => button.onclick = () => { localStorage.setItem('rift-career', button.dataset.open); careerCache = null; go('/app/home') })
   document.querySelectorAll('[data-team]').forEach(button => button.onclick = async () => {
     try {
@@ -134,7 +154,7 @@ async function clubs() {
   await topbar()
 }
 async function requireCareer() {
-  if(isOperator)return {id:0,name:'리그 운영',season:worldState.season,week:worldState.week,role:'viewer'}
+  if(isOperator)return await career() || {id:0,name:'리그 운영',season:worldState.season,week:worldState.week,role:'viewer'}
   const current=await career();if(!current){go('/app/clubs');return null}return current
 }
 function legacyWidget(id, dash) {
@@ -288,10 +308,16 @@ async function managementPage(kind) {
   await topbar()
 }
 async function schedule() {
-  const current = await requireCareer(); if (!current) return
-  const data = await api('/fixtures?id=' + current.id)
-  shell(`<div class="panel"><h2>일정</h2>${data.fixtures.map(game => `<div class="row"><a href="/app/match/${game.id}">${game.season}시즌 ${game.week}주 ${esc(game.opponent)}</a><span>${esc(game.competition)} ${esc(game.state)}</span></div>`).join('') || '<p>일정이 없습니다.</p>'}</div>`, '/app/schedule')
-  document.querySelectorAll('a[href^="/app/match"]').forEach(link => link.addEventListener('click', event => { event.preventDefault(); go(link.getAttribute('href')) }))
+  const current=await requireCareer();if(!current)return
+  if(current.id===0)return worldSchedule()
+  const league=current.club_profile?.league||'LCK'
+  const [data,planned]=await Promise.all([
+    api('/fixtures?id='+current.id),
+    api('/season-calendar?league='+encodeURIComponent(league)+'&team='+encodeURIComponent(current.name))
+  ])
+  const recorded=(data.fixtures||[]).map(game=>'<div class="row"><a href="/app/match/'+game.id+'">'+game.season+'시즌 '+game.week+'주 · '+esc(game.opponent)+'</a><span>'+esc(game.competition)+' · '+esc({scheduled:'예정',queued:'진행 중',finished:'종료',failed:'확인 필요'}[game.state]||game.state)+'</span></div>').join('')||'<p>실행 가능한 경기가 없습니다.</p>'
+  const generated=(planned.fixtures||[]).map(game=>'<div class="row"><b>'+game.season+'시즌 '+game.week+'주</b><span>'+esc(game.home)+' vs '+esc(game.away)+'</span><small>정규 시즌 · BO'+game.best_of+'</small></div>').join('')||'<p>예정된 경기가 없습니다.</p>'
+  shell('<div class="page-heading"><div><p class="eyebrow">SEASON FIXTURES</p><h1>경기 일정</h1><p>'+esc(current.name)+' · '+esc(league)+' · '+current.season+'시즌</p></div></div><section class="panel"><h2>내 경기 · '+data.fixtures.length+'경기</h2>'+recorded+'</section><section class="panel"><h2>리그 자동 생성 대진</h2><p>게임 일정이며 실제 대회 공식 일정과는 다릅니다.</p>'+generated+'</section>','/app/schedule')
   await topbar()
 }
 async function match(id) {
@@ -506,7 +532,7 @@ async function draw() {
   }
   try {
     worldState=await api('/world');isOperator=worldState.operator===true
-    if(isOperator){careerCache=null;localStorage.removeItem('rift-career');if(path==='/app/manager')return go('/app/home');if(path==='/app/home'||path==='/'||path==='/app/schedule')return await operatorDesk(path==='/app/schedule'?path:'/app/home');if(!['/app/clubs','/app/competition','/app/players'].includes(path)&&!/^\/app\/(player|team|entity)\//.test(path))return go('/app/home')}
+    if(isOperator){const observed=await career();if(path==='/app/operator')return await operatorDesk();if(!observed&&(path==='/app/home'||path==='/'))return await operatorDesk();if(!observed&&path==='/app/schedule')return await worldSchedule();if(!observed&&!['/app/clubs','/app/competition','/app/players','/app/manager'].includes(path)&&!/^\/app\/(player|team|entity)\//.test(path))return go('/app/clubs')}
     if(!managerProfile)managerProfile=await api('/manager-profile')
     if(!isOperator && !managerProfile.complete && path!=='/app/manager')return go('/app/manager')
     if(path==='/app/manager')return await managerSetup()

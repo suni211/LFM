@@ -31,7 +31,22 @@ def hub(db,career,season):
         stats['win_rate']=round(100*stats['wins']/stats['games'],1)
         stats['kda']=round((stats['kills']+stats['assists'])/max(1,stats['deaths']),2)
         stats['rating']=round(stats.pop('rating_sum')/stats['games'],1)
-    for c in champions.values(): c['win_rate']=round(100*c['wins']/c['games'],1) if c['games'] else None
-    return dict(season=season,series=len(matches),sets=sets_played,matches=matches,
+    for c in champions.values():
+        games,bans=c['games'],c['bans']
+        c['win_rate']=round(100*c['wins']/games,1) if games else None
+        c['pick_rate']=round(100*games/max(1,sets_played),1)
+        c['ban_rate']=round(100*bans/max(1,sets_played),1)
+        c['presence']=round(100*(games+bans)/max(1,sets_played),1)
+        # Small samples should never be presented as authoritative global tiers.
+        if games>=4 and sets_played>=8:
+            impact=c['presence']*.65+c['win_rate']*.35
+            c['tier']='S' if impact>=65 else 'A' if impact>=48 else 'B' if impact>=30 else 'C'
+            c['tier_source']='자체 경기 표본'
+        else:
+            c['tier']='표본 부족'
+            c['tier_source']='내 구단 기록 부족'
+    return dict(patch='16.22.1',patch_source='Riot Data Dragon',
+                sample_notice='내 구단의 게임 내 경기 기록 기준. 실제 전 세계 승률이나 공식 메타 통계가 아닙니다.',
+                season=season,series=len(matches),sets=sets_played,matches=matches,
                 players=sorted(players.values(),key=lambda p:(-p['wins'],-p['kda'],p['id'])),
                 champions=sorted(champions.values(),key=lambda c:(-c['games'],-c['bans'],c['champion'])),source='simulation-results')

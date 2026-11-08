@@ -112,4 +112,8 @@ def complete(db, fixture, result):
         solo.record_result(db,result)
         import qualification
         qualification.observe(db,fixture,result)
+        meta=db.execute("SELECT season,competition,stage FROM fixtures WHERE id=?",(fixture,)).fetchone()
+        if meta and meta[1].casefold() in ('worlds','world championship','월즈','롤드컵') and meta[2].casefold().replace(' ','_') in ('final','finals','grand_final','grand_finals','결승'):
+            import season_awards
+            season_awards.record_worlds_final(db,meta[0])
     return bool(changed.rowcount)

@@ -3,6 +3,7 @@ import json
 import os
 from collections import defaultdict
 import nationality
+import leadership
 from pathlib import Path
 
 PEOPLE=Path(os.environ.get('RIFT_PEOPLE',Path(__file__).resolve().parent.parent/'assets'/'people.json'))
@@ -16,7 +17,15 @@ def init(db):
 def load():
     data=json.loads(PEOPLE.read_text(encoding='utf-8'))
     people=data['people']
-    people[:]=[nationality.enrich(p) for p in people]
+    # Identity and profession corrections are shared by every feature,
+    # not just the club profile: imported staff never become players.
+    staff_groups=defaultdict(list)
+    for person in people:
+        staff_groups[(person.get('league') or '',person.get('team') or '')].append(nationality.enrich(person))
+    people[:]=[
+        item for (league,team),members in sorted(staff_groups.items())
+        for item in leadership.annotate_verified_staff(league,team,members)
+    ]
     # Repair only generic *league buckets* in the game view. A bucket is not
     # a real club. The chosen destination is fictional game placement.
     aliases={'LCK 2군':'LCK CL','LCK CL 2군':'LCK CL','LDL 2군':'LDL'}
@@ -123,7 +132,7 @@ def teams():
         # Generic roster buckets are not clubs and must never appear as selectable teams.
         if not key[1] or key[1].strip().casefold() in ('ldl 2군','lck 2군','lck cl 2군','ldl reserves','lck reserves'): continue
         group=groups.setdefault(key,dict(league=key[0],team=key[1],players=0,staff=0,unclassified=0))
-        group['players' if p.get('kind')=='player' else 'staff' if p.get('kind')=='coach' else 'unclassified']+=1
+        group['players' if p.get('kind')=='player' else 'staff' if p.get('kind') in ('coach','staff') else 'unclassified']+=1
     return list(sorted(groups.values(),key=lambda row:(row['league'],row['team'])))
 
 def evaluate(db,career,person_id,ratings,form,note):

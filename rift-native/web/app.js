@@ -545,7 +545,7 @@ async function team(league,name,tab) {
   const data=await api('/club-dossier?league='+encodeURIComponent(league)+'&team='+encodeURIComponent(name))
   const idn=data.identity,s=seasonStanding(data.standing)
   const active=tab==='staff'?'front':tab
-  const tabs=[['overview','구단 개요'],['roster','1군·2군'],['front','프런트'],['finance','재정'],['matches','경기'],['news','뉴스']]
+  const tabs=[['overview','구단 개요'],['roster','1군·2군'],['front','프런트'],['finance','재정'],['matches','경기'],['news','뉴스'],['history','구단 역사'],...(isOperator?[['editor','운영자 수정']]:[])]
   const links=`<div class="tabs team-tabs">${tabs.map(([k,l])=>`<a class="${active===k?'on':''}" href="/app/team/${encodeURIComponent(league)}/${encodeURIComponent(name)}/${k}">${l}</a>`).join('')}</div>`
   const table=leagueStandingsTable(data.standings||[],league,name)
   const rowNotes=`<div class="fm-metrics"><div><small>리그 순위</small><strong>${esc(s.rank)}</strong></div><div><small>경기</small><strong>${s.played}</strong></div><div><small>승 / 패</small><strong>${s.wins}승 ${s.losses}패</strong></div><div><small>세트 득실</small><strong>${s.sets_won}:${s.sets_lost} (${s.diff>0?'+':''}${s.diff})</strong></div><div><small>담당 감독</small><strong>${esc(data.manager||'정보 미등록')}</strong></div></div>`
@@ -555,13 +555,24 @@ async function team(league,name,tab) {
   let main=''
   if(active==='overview')main=`<div class="fm-club-dashboard"><section class="panel fm-dashboard-standing"><h2>리그 순위 <a href="/app/league/${encodeURIComponent(league)}">리그 상세</a></h2>${table}</section><section class="panel fm-dashboard-squad"><h2>이번 시즌 1군 · ${teamPlayers.length}명</h2>${rosterCards}<a class="panel-link" href="/app/team/${encodeURIComponent(league)}/${encodeURIComponent(name)}/roster">전체 명단 보기</a></section><section class="panel fm-dashboard-front"><h2>프런트·코칭스태프</h2>${frontOfficePanel(data)}</section><section class="panel fm-dashboard-news"><h2>구단 뉴스</h2>${latestTeamNews(data)}</section><section class="panel fm-dashboard-finance"><h2>재정 흐름</h2>${finance}</section><section class="panel fm-dashboard-form"><h2>최근 공식 경기</h2>${resultStrip(data.recent||[])}</section></div>`
   else if(active==='roster')main=`<section class="panel"><h2>1군 선수 · ${teamPlayers.length}명</h2>${rosterTable(teamPlayers)}</section><section class="panel"><h2>2군 육성 선수 · ${(data.academy||[]).length}명</h2>${rosterTable((data.academy||[]).filter(p=>p.kind==='player'))}</section>`
-  else if(active==='front')main=`<section class="panel"><h2>프런트 및 코칭스태프</h2><p class="muted-note">선수와 구분하여 구단주, 감독, 수석코치, 코치, 단장 및 실무진을 직책별로 표시합니다.</p>${frontOfficePanel(data)}</section><section class="panel"><h2>구단 운영 정보</h2><p>담당 감독 · ${esc(data.manager||'미등록')}</p><p>구단주·운영 주체 · ${esc(data.owner||'미등록')}</p><p>대표이사·운영 대표 · ${esc(data.owner_info?.representative||'공개 정보 없음')}</p><p>담당 감독 · ${esc(data.manager||'미등록')}</p></section>`
+  else if(active==='front')main=`<section class="panel"><h2>프런트 및 코칭스태프</h2><p class="muted-note">선수와 구분하여 구단주, 감독, 수석코치, 코치, 단장 및 실무진을 직책별로 표시합니다.</p>${frontOfficePanel(data)}</section><section class="panel"><h2>구단 운영 정보</h2><p>담당 감독 · ${esc(data.manager||'미등록')}</p><p>구단주·운영 주체 · ${esc(data.owner||'미등록')}</p><p>대표이사·운영 대표 · ${esc(data.owner_info?.representative||'공개 정보 없음')}</p></section>`
   else if(active==='finance')main=`<div class="fm-club-finance"><section class="panel"><h2>재정 요약</h2>${finance}</section><section class="panel"><h2>거래 원장</h2>${(data.finances?.ledger||[]).map(n=>`<div class="row"><span>${n.season}시즌 ${n.week}주 · ${esc(n.description)}</span><b>${money(n.amount)}</b></div>`).join('')||'<p class="empty">표시할 거래 원장이 없습니다.</p>'}</section></div>`
   else if(active==='matches')main=`<section class="panel"><h2>${data.season||''}시즌 공식 경기 결과</h2>${resultStrip(data.recent||[])}</section><section class="panel"><h2>시즌 성적</h2>${rowNotes}</section>`
   else if(active==='news')main=`<section class="panel"><h2>구단 소식</h2>${latestTeamNews(data)}</section>`
+  else if(active==='history')main=clubHistoryPanel(data.history)
+  else if(active==='editor'&&isOperator)main='<section class="panel"><h2>운영자 구단 정보 수정</h2><p>구단의 원래 식별자는 유지되며, 새 이름과 로고가 화면과 향후 역사에 반영됩니다.</p><form id="operator-club-editor"><label>새 구단명<input type="text" name="name" minlength="2" maxlength="48" value="'+esc(data.display_name||name)+'" required/></label><label>대표 로고 변경(선택)<input type="file" name="logo" accept="image/png,image/jpeg,image/webp"/></label><button class="act" type="submit">구단 변경 사항 저장</button><p class="err" id="editor-error"></p></form></section>'+clubHistoryPanel(data.history)
   else return go('/app/team/'+encodeURIComponent(league)+'/'+encodeURIComponent(name)+'/overview')
-  shell(`<div class="fm-team-page"><header class="fm-team-header">${logoImg(idn.league,idn.team)}<div><p class="eyebrow">CLUB INFORMATION · ${esc(idn.league)}</p><h1>${esc(idn.team)}</h1><p>${esc(data.season||'현재')}시즌 · 1군 ${teamPlayers.length}명 · 2군 ${(data.academy||[]).length}명 · 프런트 ${(data.front_office||[]).length}명</p></div><a href="/app/league/${encodeURIComponent(league)}" class="act">${esc(league)} 리그 보기</a></header>${rowNotes}${links}${main}</div>`,'/app/team/'+encodeURIComponent(league)+'/'+encodeURIComponent(name))
+  shell(`<div class="fm-team-page"><header class="fm-team-header">${logoImg(idn.league,idn.team)}<div><p class="eyebrow">CLUB INFORMATION · ${esc(idn.league)}</p><h1>${esc(data.display_name||idn.team)}</h1><p>${esc(data.season||'현재')}시즌 · 1군 ${teamPlayers.length}명 · 2군 ${(data.academy||[]).length}명 · 프런트 ${(data.front_office||[]).length}명</p></div><a href="/app/league/${encodeURIComponent(league)}" class="act">${esc(league)} 리그 보기</a></header>${rowNotes}${links}${main}</div>`,'/app/team/'+encodeURIComponent(league)+'/'+encodeURIComponent(name))
   document.documentElement.style.setProperty('--team',idn.color||'#17324d')
+  const editor=document.getElementById('operator-club-editor')
+  if(editor)editor.onsubmit=async e=>{e.preventDefault();try{
+    const newName=editor.elements.name.value.trim()
+    const file=editor.elements.logo.files[0]
+    const update={league,team:name,name:newName}
+    if(file)update.logo_data=await readClubLogo(file)
+    await api('/operator/club-identity',update)
+    media.brandings=null;careerCache=null;draw()
+  }catch(error){document.getElementById('editor-error').textContent=error.message}}
   if(token()&&careerId())await topbar()
 }
 async function readClubLogo(file) {

@@ -399,12 +399,12 @@ function personLink(person) {
 }
 function rosterTable(people, records={}, development={}, contracts={}) {
   if(!people.length)return '<p class="empty">등록된 선수가 없습니다.</p>'
-  return `<div class="table-scroll"><table class="roster-table"><thead><tr>${['선수 얼굴 · 닉네임 / 이름','구분','소속 팀','레이팅','OVR','국적','포지션','계약금액 (연봉)','계약년도','만료'].map(t=>`<th>${t}</th>`).join('')}</tr></thead><tbody>${people.map(p=>{
-    const c=contracts[p.id],d=development[p.id],r=records[p.id];const ratings=p.game_evaluation?.ratings||p.stats;const values=ratings?Object.values(ratings).filter(Number.isFinite):[];const ovr=d?.ovr??(values.length?Math.round(values.reduce((a,b)=>a+b,0)/values.length):null)
+  return `<div class="table-scroll"><table class="roster-table"><thead><tr>${['선수 얼굴 · 닉네임 / 이름','구분','소속 팀','게임 레이팅','OVR','인지도','국적','포지션','연봉','시장가치','계약년도','만료'].map(t=>`<th>${t}</th>`).join('')}</tr></thead><tbody>${people.map(p=>{
+    const c=contracts[p.id],d=development[p.id],r=records[p.id],eco=p.economics||{};const ratings=p.game_evaluation?.ratings||p.stats;const values=ratings?Object.values(ratings).filter(Number.isFinite):[];const ovr=d?.ovr??(values.length?Math.round(values.reduce((a,b)=>a+b,0)/values.length):null)
     const start=c?.start_turn?`${2026+Math.floor((c.start_turn-1)/104)}년 · ${Math.floor((c.start_turn-1)/104)+1}시즌`:'미기록'
     const expiry=c?`${2026+Math.floor((c.end_turn-1)/104)}년 · ${Math.floor((c.end_turn-1)/104)+1}시즌 ${((c.end_turn-1)%104)+1}주`:p.contract_end||'확인 중'
     const group=p.kind==='player'?(p.real_person?'실존 선수':'생성 선수'):(p.real_person?'실존 프런트':'생성 프런트');const assignment=rosterStatus(p)
-    return `<tr><td>${personLink(p)}</td><td><span class="identity-tag ${p.real_person?'real':'generated'}">${group}</span><small>${esc(assignment)}</small></td><td>${logoImg(p.league,p.team)}${esc(p.team||'무소속')}</td><td>${r?.rating!=null?`<b class="rating">${Number(r.rating).toFixed(1)}</b><small>${r.games}경기</small>`:'기록 없음'}</td><td><b>${ovr??'미평가'}</b></td><td>${flagAndCountry(p)}</td><td>${esc(ROLE[p.role]||'확인 중')}</td><td>${money(c?.annual_salary??p.salary)}${c||p.salary_estimated?'<small>게임 계약</small>':''}</td><td>${start}</td><td>${esc(expiry)}${!c&&p.contract_estimated?'<small>예상</small>':''}</td></tr>`
+    return `<tr><td>${personLink(p)}</td><td><span class="identity-tag ${p.real_person?'real':'generated'}">${group}</span><small>${esc(assignment)}</small></td><td>${logoImg(p.league,p.team)}${esc(p.team||'무소속')}</td><td><b class="rating">${eco.rating??'미평가'}</b><small>${r?.rating!=null?'게임 경기 평점 '+Number(r.rating).toFixed(1):'능력·경력 평가'}</small></td><td><b>${d?.ovr??eco.ovr??ovr??'미평가'}</b></td><td><b>${eco.fame??'미평가'}</b></td><td>${flagAndCountry(p)}</td><td>${esc(ROLE[p.role]||'확인 중')}</td><td>${money(c?.annual_salary??eco.annual_salary??p.salary)}<small>${c?'실제 게임 계약':'게임 연봉 추정'}</small></td><td>${money(eco.market_value)}</td><td>${start}</td><td>${esc(expiry)}${!c&&p.contract_estimated?'<small>예상</small>':''}</td></tr>`
   }).join('')}</tbody></table></div>`
 }
 async function squad(which) {
@@ -501,11 +501,12 @@ async function managementPage(kind) {
     for(const l of ledger){balance-=Number(l.amount)||0;history.unshift({cash:balance})}
     const cash=Math.max(1,Number(data.cash)||1),budget=Math.max(0,Number(data.transfer_budget)||0)
     const payroll=Number(data.annual_payroll)||0
+    const merch=data.merchandise||{}
     body='<div class="page-heading"><h1>재정 센터</h1><p>이적 자금·현금·연봉·스폰서 수입을 시각화한 이번 시즌 회계</p></div>'+
       '<div class="finance-dash"><section class="panel"><h2>구단 유동성</h2><div class="finance-hero">'+money(data.cash)+'</div>'+
        cashGraph(history)+'<p class="muted-note">원장에 기록된 실제 게임 내 수입·지출만 사용</p></section>'+
       '<section class="panel"><h2>예산 배분</h2><div class="fm-finance-totals">'+
-      [['이적 예산',budget],['연봉 약정',payroll],['현금',cash]].map(([label,value])=>
+      [['이적 예산',budget],['연봉 약정',payroll],['굿즈 누적 순이익',Number(merch.profit)||0],['현금',cash]].map(([label,value])=>
        '<div class="finance-budget-row"><span>'+label+'</span><strong>'+money(value)+'</strong>'+
        '<div class="bar-track"><span style="width:'+Math.max(0,Math.min(100,value/cash*100))+'%"></span></div></div>').join('')+
       '</div><div class="budget-editor"><label>이적 예산 조정<input id="budget-transfer" type="number" min="0" value="'+budget+'"/></label>'+
@@ -747,7 +748,7 @@ async function player(id, tab) {
   const current=await requireCareer();if(!current)return
   const [detail,train,manage]=await Promise.all([api('/person?id='+current.id+'&person='+encodeURIComponent(id)),isOperator?Promise.resolve({players:[]}):api('/training?id='+current.id).catch(()=>({players:[]})),isOperator?Promise.resolve({}):api('/management?id='+current.id).catch(()=>({}))])
   if(tab==='overview'||tab==='stats')await loadChampionMeta()
-  const person=detail.person,scout=detail.scouting?.scout,agency=detail.scouting?.agency
+  const person=detail.person,scout=detail.scouting?.scout,agency=detail.scouting?.agency,eco=detail.person?.economics||{}
   const analysis=detail.player_analysis?.attributes||null
   const performance=detail.player_analysis?.season||null
   const statusLabel=rosterStatus(person)
@@ -783,6 +784,8 @@ async function player(id, tab) {
      '<div class="fm-player-head-stats">'+
        '<div><small>개인 솔로랭크</small><strong>'+esc(person.solo?.label||'기록 없음')+'</strong></div>'+
        '<div><small>소속 선수단</small><strong>'+esc(statusLabel)+'</strong></div>'+
+       (isPlayer?'<div><small>게임 레이팅</small><strong>'+(eco.rating??'미평가')+' / 99</strong></div>':'')+
+       (isPlayer?'<div><small>인지도</small><strong>'+(eco.fame??'미평가')+' / 100</strong></div>':'')+
        (isPlayer?'<div><small>게임 내 개별 능력</small><strong>'+
           (analysis?analysis.overall+' / 20':'평가 없음')+'</strong></div>':'')+
        (isPlayer?'<div><small>세부 평가 항목</small><strong>'+statsCount+'개</strong></div>':'')+
@@ -805,7 +808,10 @@ async function player(id, tab) {
            '<span>'+joinedText+'</span></div></section>'+
        '<section class="panel"><h2>계약 · 정보</h2><div class="fm-quickfacts">'+
          '<div><span>국적</span>'+flagAndCountry(person)+'</div>'+
-         '<div><span>연봉</span><b>'+money(contract?.annual_salary??person.salary)+'</b></div>'+
+         '<div><span>연봉</span><b>'+money(contract?.annual_salary??eco.annual_salary??person.salary)+'</b></div>'+
+         '<div><span>시장가치</span><b>'+money(eco.market_value)+'</b></div>'+
+         '<div><span>인지도</span><b>'+(eco.fame??'미평가')+' / 100</b></div>'+
+         '<div><span>굿즈 순이익 예상</span><b>'+money(eco.merch_annual_profit)+'</b></div>'+
          '<div><span>계약 종료</span><b>'+esc(person.contract_end||'확인 중')+'</b></div>'+
          '<div><span>출전 세트</span><b>'+String(performance?.games||0)+'세트</b></div>'+
          '</div></section></aside></div>'
@@ -815,8 +821,8 @@ async function player(id, tab) {
       '개별 능력은 게임 평가 모델의 추정값이고, KDA·CS·피해량은 실제로 진행된 LFM 경기만 집계합니다. '+
       '솔로랭크 전적은 프로 경기 성적에 포함하지 않습니다.</p></section>':'')
   else if(tab==='personal') main=`<section class="panel"><h2>개인 정보</h2><div class="info-pairs"><p>영문 닉네임 <b>${esc(person.nickname||'기록 없음')}</b></p><p>본명 <b>${esc(person.real_name||'기록 없음')}</b></p><p>국적 <b>${flagAndCountry(person)}</b></p><p>리그 <b>${esc(person.league||'무소속')}</b></p><p>지역 <b>${esc(person.region||person.nationality_name_ko||'정보 없음')}</b></p><p>포지션 <b>${esc(ROLE[person.role]||person.role||'정보 없음')}</b></p><p>솔로랭크 <b>${esc(person.solo?.label||'정보 없음')}</b></p></div></section>`
-  else if(tab==='contract') main=`<section class="panel"><h2>계약 및 연봉</h2><div class="info-pairs"><p>계약 종료 <b>${esc(person.contract_end||'정보 없음')}</b></p><p>게임 내 연봉 <b>${contract?money(contract.annual_salary):money(person.salary)}</b></p><p>계약 기간 <b>${contract?contract.remaining_turns+'주 남음':'구단 계약 정보 없음'}</b></p><p>현재 상태 <b>${contract?(contract.active?'계약 중':'계약 종료'):'외부 구단 또는 FA'}</b></p></div></section>`
-  else if(tab==='history') main=`<section class="panel"><h2>선수 이력</h2><p>현재 소속 ${joined}</p><p>최초 등록 구단: ${esc(person.registered_team||person.team||'정보 없음')}</p><p class="muted-note">내부 DB 출처 코드 대신 실제 경기 및 이적 기록을 표시할 예정입니다.</p></section>`
+  else if(tab==='contract') main=`<section class="panel"><h2>계약 · 연봉 · 시장가치</h2><div class="info-pairs"><p>계약 종료 <b>${esc(person.contract_end||'정보 없음')}</b></p><p>연봉 <b>${money(contract?.annual_salary??eco.annual_salary??person.salary)}</b></p><p>계약 분류 <b>${contract?'게임 내 확정 계약':'성적·인지도 기준 게임 추정'}</b></p><p>시장가치 <b>${money(eco.market_value)}</b></p><p>굿즈 연매출 예상 <b>${money(eco.merch_annual_sales)}</b></p><p>굿즈 연간 순이익 예상 <b>${money(eco.merch_annual_profit)}</b></p><p>계약 기간 <b>${contract?contract.remaining_turns+'주 남음':'구단 계약 정보 없음'}</b></p><p>현재 상태 <b>${contract?(contract.active?'계약 중':'계약 종료'):'외부 구단 또는 FA'}</b></p></div><h3>FM 게임 평가 기준</h3><p>${esc(eco.criteria?.rating||'능력치·경기 성적 기준')}</p><p>${esc(eco.criteria?.fame||'경기 출전·인지도 기준')}</p><p>${esc(eco.criteria?.salary||'성적·인지도 기준 게임 연봉 추정')}</p><p>${esc(eco.criteria?.market_value||'레이팅·인지도·굿즈 판매 기대 수익 기준')}</p></section>`
+  else if(tab==='history') main=`<section class="panel"><h2>선수 이력</h2><p>현재 소속 ${joined}</p><p>최초 등록 구단: ${esc(person.registered_team||person.team||'정보 없음')}</p><p class="muted-note">경기·이적 기록은 커리어 진행에 따라 누적됩니다.</p></section>`
   else if(tab==='report') main='<div class="report-grid">'+
      '<section class="panel scout-report-card"><p class="eyebrow">PRIVATE SCOUTING</p>'+
        '<h2>구단 스카우트 보고서</h2><p>현재 능력</p>'+scoutStars(scout?.current_stars)+
@@ -826,7 +832,7 @@ async function player(id, tab) {
        '<p>보고 신뢰도 <b>'+esc(scout?.confidence||'미평가')+'</b></p></div>'+
        '<p class="muted-note">'+esc(scout?.summary||'스카우팅 기록 없음')+'</p></section>'+
      '<section class="panel"><p class="eyebrow">ANNUAL REPORT</p><h2>기관 연례 평가</h2>'+
-       '<p>'+esc(agency?.source||'게임 내 가상 평가 기관')+'</p>'+scoutStars(agency?.current_stars)+
+       scoutStars(agency?.current_stars)+
        '<p>'+(agency?.season||'-')+'시즌 · 연 1회 발표</p>'+
        '<p class="muted-note">'+esc(agency?.summary||'아직 발표된 평가가 없습니다.')+'</p></section></div>'+
      '<div class="fm-section-head"><h2>개별 능력치 · '+(analysis?.count||0)+'개</h2>'+
@@ -895,14 +901,11 @@ function leagueStandingsTable(rows,league,currentTeam='') {
   return `<div class="table-scroll"><table class="league-table"><thead><tr><th>순위</th><th>구단</th><th>경기</th><th>승</th><th>패</th><th>세트 득실</th><th>득실차</th></tr></thead><tbody>${(rows||[]).map((r,i)=>`<tr class="${r.team===currentTeam?'mine':''}"><td>${r.rank==null?'—':r.rank}</td><td>${logoImg(league,r.team)}<a href="/app/team/${encodeURIComponent(league)}/${encodeURIComponent(r.team)}">${esc(displayTeam(league,r.team))}</a></td><td>${r.played||0}</td><td>${r.wins||0}</td><td>${r.losses||0}</td><td>${r.sets_won||0}:${r.sets_lost||0}</td><td>${(r.sets_won||0)-(r.sets_lost||0)>0?'+':''}${(r.sets_won||0)-(r.sets_lost||0)}</td></tr>`).join('')}</tbody></table></div>${(rows||[]).every(r=>!r.played)?'<p class="muted-note">아직 완료된 경기가 없습니다. 첫 경기 이후 순위가 확정됩니다.</p>':''}`
 }
 function frontOfficeCard(p) {
-  const labels={real:'실존 프런트·코칭스태프',generated:'생성 프런트·코칭스태프',verified:'출처 확인됨',simulation:'게임 내 운영진','registered-coach':'등록된 코치진',user:'유저 감독',game:'게임 내 직책'}
-  const source=labels[p.source]||'직책 등록'
-  const link=typeof p.source_url==='string'&&/^https:\/\//.test(p.source_url)?'<a class="front-source" href="'+esc(p.source_url)+'" target="_blank" rel="noopener">정보 출처</a>':''
   const role=String(p.role_key||'')
   const hasNationality=p.show_nationality!==false && role!=='OWNER' && role!=='EXECUTIVE'
   const country=hasNationality?flagAndCountry(p):''
   const details=role==='OWNER'?'구단 소유·운영 조직':role==='EXECUTIVE'?'대표자':role==='MANAGER'?'담당 감독':'프런트·코치진'
-  return '<div class="front-person"><div class="front-role">'+esc(p.role||'직책 미확인')+'</div><strong>'+esc(p.name||'정보 미등록')+'</strong>'+country+'<small>'+esc(details)+'</small><small>'+esc(source)+'</small>'+link+'</div>'
+  return '<div class="front-person"><div class="front-role">'+esc(p.role||'직책 미확인')+'</div><strong>'+esc(p.name||'정보 미등록')+'</strong>'+country+'<small>'+esc(details)+'</small></div>'
 }
 function frontOfficePanel(data) {
   const positions=[...(data.front_office||[])]
@@ -1072,8 +1075,8 @@ async function solo() {
 }
 async function transfers() {
   const current = await requireCareer(); if (!current) return
-  const [offers, activity] = await Promise.all([api('/transfer-offers?id=' + current.id), api('/transfer-activity?id=' + current.id)])
-  shell(`<div class="panel"><h2>이적 제안</h2><input id="pid" placeholder="선수 id"/><input id="salary" value="0"/><input id="fee" value="0"/><button class="act" id="quote">제안</button>${offers.offers.map(item => `<div class="row">#${item.id} ${esc(item.state)} 연봉 ${money(item.annual_salary)} 이적료 ${money(item.fee)}<button class="act" data-offer="${item.id}" data-choice="accept">수락</button><button class="act" data-offer="${item.id}" data-choice="decline">거절</button><button class="act" data-offer="${item.id}" data-choice="cancel">취소</button></div>`).join('')}</div><div class="panel"><h2>이적 기록</h2>${activity.events.map(item => `<div class="row">${esc(item.buyer_name || '')} ${money(item.fee)}</div>`).join('')}</div>`, '/app/transfers')
+  const [offers, activity,ai] = await Promise.all([api('/transfer-offers?id=' + current.id), api('/transfer-activity?id=' + current.id), api('/ai-transfer-decisions?league='+encodeURIComponent(current.club_profile?.league||'')).catch(()=>({decisions:[]}))])
+  shell(`<div class="panel"><h2>이적 제안</h2><input id="pid" placeholder="선수 id"/><input id="salary" value="0"/><input id="fee" value="0"/><button class="act" id="quote">제안</button>${offers.offers.map(item => `<div class="row">#${item.id} ${esc(item.state)} 연봉 ${money(item.annual_salary)} 이적료 ${money(item.fee)}<button class="act" data-offer="${item.id}" data-choice="accept">수락</button><button class="act" data-offer="${item.id}" data-choice="decline">거절</button><button class="act" data-offer="${item.id}" data-choice="cancel">취소</button></div>`).join('')}</div><div class="panel"><h2>AI 구단의 이적 판단</h2><p>예상 경기 기여도와 인지도·굿즈 순이익, 연봉 부담을 비교해 영입합니다.</p>${(ai.decisions||[]).slice(0,20).map(d=>'<div class="row"><b>'+esc(d.club)+' · '+esc(d.player)+'</b><span>'+esc(d.decision==='signed-free-agent'?'FA 영입 확정':'영입 관심')+'</span><small>레이팅 '+d.rating+' · 인지도 '+d.fame+' · 굿즈 예상 순이익 '+money(d.merch_profit)+' · 연봉 '+money(d.salary)+'</small></div>').join('')||'<p>AI 구단의 이적 판단 기록이 아직 없습니다.</p>'}</div><div class="panel"><h2>이적 기록</h2>${activity.events.map(item => `<div class="row">${esc(item.buyer_name || '')} ${money(item.fee)}</div>`).join('')}</div>`, '/app/transfers')
   document.getElementById('quote').onclick = () => api('/transfer-offer', {id:current.id, person:document.getElementById('pid').value.trim(), annual_salary:Number(document.getElementById('salary').value), fee:Number(document.getElementById('fee').value), years:2, pitch:'development'}).then(() => draw()).catch(error => alert(error.message))
   document.querySelectorAll('[data-offer]').forEach(button => button.onclick = () => api('/transfer-response', {id:current.id, offer:Number(button.dataset.offer), choice:button.dataset.choice}).then(() => draw()).catch(error => alert(error.message)))
   await topbar()

@@ -12,7 +12,7 @@ from collections import defaultdict
 import pandas as pd
 from import_leaguepedia_nationalities import (
     PEOPLE, ROOT, OVERRIDES, NAMES_KO, norm, same_real_name,
-    country_code,
+    country_code, name_parts,
 )
 
 URL = ("https://huggingface.co/datasets/gptilt/lol-esports-entities/"
@@ -20,15 +20,18 @@ URL = ("https://huggingface.co/datasets/gptilt/lol-esports-entities/"
 OUTPUT = ROOT/"assets"/"country-hints.json"
 REPORT = ROOT/"country-hints-report.json"
 SNAPSHOT = "2026-06 / GPTilt public figures snapshot"
+ALIASES_URL = ("https://huggingface.co/datasets/gptilt/lol-esports-entities/"
+               "resolve/main/entity_aliases/entity_aliases.parquet")
 
 
-def reconcile(people, source, official):
+def reconcile(people, source, official, aliases=()):
     by_ign=defaultdict(list)
     for p in people:
         if p.get('real_person'):
             by_ign[norm(p.get('nickname'))].append(p)
     candidates=defaultdict(list)
     unmatched=defaultdict(int)
+    by_entity={str(row.get('person_id')):row for row in source}
     for row in source:
         ign=row.get('display_name')
         fullname=row.get('canonical_name')
@@ -55,6 +58,47 @@ def reconcile(people, source, official):
                 identity_match="exact competitive nickname + equivalent real-world name",
                 dataset_snapshot=SNAPSHOT
             ))
+    # Resolve alternative spellings using TWO independent aliases referring
+    # to the same Leaguepedia entity. Never match an IGN alias alone.
+    nick_ids=defaultdict(set)
+    name_ids=defaultdict(set)
+    for alias in aliases:
+        if alias.get('entity_type')!='person' or not alias.get('alias'):
+            continue
+        pid=str(alias.get('entity_id'))
+        kind=alias.get('alias_type')
+        if kind in ('ign','other'):
+            nick_ids[norm(alias['alias'])].add(pid)
+        if kind in ('real_name','romanization'):
+            name_ids[norm(alias['alias'])].add(pid)
+            name_ids[':tokens:'+','.join(name_parts(alias['alias']))].add(pid)
+    for person in people:
+        if not person.get('real_person'):continue
+        nick=norm(person.get('nickname'))
+        name=person.get('real_name')
+        if not nick or not name:continue
+        source_ids=nick_ids[nick] & (
+            name_ids[norm(name)] |
+            name_ids[':tokens:'+','.join(name_parts(name))]
+        )
+        if len(source_ids)!=1:
+            if len(source_ids)>1:unmatched['ambiguous-alias-identity']+=1
+            continue
+        source_row=by_entity.get(next(iter(source_ids)))
+        if not source_row or not source_row.get('region'):
+            continue
+        code=country_code(source_row.get('region'))
+        if not code:continue
+        candidates[person['id']].append(dict(
+            code=code,
+            name=NAMES_KO.get(code,str(source_row['region'])),
+            source=str(source_row.get('source_url') or ''),
+            country_data_source='gptilt/Leaguepedia',
+            source_field='NationalityPrimary or Country (indistinguishable in published snapshot)',
+            citizenship_verified=False,
+            identity_match='matching IGN alias and real-name alias for one Leaguepedia person',
+            dataset_snapshot=SNAPSHOT
+        ))
     chosen={}
     conflicts=[]
     for p in people:
@@ -85,8 +129,9 @@ def main():
     people=json.loads(PEOPLE.read_text(encoding='utf-8'))['people']
     official=json.loads(OVERRIDES.read_text(encoding='utf-8')).get('people',{})
     rows=data.to_dict('records')
-    values,conflicts,skipped=reconcile(people,rows,official)
-    report=dict(total=len(people),source_rows=len(rows),matched_hints=len(values),
+    aliases=pd.read_parquet(ALIASES_URL).to_dict('records')
+    values,conflicts,skipped=reconcile(people,rows,official,aliases)
+    report=dict(total=len(people),source_rows=len(rows),alias_rows=len(aliases),matched_hints=len(values),
         citizenship_explicit=sum(bool(p.get('nationality_code') or (official.get(p['id']) or {}).get('code'))
                            for p in people),
         missing_country_hints=len(people)-len(values),

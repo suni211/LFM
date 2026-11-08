@@ -33,6 +33,8 @@ def create(db, career, season, first_week, opponents):
     if not row or season < row[1] or season == row[1] and first_week <= row[2]:
         raise ValueError('league must start in a future week')
     club = row[0]
+    league_row=db.execute('SELECT league FROM club_profiles WHERE career_id=?',(career,)).fetchone()
+    league_name=league_row[0] if league_row else 'domestic'
     teams = [club,*(name.strip() for name in opponents)]
     if len({name.casefold() for name in teams}) != len(teams):
         raise ValueError('duplicate clubs')
@@ -48,8 +50,8 @@ def create(db, career, season, first_week, opponents):
             fixture = None
             if club in (home,away):
                 fixture = db.execute(
-                    'INSERT INTO fixtures(career_id,season,week,opponent,seed) VALUES(?,?,?,?,?)',
-                    (career,season,week,away if home==club else home,secrets.randbits(31))).lastrowid
+                    'INSERT INTO fixtures(career_id,season,week,opponent,seed,competition,stage) VALUES(?,?,?,?,?,?,?)',
+                    (career,season,week,away if home==club else home,secrets.randbits(31), league_name, 'regular')).lastrowid
             db.execute('INSERT INTO league_games VALUES(?,?,?,?,?,?,NULL,NULL)',
                        (career,season,week,home,away,fixture))
     return len(schedule)

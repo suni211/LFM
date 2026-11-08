@@ -100,6 +100,9 @@ def teams():
         if not key[1]: continue
         group=groups.setdefault(key,dict(league=key[0],team=key[1],players=0,staff=0,unclassified=0))
         group['players' if p.get('kind')=='player' else 'staff' if p.get('kind')=='coach' else 'unclassified']+=1
+    import tier2_leagues
+    for club in tier2_leagues.additional():
+        groups.setdefault((club['league'],club['team']),club)
     return list(sorted(groups.values(),key=lambda row:(row['league'],row['team'])))
 
 def evaluate(db,career,person_id,ratings,form,note):

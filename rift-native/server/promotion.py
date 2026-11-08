@@ -1,91 +1,145 @@
-"""Fictional career progression with region-specific promotion gates.
+"""Hidden 3–5-year fictional franchise review. Not Riot's real promotion rules.
 
-LCS NACL promotion echoes the real guest-team qualifying route.
-LCK/LPL/LEC use clearly labeled *game-only* expansion licensing, NOT claims
-that real franchised leagues promote an academy club automatically.
-Applied at the next season boundary after a completed season, never mid-season.
+No public eligibility endpoint or thresholds: users see only resulting
+franchise news and club-history events. Historical season form is persisted.
 """
-import academy_clubs
-import catalog
-import clubs
+import hashlib
+import random
 
-ROUTES={
-    'LCK CL':dict(target='LCK',type='expansion_license',name='LCK 신규 참가 라이선스 (게임 규칙)',
-                  min_games=8,min_win_rate=.60,rank_limit=2,min_cash=40000000,min_board=65),
-    'LDL':dict(target='LPL',type='expansion_license',name='LPL 신규 참가 라이선스 (게임 규칙)',
-               min_games=8,min_win_rate=.60,rank_limit=2,min_cash=40000000,min_board=65),
-    'NACL':dict(target='LCS',type='guest_tournament',name='LCS 승격 토너먼트 게스트 시드 (게임)',
-                min_games=8,min_win_rate=.55,rank_limit=2,min_cash=25000000,min_board=55),
-    'LFL':dict(target='LEC',type='erl_invitation',name='EMEA Masters 성과 기반 LEC 특별 초청 (게임)',
-               min_games=8,min_win_rate=.65,rank_limit=1,min_cash=35000000,min_board=60),
-    'LES':dict(target='LEC',type='erl_invitation',name='EMEA Masters 성과 기반 LEC 특별 초청 (게임)',
-               min_games=8,min_win_rate=.65,rank_limit=1,min_cash=35000000,min_board=60),
-    'PRM':dict(target='LEC',type='erl_invitation',name='EMEA Masters 성과 기반 LEC 특별 초청 (게임)',
-               min_games=8,min_win_rate=.65,rank_limit=1,min_cash=35000000,min_board=60),
-    'TCL':dict(target='LEC',type='erl_invitation',name='EMEA Masters 성과 기반 LEC 특별 초청 (게임)',
-               min_games=8,min_win_rate=.65,rank_limit=1,min_cash=35000000,min_board=60),
-}
-SOURCES={
-    'LCS':'https://lolesports.com/en-US/lolesports/news/lcs-promotion-tournament-wsci',
-    'LEC':'https://lolesports.com/en-GB/news/lec-2026-format-update',
-}
+FEEDERS={'LCK':('LCK CL',),'LPL':('LDL',),'LCS':('NACL',),
+         'LEC':('LFL','LES','PRM','TCL')}
+
 def init(db):
-    db.execute("""CREATE TABLE IF NOT EXISTS club_promotions(
-        career_id INTEGER NOT NULL REFERENCES careers(id),
-        season INTEGER NOT NULL,target_league TEXT NOT NULL,
-        route TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'approved',
-        PRIMARY KEY(career_id,season))""")
+    db.executescript("""CREATE TABLE IF NOT EXISTS franchise_history(
+        league TEXT NOT NULL,team TEXT NOT NULL,season INTEGER NOT NULL,
+        position INTEGER NOT NULL,entrant_count INTEGER NOT NULL,
+        source TEXT NOT NULL,PRIMARY KEY(league,team,season));
+    CREATE TABLE IF NOT EXISTS franchise_exits(
+        league TEXT NOT NULL,team TEXT NOT NULL,season INTEGER NOT NULL,
+        replacement TEXT NOT NULL,reason TEXT NOT NULL,PRIMARY KEY(league,team));
+    CREATE TABLE IF NOT EXISTS franchise_promotions(
+        career_id INTEGER PRIMARY KEY REFERENCES careers(id),
+        previous_league TEXT NOT NULL,new_league TEXT NOT NULL,
+        season INTEGER NOT NULL,status TEXT NOT NULL DEFAULT 'approved');
+    CREATE TABLE IF NOT EXISTS franchise_announcements(
+        id INTEGER PRIMARY KEY,season INTEGER NOT NULL,league TEXT NOT NULL,
+        departing TEXT NOT NULL,arriving TEXT NOT NULL,headline TEXT NOT NULL,
+        UNIQUE(season,league,departing,arriving));""")
 
-def check(db,career):
+def active(db,league,team,season=None):
+    row=db.execute('SELECT season FROM franchise_exits WHERE league=? AND team=?',
+                   (league,team)).fetchone()
+    return not row or (season is not None and season<=row[0])
+
+def _random(*parts):
+    return random.Random(int.from_bytes(hashlib.sha256(
+        '|'.join(map(str,parts)).encode()).digest()[:8],'big'))
+
+def _yearly(db,league,season):
+    """One real scored match overrides estimated AI strength where available."""
+    import catalog, career_rules, dashboard
+    names={r['team'] for r in catalog.teams() if r['league']==league}
+    names.update(name for name, in db.execute(
+        """SELECT c.name FROM careers c JOIN club_profiles p ON p.career_id=c.id
+           WHERE p.league=?""",(league,)))
+    names={name for name in names if active(db,league,name,season)}
+    played={r['team']:r for r in dashboard.league_table(db,league,season)}
+    scores=[]
+    for name in names:
+        result=played.get(name)
+        if result and result['played']>=5:
+            score=60*result['wins']/max(1,result['played'])+min(
+                15,(result['sets_won']-result['sets_lost'])*2)
+            source='in-game-match-results'
+        else:
+            score=career_rules.club_power(league,name)*.60+_random(
+                'franchise',season,league,name).uniform(-14,14)
+            source='game-AI-estimate'
+        scores.append((score,name,source))
+    scores.sort(key=lambda item:(-item[0],item[1]))
+    for index,(_,name,source) in enumerate(scores,1):
+        db.execute("""INSERT OR IGNORE INTO franchise_history
+            (league,team,season,position,entrant_count,source) VALUES(?,?,?,?,?,?)""",
+            (league,name,season,index,len(scores),source))
+
+def _under_review(db,league,season):
+    """Only genuinely sustained bottom finishes can trigger review."""
+    names=[t for t, in db.execute(
+        'SELECT DISTINCT team FROM franchise_history WHERE league=? AND season=?',
+        (league,season))]
+    flagged=[]
+    for team in names:
+        if not active(db,league,team,season):continue
+        history=db.execute("""SELECT season,position,entrant_count FROM franchise_history
+            WHERE league=? AND team=? AND season<=? ORDER BY season DESC LIMIT 5""",
+            (league,team,season)).fetchall()
+        if len(history)<3 or any(history[i][0]!=season-i for i in range(min(3,len(history)))):
+            continue
+        bad=0
+        for year,place,size in history:
+            if size>=5 and place>=max(3,(size*7+9)//10):bad+=1
+            else:break
+        if bad<3:continue
+        # A repeatable game-board review cycle between years three and five.
+        review_at=3+_random('review',league,team).randrange(3)
+        if bad>=review_at:flagged.append((bad,history[0][1],team))
+    flagged.sort(reverse=True)
+    return [item[-1] for item in flagged]
+
+def _best_lower(db,league,season):
     import dashboard
-    row=db.execute('SELECT c.name,c.season,c.week,p.league FROM careers c JOIN club_profiles p ON p.career_id=c.id WHERE c.id=?',(career,)).fetchone()
-    if not row:raise ValueError('career not found')
-    name,season,week,league_name=row
-    rule=ROUTES.get(league_name)
-    if not rule:return dict(available=False,league=league_name,reason='해당 리그에는 LFM 승격 경로가 없습니다.')
-    # Approval possible at the final week of the season; one per season.
-    previous=db.execute('SELECT target_league,status FROM club_promotions WHERE career_id=? AND season=?',(career,season)).fetchone()
-    ranked=dashboard.league_table(db,league_name,season)
-    mine=next((r for r in ranked if r['team']==name),None)
-    games=mine['played'] if mine else 0
-    wins=mine['wins'] if mine else 0
-    rank=mine['rank'] if mine else None
-    finance=db.execute('SELECT cash,board FROM club_finances WHERE career_id=?',(career,)).fetchone()
-    cash,board=finance if finance else (0,0)
-    contract_count=db.execute('SELECT COUNT(*) FROM club_contracts WHERE career_id=? AND active=1',(career,)).fetchone()[0]
-    conditions=[
-        dict(label='시즌 종료 주차',current=week,need=104,met=week==104),
-        dict(label='공식 경기 수',current=games,need=rule['min_games'],met=games>=rule['min_games']),
-        dict(label='승률',current=round(100*wins/max(1,games),1),need=round(rule['min_win_rate']*100,1),
-             met=games>0 and wins/games>=rule['min_win_rate']),
-        dict(label='리그 순위',current=rank,need=rule['rank_limit'],met=rank is not None and rank<=rule['rank_limit']),
-        dict(label='구단 보유 현금',current=cash,need=rule['min_cash'],met=cash>=rule['min_cash']),
-        dict(label='구단주 신임',current=board,need=rule['min_board'],met=board>=rule['min_board']),
-        dict(label='프로 계약 인원',current=contract_count,need=5,met=contract_count>=5),
-    ]
-    return dict(available=True,can_apply=all(item['met'] for item in conditions) and not previous,
-                applied=bool(previous),target=rule['target'],type=rule['type'],
-                route=rule['name'],source=SOURCES.get(rule['target']),
-                game_rule=True,season=season,conditions=conditions,league=league_name)
+    choices=[]
+    for lower in FEEDERS[league]:
+        for row in dashboard.league_table(db,lower,season):
+            if row['played']<6 or row['wins']/row['played']<.5:continue
+            career=db.execute("""SELECT c.id FROM careers c JOIN club_profiles p
+                ON p.career_id=c.id WHERE p.league=? AND c.name=?""",
+                (lower,row['team'])).fetchone()
+            if not career:continue
+            cid=career[0]
+            if db.execute('SELECT 1 FROM franchise_promotions WHERE career_id=?',(cid,)).fetchone():
+                continue
+            finances=db.execute('SELECT cash FROM club_finances WHERE career_id=?',(cid,)).fetchone()
+            if not finances or finances[0]<0:continue
+            ratio=row['wins']/row['played']
+            choices.append((ratio,row['wins'],row['sets_won']-row['sets_lost'],cid,lower,row['team']))
+    choices.sort(reverse=True)
+    return choices[0] if choices else None
 
-def request(db,career):
-    state=check(db,career)
-    if not state.get('can_apply'):raise ValueError('승격 라이선스 조건을 충족하지 못했거나 이미 신청했습니다.')
-    db.execute('INSERT INTO club_promotions(career_id,season,target_league,route) VALUES(?,?,?,?)',
-               (career,state['season'],state['target'],state['type']))
-    return dict(approved=True,effective_season=state['season']+1,
-                target=state['target'],type=state['type'],game_rule=True)
+def year_end(db,season):
+    """Run once inside shared season-boundary transaction, before next year."""
+    import club_history
+    for major in FEEDERS:
+        _yearly(db,major,season)
+        departed=_under_review(db,major,season)
+        candidate=_best_lower(db,major,season) if departed else None
+        if not candidate:continue
+        _,_,_,cid,former,arriving=candidate
+        outgoing=departed[0]
+        # One new place per region/year. The real league is never modified.
+        result=db.execute("""INSERT OR IGNORE INTO franchise_exits
+            (league,team,season,replacement,reason) VALUES(?,?,?,?,?)""",
+            (major,outgoing,season,arriving,'fictional-game-franchise-review'))
+        if not result.rowcount:continue
+        db.execute("""INSERT OR REPLACE INTO franchise_promotions
+            (career_id,previous_league,new_league,season,status)
+            VALUES(?,?,?,?,?)""",(cid,former,major,season+1,'approved'))
+        headline=major+' 프랜차이즈 지각변동… '+outgoing+' 퇴장, '+arriving+' 입성'
+        db.execute("""INSERT OR IGNORE INTO franchise_announcements
+            (season,league,departing,arriving,headline) VALUES(?,?,?,?,?)""",
+            (season+1,major,outgoing,arriving,headline))
+        club_history.record(db,major,arriving,season+1,1,'promotion',
+                            headline,'시뮬레이션으로 발생한 프랜차이즈 교체')
+    return True
 
-def apply_new_season(db,new_season):
-    """Called inside the authoritative shared-week advancement transaction."""
+def apply_new_season(db,season):
     from career_rules import seed_league
-    rows=db.execute("""SELECT career_id,target_league FROM club_promotions
-        WHERE season=? AND status='approved'""",(new_season-1,)).fetchall()
-    for career,target in rows:
-        db.execute('UPDATE club_profiles SET league=? WHERE career_id=?',(target,career))
-        db.execute("UPDATE club_promotions SET status='applied' WHERE career_id=? AND season=?",
-                   (career,new_season-1))
-        # Schedule only actual catalog clubs in the new division.
-        try:seed_league(db,career,target,new_season,1)
-        except ValueError:pass
+    rows=db.execute("""SELECT career_id,previous_league,new_league FROM franchise_promotions
+        WHERE season=? AND status='approved'""",(season,)).fetchall()
+    for cid,old,new in rows:
+        db.execute('UPDATE club_profiles SET league=? WHERE career_id=?',(new,cid))
+        db.execute('UPDATE franchise_promotions SET status=? WHERE career_id=?',
+                   ('applied',cid))
+        try:seed_league(db,cid,new,season,1)
+        except (ValueError,KeyError):pass
     return len(rows)

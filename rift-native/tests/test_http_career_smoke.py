@@ -143,6 +143,21 @@ class HttpCareerSmokeTests(unittest.TestCase):
         with sqlite3.connect(self.db) as db:
             admin_id=db.execute("SELECT id FROM users WHERE name='smoke-operator'").fetchone()[0]
             db.execute("INSERT INTO league_operators(user_id) VALUES(?)",(admin_id,))
+        # One shared live turn: managers cannot vote or advance weeks anymore.
+        status,before=self.call('/world',token=token)
+        self.assertEqual(200,status,before)
+        status,forbidden=self.call('/advance',
+            dict(id=career,version=before['version']),token=token)
+        self.assertEqual(403,status,forbidden)
+        status,unchanged=self.call('/world',token=token)
+        self.assertEqual(200,status,unchanged)
+        self.assertEqual(before['version'],unchanged['version'])
+        self.assertEqual(before['week'],unchanged['week'])
+        self.assertEqual(before['season'],unchanged['season'])
+        status,admin_world=self.call('/world',token=admin_token)
+        self.assertEqual(200,status,admin_world)
+        self.assertTrue(admin_world['operator'])
+        self.assertEqual(admin_world['version'],before['version'])
         status,data=self.call('/person?id=0&person='+person_id,token=admin_token)
         self.assertEqual(200,status,data)
         self.assertTrue(data['can_edit_attributes'])
@@ -225,6 +240,26 @@ class HttpCareerSmokeTests(unittest.TestCase):
         self.assertEqual(200,status,data)
         self.assertIn('sponsor-change',{x['event'] for x in data['history']})
         self.assertIn('club-founded',{x['event'] for x in data['history']})
+        # Operator's single advance updates the world and every user's career.
+        status,before=self.call('/world',token=token)
+        self.assertEqual(200,status,before)
+        status,advanced=self.call('/operator/advance',
+            dict(version=before['version']),token=admin_token)
+        self.assertEqual(200,status,advanced)
+        self.assertTrue(advanced['advanced'])
+        self.assertEqual(before['version']+1,advanced['version'])
+        status,updated=self.call('/world',token=token)
+        self.assertEqual(200,status,updated)
+        self.assertEqual(advanced['week'],updated['week'])
+        self.assertEqual(advanced['season'],updated['season'])
+        self.assertEqual(advanced['version'],updated['version'])
+        status,manager=self.call('/careers',token=token)
+        self.assertEqual(200,status,manager)
+        self.assertEqual(advanced['week'],manager['careers'][0]['week'])
+        self.assertEqual(advanced['season'],manager['careers'][0]['season'])
+        status,conflict=self.call('/operator/advance',
+            dict(version=before['version']),token=admin_token)
+        self.assertEqual(409,status,conflict)
 
 if __name__=='__main__':
     unittest.main()

@@ -189,20 +189,20 @@ async function topbar() {
   document.documentElement.style.setProperty('--team',teamColor(league,name))
   const fixtures=current?(await api('/fixtures?id='+current.id)).fixtures:[]
   const due=(fixtures||[]).find(g=>g.state==='queued')
-  bar.innerHTML=`<div class="club-identity">${current?careerLogo(current):logoImg(league,name)}<div><b>${esc(name)}</b><small>${esc(league)} · 온라인 리그</small></div></div><div class="search-wrap"><label class="sr-only" for="global-search">통합 검색</label><input id="global-search" placeholder="선수, 스태프, 구단 검색" autocomplete="off"/><div id="search-results" hidden></div></div><div class="week"><small>현재 시즌</small><b>${world.season}시즌 ${world.week}주차</b></div>${isOperator?'<button class="continue" id="operator-advance">다음 주 진행 <span>❯❯</span></button>':`<button class="continue" id="vote">${due?'경기 진행':world.ready?'준비 완료':'다음으로'} <span>❯❯</span></button>`}`
+  bar.innerHTML=`<div class="club-identity">${current?careerLogo(current):logoImg(league,name)}<div><b>${esc(name)}</b><small>${esc(league)} · 온라인 리그</small></div></div><div class="search-wrap"><label class="sr-only" for="global-search">통합 검색</label><input id="global-search" placeholder="선수, 스태프, 구단 검색" autocomplete="off"/><div id="search-results" hidden></div></div><div class="week"><small>현재 시즌</small><b>${world.season}시즌 ${world.week}주차</b></div>${isOperator?'<button class="continue" id="operator-advance">다음 주 진행 <span>❯❯</span></button>':due?'<button class="continue" id="play-match">경기 진행 <span>❯❯</span></button>':'<button class="continue" disabled title="다음 주차와 시즌 변경은 운영자만 가능합니다.">운영자 턴 진행 대기</button>'}`
   if(isOperator)document.getElementById('operator-advance').onclick=async()=>{
     if(!confirm(world.season+'시즌 '+world.week+'주차를 완료하고 모든 구단을 다음 주로 진행할까요?'))return
     const b=document.getElementById('operator-advance');if(b)b.disabled=true
     try{await api('/operator/advance',{version:world.version});careerCache=null;worldState=null;await draw()}
     catch(e){alert(e.message);if(b)b.disabled=false}
   }
-  if(!isOperator)document.getElementById('vote').onclick=async()=>{try{if(due)return go('/app/match/'+due.id);if(!current)return go('/app/clubs');careerCache=null;const fresh=await career();await api('/advance',{id:fresh.id,version:fresh.version});careerCache=null;draw()}catch(e){alert(e.message)}}
+  if(!isOperator&&due)document.getElementById('play-match').onclick=()=>go('/app/match/'+due.id)
   const input=document.getElementById('global-search'),results=document.getElementById('search-results');let generation=0,timer
   input.oninput=()=>{const g=++generation;clearTimeout(timer);results.hidden=true;const q=input.value.trim();if(!q)return;timer=setTimeout(async()=>{try{const data=await api('/search?query='+encodeURIComponent(q));if(g!==generation||!results.isConnected)return;results.innerHTML=(data.results||[]).map(item=>{const href=item.kind==='team'?'/app/team/'+encodeURIComponent(item.league)+'/'+encodeURIComponent(item.team):item.kind==='manager'||item.kind==='owner'?'/app/entity/'+item.kind+'/'+encodeURIComponent(item.id):'/app/player/'+encodeURIComponent(item.id);return `<a href="${href}"><b>${esc(item.label)}</b><small>${esc(item.subtitle)}</small></a>`}).join('')||'<p>검색 결과가 없습니다.</p>';results.hidden=false}catch(e){if(g===generation){results.innerHTML='<p>검색을 다시 시도해 주세요.</p>';results.hidden=false}}},180)}
   input.onkeydown=e=>{if(e.key==='Escape')results.hidden=true};input.onblur=()=>setTimeout(()=>{results.hidden=true},160)
 }
 function login() {
-  document.getElementById('app').innerHTML = `<div class="entry"><section class="entry-story"><span class="entry-mark">R/M · CAREER MODE</span><h1>당신의 팀.<br><em>당신의 역사.</em></h1><p>하부 리그의 작은 구단에서 출발해 국제 무대까지 올라가세요.</p><div class="entry-facts"><span>104 WEEKS / SEASON</span><span>CLUB MANAGEMENT</span><span>ONLINE CAREER</span></div></section><form class="login" id="gate"><small>MANAGER ACCESS</small><h1>RIFT MANAGER</h1><p>감독 계정을 만들고 커리어를 시작하세요.</p><p class="err" id="err" role="alert"></p><label for="name">계정 이름</label><input id="name" autocomplete="username" maxlength="30" required placeholder="계정 ID"/><label for="password">비밀번호 · 10~128자</label><input id="password" type="password" autocomplete="current-password" minlength="10" maxlength="128" required placeholder="비밀번호"/><div class="entry-actions"><button class="act" type="button" id="in">로그인</button><button class="act" type="button" id="up">새 감독 계정 만들기</button></div><small>감독 닉네임은 가입 후 영문 2~20자로 설정합니다.</small></form></div>`
+  document.getElementById('app').innerHTML = `<div class="entry"><section class="entry-story"><span class="entry-mark">R/M · CAREER MODE</span><h1>당신의 팀.<br><em>당신의 역사.</em></h1><p>하부 리그의 작은 구단에서 출발해 국제 무대까지 올라가세요.</p><div class="entry-facts"><span>150 WEEKS / SEASON</span><span>CLUB MANAGEMENT</span><span>ONLINE CAREER</span></div></section><form class="login" id="gate"><small>MANAGER ACCESS</small><h1>RIFT MANAGER</h1><p>감독 계정을 만들고 커리어를 시작하세요.</p><p class="err" id="err" role="alert"></p><label for="name">계정 이름</label><input id="name" autocomplete="username" maxlength="30" required placeholder="계정 ID"/><label for="password">비밀번호 · 10~128자</label><input id="password" type="password" autocomplete="current-password" minlength="10" maxlength="128" required placeholder="비밀번호"/><div class="entry-actions"><button class="act" type="button" id="in">로그인</button><button class="act" type="button" id="up">새 감독 계정 만들기</button></div><small>감독 닉네임은 가입 후 영문 2~20자로 설정합니다.</small></form></div>`
   let submitting=false
   const send = async (path) => {
     if(submitting || !document.getElementById('gate').reportValidity())return
@@ -1191,18 +1191,68 @@ async function dataHub() {
    '<a class="act" href="/app/solo">개인 랭크 데이터 이동</a></section></div>','/app/data')
  await topbar()
 }
+const communityState={league:'',category:'all',page:0,query:''}
 async function community(postId) {
-  const current = await requireCareer(); if (!current) return
-  const league = current.club_profile?.league || 'LCK'
-  if (postId) {
-    const data = await api('/community-post?post=' + postId)
-    const post = data.post
-    shell(`<div class="panel"><a href="/app/community">목록</a><h2>${esc(post.title)}</h2><p>${esc(post.body || '')}</p>${(post.comments_list || []).map(comment => `<div class="row">${esc(comment.body)}</div>`).join('')}</div>`, '/app/community')
-  } else {
-    const data = await api('/community?league=' + encodeURIComponent(league))
-    shell(`<div class="panel"><h2>${esc(data.league)} 팬 게시판</h2>${data.posts.map(post => `<div class="row"><a href="/app/community/${post.id}">${esc(post.title)}</a><span>${esc(post.category_name)}</span></div>`).join('')}</div>`, '/app/community')
+  const current=await requireCareer();if(!current)return
+  const league=communityState.league||current.club_profile?.league||'LCK'
+  if(postId){
+    const data=await api('/community-post?post='+postId)
+    const p=data.post
+    const comments=(p.comments_list||[]).map(c=>
+      '<div class="row community-comment"><div><b>'+esc(c.author?.name||'팬')+'</b>'+
+      '<small> · '+esc(c.full_time||'')+'</small><p>'+esc(c.body)+'</p></div></div>').join('')
+    shell('<div class="page-heading"><div><p class="eyebrow">FAN COMMUNITY · '+esc(p.league)+'</p>'+
+      '<h1>'+esc(p.title)+'</h1><p>'+esc(p.category_name)+' · '+p.game_time+
+      ' · 작성자 '+esc(p.author?.name||'팬')+'</p></div><a class="act" href="/app/community">게시판으로</a></div>'+
+      '<section class="panel"><p>'+esc(p.body)+'</p><p class="muted-note">추천 '+p.up+
+      ' · 비추천 '+p.down+' · 조회 '+p.views+' · NPC 팬 게시글</p></section>'+
+      '<section class="panel"><h2>팬 댓글 '+(p.comments_list||[]).length+'개</h2>'+
+      (comments||'<p class="empty">아직 댓글이 없습니다.</p>')+'</section>','/app/community')
+    await topbar();return
   }
-  document.querySelectorAll('a[href^="/app"]').forEach(link => link.addEventListener('click', event => { event.preventDefault(); go(link.getAttribute('href')) }))
+  const params=new URLSearchParams({league,category:communityState.category,
+    page:String(communityState.page),query:communityState.query})
+  const data=await api('/community?'+params.toString())
+  communityState.page=data.page
+  const categories=[['all','전체'],['popular','인기'],...Object.entries(data.categories||{})]
+  const tabs=categories.map(([id,label])=>
+    '<button class="act community-chip '+(communityState.category===id?'selected':'')+
+    '" data-community-category="'+esc(id)+'">'+esc(label)+'</button>').join('')
+  const leagueChoices=(data.leagues||[]).map(l=>
+    '<option value="'+esc(l)+'" '+(l===league?'selected':'')+'>'+esc(l)+'</option>').join('')
+  const rows=(data.posts||[]).map(p=>
+    '<a class="row community-post" href="/app/community/'+p.id+'"><div>'+
+    '<small>'+esc(p.category_name)+' · '+esc(p.author?.name||'팬')+
+    ' · '+esc(p.game_time)+'</small><h3>'+esc(p.title)+'</h3></div>'+
+    '<span>추천 '+p.up+' · 댓글 '+p.comments+' · 조회 '+p.views+'</span></a>').join('')
+  shell('<div class="page-heading"><div><p class="eyebrow">FAN COMMUNITY</p>'+
+    '<h1>'+esc(league)+' 팬 게시판</h1>'+
+    '<p>경기·계약·이적·감독 결정에 따른 NPC 팬의 칭찬, 불만, 욕설, 밈, 토론. 모든 반응은 게임 내 가상 게시글입니다.</p>'+
+    '</div></div><section class="panel"><div class="row"><label>리그 선택 <select id="community-league">'+
+    leagueChoices+'</select></label><strong>게시글 '+data.total+'개</strong></div>'+
+    '<div class="community-categories">'+tabs+'</div>'+
+    '<form class="row" id="community-search"><input id="community-query" type="search" maxlength="100" placeholder="게시글 검색" value="'+esc(communityState.query)+'"/>'+
+    '<button class="act" type="submit">검색</button></form></section>'+
+    '<section class="panel"><h2>팬 반응</h2>'+
+    (rows||'<p class="empty">아직 이 조건에 맞는 게시글이 없습니다.</p>')+
+    '</section><div class="row community-pagination">'+
+    '<button class="act" id="community-prev" '+(data.page===0?'disabled':'')+'>이전</button>'+
+    '<span>'+(data.page+1)+' / '+Math.max(1,Math.ceil(data.total/data.page_size))+' 페이지</span>'+
+    '<button class="act" id="community-next" '+((data.page+1)*data.page_size>=data.total?'disabled':'')+'>다음</button>'+
+    '</div>','/app/community')
+  document.getElementById('community-league').onchange=e=>{
+    communityState.league=e.target.value;communityState.page=0;community()
+  }
+  document.querySelectorAll('[data-community-category]').forEach(button=>button.onclick=()=>{
+    communityState.category=button.dataset.communityCategory;communityState.page=0;community()
+  })
+  document.getElementById('community-search').onsubmit=e=>{
+    e.preventDefault()
+    communityState.query=document.getElementById('community-query').value.trim()
+    communityState.page=0;community()
+  }
+  document.getElementById('community-prev').onclick=()=>{communityState.page--;community()}
+  document.getElementById('community-next').onclick=()=>{communityState.page++;community()}
   await topbar()
 }
 async function draw() {
@@ -1220,7 +1270,7 @@ async function draw() {
       media.academyParents=visual.academy_parents||{}
       media.leagueLogos=await fetch(BASE+'/media/league-logos.json').then(r=>r.ok?r.json():{}).catch(()=>({}))
     }
-    if(isOperator){const observed=await career();if(path==='/app/operator')return await operatorDesk();if(path==='/app/manager')return go('/app/operator');if(!observed&&(path==='/app/home'||path==='/'))return await operatorDesk();if(!observed&&path==='/app/schedule')return await worldSchedule();if(!observed&&!['/app/clubs','/app/history','/app/players','/app/leagues','/app/sponsors','/app/competition','/app/news'].includes(path)&&!/^\/app\/(player|team|league|entity)\//.test(path))return go('/app/clubs')}
+    if(isOperator){const observed=await career();if(path==='/app/operator')return await operatorDesk();if(path==='/app/manager')return go('/app/operator');if(!observed&&(path==='/app/home'||path==='/'))return await operatorDesk();if(!observed&&path==='/app/schedule')return await worldSchedule();if(!observed&&!['/app/clubs','/app/history','/app/players','/app/leagues','/app/sponsors','/app/competition','/app/news','/app/community'].includes(path)&&!/^\/app\/(player|team|league|entity)\//.test(path))return go('/app/clubs')}
     if(!managerProfile)managerProfile=await api('/manager-profile')
     if(!isOperator && !managerProfile.complete && path!=='/app/manager')return go('/app/manager')
     if(path==='/app/manager')return await managerSetup()
@@ -1272,4 +1322,28 @@ async function draw() {
 document.addEventListener('click',event=>{const a=event.target.closest('a[href]');if(!a||event.ctrlKey||event.metaKey||event.button!==0)return;let href=a.getAttribute('href');if(href.startsWith(BASE+'/app')||href.startsWith('/app')){event.preventDefault();event.stopImmediatePropagation();document.querySelectorAll('details[open]').forEach(d=>d.open=false);go(href)}},true)
 new MutationObserver(()=>{if(!BASE)return;document.querySelectorAll('a[href^="/app"],img[src^="/media"]').forEach(el=>{const attr=el.tagName==='A'?'href':'src';el.setAttribute(attr,BASE+el.getAttribute(attr))})}).observe(document.getElementById('app'),{childList:true,subtree:true})
 window.addEventListener('popstate', draw)
+
+// A single authoritative online clock is shared by every connected account.
+// Re-check it automatically rather than requiring users to refresh the site.
+// Background tabs catch up immediately when brought back to the foreground.
+let worldSyncBusy=false
+let worldRedrawBusy=false
+async function syncGlobalTurn() {
+  if(!token()||worldSyncBusy||worldRedrawBusy)return
+  worldSyncBusy=true
+  try {
+    const fresh=await api('/world')
+    if(!worldState){worldState=fresh;return}
+    if(fresh.version===worldState.version&&fresh.season===worldState.season&&fresh.week===worldState.week)return
+    worldState=fresh
+    careerCache=null
+    worldRedrawBusy=true
+    try {await draw()} finally {worldRedrawBusy=false}
+  } catch(_error) {
+    // Offline or temporarily unavailable: retry on the next poll.
+  } finally {worldSyncBusy=false}
+}
+setInterval(syncGlobalTurn,2000)
+window.addEventListener('focus',syncGlobalTurn)
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncGlobalTurn()})
 draw()

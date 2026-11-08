@@ -230,6 +230,12 @@ class Handler(BaseHTTPRequestHandler):
                     return self.reply(200,{'messages':club_messages.inbox(db,cid,uid,before)})
                 except KeyError: return self.reply(404,{'error':'not found'})
                 except ValueError: return self.reply(400,{'error':'invalid request'})
+            if url.path=='/player-comparisons':
+                query=parse_qs(url.query)
+                cid=int(query['id'][0])
+                if not news.member(db,uid,cid): return self.reply(404,{'error':'not found'})
+                person=catalog.detail(db,cid,query['person'][0])
+                return self.reply(200,{'comparisons':scouting.compare(db,cid,person)})
             if url.path in ('/people','/person','/teams'):
                 query=parse_qs(url.query)
                 try:

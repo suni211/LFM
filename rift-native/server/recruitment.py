@@ -32,10 +32,9 @@ def generate(db,career,club):
         ('김','이','박','최','정','강','조','윤','장','임','한','오','서','신','권','황','안','송','유','홍'),
         ('민','서','도','시','지','예','준','현','하','태','수','건','진','성','재','우','승','정','찬','영'),
         ('준','윤','우','호','빈','혁','성','현','훈','원','민','진','환','겸','찬','율','영','재','수','석')) if ''.join(parts) not in used_names]
-    nicks=[''.join(parts) for parts in itertools.product(
-        ('루','라','리','레','로','시','세','소','하','해','호','유','이','아','오','누','나','노','미','모'),
-        ('온','엘','안','오','루','리','린','빈','솔','별','율','현','빛','나','노','담','람','하','로','유'),
-        ('','스','아')) if ''.join(parts).casefold() not in used_nicks]
+    prefixes=('Aero','Ash','Blue','Cinder','Dawn','Ember','Frost','Gale','Haze','Iron','Jade','Lunar','Mist','Night','Opal','Pine','Quartz','Raven','Silver','Thorn','Violet')
+    suffixes=('Arc','Bloom','Crest','Drift','Echo','Flare','Grove','Hawk','Iris','Jet','Knight','Leaf','Moon','Nova','Oath','Peak','Quill','Rise','Storm','Vale')
+    nicks=[a+b for a,b in itertools.product(prefixes,suffixes) if (a+b).casefold() not in used_nicks]
     if min(len(names),len(nicks))<60: raise ValueError('unique prospect identities exhausted')
     names=rng.sample(names,60);nicks=rng.sample(nicks,60)
     season=db.execute('SELECT season FROM careers WHERE id=?',(career,)).fetchone()[0]
@@ -44,8 +43,9 @@ def generate(db,career,club):
         salary=round((sum(ratings.values())/6)*24000/10000)*10000
         person_id='generated-'+uuid.uuid4().hex
         coach=index>=50
+        selected_league=db.execute('SELECT league FROM club_profiles WHERE career_id=?',(career,)).fetchone()[0]
         person=dict(id=person_id,real_name=names[index],display_name_ko=names[index],display_name=names[index],nickname=nicks[index],
-                    team=club,league='LCK CL',region='KR',nationality_name_ko='대한민국',
+                    team=club,league=selected_league,region='KR',nationality_name_ko='대한민국',
                     kind='coach' if coach else 'player',role='COACH' if coach else ROLES[index//10],
                     raw_role='코치' if coach else ROLES[index//10],real_person=False,
                     contract_end='시즌 '+str(season)+' 종료',contract_estimated=True,salary=salary,salary_estimated=True,
@@ -109,23 +109,40 @@ def finalize(db,career):
 
 
 def repair_generated_handles(db):
-    """Rename only legacy automatic compound handles; preserve IDs and original handles."""
+    """Migrate generated Korean nicknames to unique English handles, preserving IDs."""
     import hashlib
+    import re
     rows=db.execute('SELECT id,payload FROM generated_people').fetchall()
     used={str(p.get('nickname') or '').casefold() for p in catalog.load()['people']}
-    used.update(n for n, in db.execute('SELECT nickname_key FROM generated_people'))
-    syllables=('루','라','리','레','로','시','세','소','하','해','호','유','이','아','오','누','나','노','미','모')
-    endings=('온','엘','안','오','루','리','린','빈','솔','별','율','현','빛','나','노','담','람','하','로','유')
+    used.update(str(n).casefold() for n, in db.execute('SELECT nickname_key FROM generated_people'))
+    prefixes=('Aero','Ash','Blue','Cinder','Dawn','Ember','Frost','Gale','Haze','Iron','Jade','Lunar','Mist','Night','Opal','Pine','Quartz','Raven','Silver','Thorn','Violet')
+    suffixes=('Arc','Bloom','Crest','Drift','Echo','Flare','Grove','Hawk','Iris','Jet','Knight','Leaf','Moon','Nova','Oath','Peak','Quill','Rise','Storm','Vale')
     for pid,raw in rows:
-        p=json.loads(raw);nick=p.get('nickname','')
-        if p.get('source')!='solo-queue' or p.get('original_nickname') or not any(nick.startswith(prefix) for prefix in ('Ash','Blue','Cinder','Dawn','Ember','Frost','Gale','Haze','Iron','Jade','Lunar','Mist','Night','Opal','Pine','Quartz','Raven','Silver','Thorn','Violet')): continue
+        person=json.loads(raw)
+        old=str(person.get('nickname') or '')
+        if person.get('real_person') or re.fullmatch(r'[A-Za-z]{2,20}',old):
+            continue
         seed=int(hashlib.sha256(pid.encode()).hexdigest(),16)
         for offset in range(100000):
-            n=seed+offset;name=syllables[n%20]+endings[(n//20)%20]+('' if offset<400 else str(offset//400+1))
-            if name.casefold() not in used:break
-        used.add(name.casefold());p.update(original_nickname=nick,nickname=name,nickname_ko=name)
-        db.execute('UPDATE generated_people SET nickname_key=?,payload=? WHERE id=?',(name.casefold(),json.dumps(p,ensure_ascii=False),pid))
-        if db.execute("SELECT 1 FROM sqlite_master WHERE name='solo_ranks'").fetchone(): db.execute('UPDATE solo_ranks SET nickname=? WHERE person_id=?',(name,pid))
+            i=seed+offset
+            nick=prefixes[i%len(prefixes)]+suffixes[(i//len(prefixes))%len(suffixes)]
+            if offset>=len(prefixes)*len(suffixes):
+                # Alphabetic suffix keeps handles English-only.
+                n=offset//(len(prefixes)*len(suffixes))
+                letters=''
+                while n:
+                    n,r=divmod(n-1,26);letters=chr(65+r)+letters
+                nick+=letters
+            if nick.casefold() not in used:break
+        else: raise ValueError('generated nickname space exhausted')
+        used.add(nick.casefold())
+        person['original_nickname']=old
+        person['nickname']=nick
+        person.pop('nickname_ko',None)
+        db.execute('UPDATE generated_people SET nickname_key=?,payload=? WHERE id=?',
+                   (nick.casefold(),json.dumps(person,ensure_ascii=False),pid))
+        if db.execute("SELECT 1 FROM sqlite_master WHERE name='solo_ranks'").fetchone():
+            db.execute('UPDATE solo_ranks SET nickname=? WHERE person_id=?',(nick,pid))
 
 
 def repair_initial_pool(db):
@@ -137,4 +154,4 @@ def repair_initial_pool(db):
             candidates=[(pid,json.loads(raw)) for pid,raw in db.execute("SELECT id,payload FROM generated_people WHERE career_id=? AND assignment='candidate'",(cid,)) if json.loads(raw).get('role')==role]
             if any(solo.is_pro(db,pid) for pid,p in candidates):continue
             candidates.sort(key=lambda row:-sum((row[1].get('stats') or {}).values()))
-            for pid,p in candidates[:3]:db.execute("UPDATE solo_ranks SET path='pro',mmr=MAX(mmr,1500) WHERE person_id=?",(pid,))
+            for pid,p in candidates[:3]:db.execute("UPDATE solo_ranks SET path='pro',mmr=MAX(mmr,2800) WHERE person_id=?",(pid,))

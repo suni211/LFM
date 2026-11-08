@@ -354,33 +354,34 @@ const newsState={scope:'home',league:''}
 async function news() {
  const current=await requireCareer();if(!current)return
  const league=current.club_profile?.league||''
- if(!newsState.league)newsState.league=league
+ if(!isOperator&&!newsState.league)newsState.league=league
  const [feed,follows,board]=await Promise.all([
-   api('/news?id='+current.id+'&scope='+encodeURIComponent(newsState.scope)+'&competition='+encodeURIComponent(newsState.league)),
-   api('/follows?id='+current.id),
+   api('/news?id='+(isOperator?0:current.id)+'&scope='+encodeURIComponent(isOperator?'all':newsState.scope)+'&competition='+encodeURIComponent(newsState.league)),
+   isOperator?Promise.resolve({follows:[]}):api('/follows?id='+current.id),
    api('/clubs')
  ])
  const tracked=follows.follows||[]
  const leagues=[...new Set((board.clubs||[]).map(c=>c.league).filter(Boolean))]
  const followed=(kind,entity)=>tracked.some(f=>f.kind===kind&&f.entity===entity)
- const filterTabs=[['home','내 소식·리그 전체'],['league','리그 뉴스'],['following','팔로우 뉴스']].map(([key,title])=>
+ const filterTabs=(isOperator?[]:[['home','내 소식·리그 전체'],['league','리그 뉴스'],['following','팔로우 뉴스']]).map(([key,title])=>
    '<button class="news-filter-tab '+(newsState.scope===key?'selected':'')+'" data-news-scope="'+key+'">'+title+'</button>').join('')
- const leagueFilters=leagues.map(l=>'<div class="news-league-chip">'+
+ const leagueFilters=(isOperator?['',...leagues]:leagues).map(l=>'<div class="news-league-chip">'+
    '<button class="'+(newsState.league===l?'selected':'')+'" data-news-league="'+esc(l)+'">'+
-   leagueIcon(l)+'<b>'+esc(l)+'</b></button><button class="news-follow-toggle '+(followed('competition',l)?'following':'')+'" data-news-follow="'+esc(l)+'">'+
-   (followed('competition',l)?'팔로우 중 ✓':'＋ 팔로우')+'</button></div>').join('')
+   (l?leagueIcon(l)+'<b>'+esc(l)+'</b>':'<b>전체 리그</b>')+'</button>'+
+   (isOperator?'':'<button class="news-follow-toggle '+(followed('competition',l)?'following':'')+'" data-news-follow="'+esc(l)+'">'+
+     (followed('competition',l)?'팔로우 중 ✓':'＋ 팔로우')+'</button>')+'</div>').join('')
  const items=(feed.news||[]).map(n=>'<article class="headline-card">'+
-   '<span class="headline-category">'+(n.own_team?'내 구단 · ':n.competition+' · ')+n.season+'시즌 '+n.week+'주</span>'+
-   '<h3>'+esc(n.headline)+'</h3>'+
+   '<span class="headline-category">'+(n.own_team?'내 구단 · ':esc(n.competition)+' · ')+n.season+'시즌 '+n.week+'주</span>'+
+   '<h3>'+esc(n.headline)+'</h3>'+ (isOperator?'<p>'+esc(n.body||'')+'</p>':'')+
    '<div class="headline-footer"><span>'+esc(n.label||'게임 내 뉴스')+'</span></div></article>').join('')
  const personal=tracked.filter(f=>f.kind==='player'||f.kind==='team').map(f=>
    '<button class="followed-person" data-news-unfollow="'+esc(f.kind)+'" data-news-entity="'+esc(f.entity)+'">'+esc(f.entity)+' · 팔로우 해제 ✕</button>').join('')
- shell('<div class="page-heading"><div><p class="eyebrow">NEWSROOM</p><h1>리그 뉴스·팔로우</h1>'+
-  '<p>내 구단과 현재 리그는 항상 뉴스에 포함됩니다. 선수·구단·리그를 추가 팔로우할 수 있습니다.</p></div></div>'+
+ shell('<div class="page-heading"><div><p class="eyebrow">NEWSROOM</p><h1>'+(isOperator?'전체 리그 뉴스 · 운영자':'리그 뉴스·팔로우')+'</h1>' +
+  '<p>'+(isOperator?'모든 구단의 뉴스와 스토브리그 소식을 통합 열람합니다. 리그별로 필터링할 수 있습니다.':'내 구단과 현재 리그는 항상 뉴스에 포함됩니다. 선수·구단·리그를 추가 팔로우할 수 있습니다.')+'</p></div></div>'+
   '<div class="news-filter-tabs">'+filterTabs+'</div><div class="newsroom-grid"><section class="panel">'+
   '<h2>이번 주 헤드라인</h2><div class="news-headlines">'+(items||'<p class="empty">현재 등록된 뉴스가 없습니다. 경기를 진행하면 새로운 기사가 발행됩니다.</p>')+'</div></section>'+
-  '<aside class="panel newsroom-follows"><h2>리그 팔로우</h2><div class="league-follow-grid">'+leagueFilters+'</div>'+
-  '<h2>팔로우한 선수·구단</h2>'+(personal||'<p class="empty">선수 프로필에서 팔로우할 수 있습니다.</p>')+
+  '<aside class="panel newsroom-follows"><h2>'+(isOperator?'리그별 뉴스 조회':'리그 팔로우')+'</h2><div class="league-follow-grid">'+leagueFilters+'</div>'+
+  (isOperator?'':'<h2>팔로우한 선수·구단</h2>'+(personal||'<p class="empty">선수 프로필에서 팔로우할 수 있습니다.</p>'))+
   '</aside></div>','/app/news')
  document.querySelectorAll('[data-news-scope]').forEach(b=>b.onclick=()=>{newsState.scope=b.dataset.newsScope;news()})
  document.querySelectorAll('[data-news-league]').forEach(b=>b.onclick=()=>{newsState.league=b.dataset.newsLeague;news()})
@@ -1219,7 +1220,7 @@ async function draw() {
       media.academyParents=visual.academy_parents||{}
       media.leagueLogos=await fetch(BASE+'/media/league-logos.json').then(r=>r.ok?r.json():{}).catch(()=>({}))
     }
-    if(isOperator){const observed=await career();if(path==='/app/operator')return await operatorDesk();if(path==='/app/manager')return go('/app/operator');if(!observed&&(path==='/app/home'||path==='/'))return await operatorDesk();if(!observed&&path==='/app/schedule')return await worldSchedule();if(!observed&&!['/app/clubs','/app/history','/app/players','/app/leagues','/app/sponsors','/app/competition'].includes(path)&&!/^\/app\/(player|team|league|entity)\//.test(path))return go('/app/clubs')}
+    if(isOperator){const observed=await career();if(path==='/app/operator')return await operatorDesk();if(path==='/app/manager')return go('/app/operator');if(!observed&&(path==='/app/home'||path==='/'))return await operatorDesk();if(!observed&&path==='/app/schedule')return await worldSchedule();if(!observed&&!['/app/clubs','/app/history','/app/players','/app/leagues','/app/sponsors','/app/competition','/app/news'].includes(path)&&!/^\/app\/(player|team|league|entity)\//.test(path))return go('/app/clubs')}
     if(!managerProfile)managerProfile=await api('/manager-profile')
     if(!isOperator && !managerProfile.complete && path!=='/app/manager')return go('/app/manager')
     if(path==='/app/manager')return await managerSetup()

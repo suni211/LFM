@@ -673,6 +673,31 @@ async function schedule() {
  document.querySelectorAll('.calendar-match').forEach(a=>a.onclick=e=>{e.preventDefault();go(a.getAttribute('href'))})
  await topbar()
 }
+async function matchEngineLobby(){
+  const current=await requireCareer();if(!current)return
+  const data=await api('/fixtures?id='+current.id)
+  const games=(data.fixtures||[]).filter(g=>['queued','finished','failed'].includes(g.state))
+  const statuses={queued:'진행 중',finished:'경기 완료',failed:'매치 엔진 오류'}
+  const rows=games.slice(0,50).map(g=>{
+    const draftActive=['choice','draft_pending','draft','swap'].includes(g.series?.phase)
+    const path=draftActive?'/app/draft/'+g.id:'/app/match/'+g.id
+    const score=g.result?.score||g.series?.score
+    return '<a class="row" href="'+path+'"><div><b>'+esc(g.opponent)+'</b>'+
+      '<small>'+esc(g.competition||'리그')+' · '+g.season+'시즌 '+g.week+'주차 · BO'+g.best_of+
+      ' · '+esc(statuses[g.state])+'</small></div>'+
+      '<span>'+esc(score?score.join(' : '):draftActive?'밴픽 진행':'경기 조회')+'</span></a>'
+  }).join('')
+  shell('<div class="page-heading"><div><p class="eyebrow">PYTHON MATCH ENGINE</p>'+
+    '<h1>매치 엔진</h1><p>Python 시뮬레이터의 실제 경기 결과, 선수 기록, 녹화된 하이라이트를 조회합니다.</p></div>'+
+    '<a class="act" href="/app/draft">밴픽 센터</a></div>'+
+    '<section class="panel"><h2>경기 엔진 연결</h2>'+
+    '<p>확정된 밴픽과 선수 능력치·전술은 서버 Python 매치 워커로 전달됩니다. 경기 결과는 저장 후 자동 반영됩니다.</p>'+
+    '<p class="muted-note">이 탭은 웹 경기 기록·하이라이트 화면입니다. 별도의 Python SDL 데스크톱 중계 프로그램 자체를 웹에서 실행하는 방식은 아닙니다.</p>'+
+    '</section><section class="panel"><h2>내 구단 매치 엔진 경기 · '+games.length+'건</h2>'+
+    (rows||'<p class="empty">현재 진행 중이거나 완료된 경기가 없습니다. 운영자가 주차를 진행하면 일정에 경기가 생성됩니다.</p>')+
+    '</section>','/app/match-engine')
+  await topbar()
+}
 async function draftLobby() {
   const current=await requireCareer();if(!current)return
   const [fixtureData,preflight]=await Promise.all([
@@ -1935,6 +1960,7 @@ async function draw() {
     const leaguePath=path.match(/^\/app\/league\/(.+)$/)
     if(leaguePath)return await leagueOverview(decodeURIComponent(leaguePath[1]))
     if (path === '/app/data') return await dataHub()
+    if(path==='/app/match-engine')return await matchEngineLobby()
     if(path==='/app/draft')return await draftLobby()
     const draftPath=path.match(/^\/app\/draft\/(\d+)$/)
     if(draftPath)return await draftMatch(Number(draftPath[1]))

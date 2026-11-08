@@ -75,3 +75,29 @@ def report(db,career,person):
         season=online_world.clock(db)['season']
     else:season=row[0]
     return dict(scout=personal(db,career,person,season),agency=annual(db,person,season))
+
+def compare(db,career,person,limit=5):
+    """Comparable in-game players by role, with relative per-attribute differences."""
+    role=person.get('role')
+    if not role:return []
+    base=ratings(person)
+    base_score=sum(base.values())/len(base)
+    candidates=catalog.load()['people']
+    if db.execute("SELECT 1 FROM sqlite_master WHERE name='generated_people'").fetchone():
+        candidates=candidates+[json.loads(raw) for raw, in db.execute(
+            "SELECT payload FROM generated_people WHERE assignment NOT IN ('departed','candidate')")]
+    ranked=[]
+    seen=set()
+    for candidate in candidates:
+        if candidate['id']==person['id'] or candidate['id'] in seen or candidate.get('kind')!='player' or candidate.get('role')!=role:
+            continue
+        seen.add(candidate['id'])
+        vals=ratings(candidate)
+        score=sum(vals.values())/len(vals)
+        gaps={key:vals[key]-base[key] for key in ATTRS}
+        ranked.append((abs(score-base_score),candidate.get('nickname') or '',dict(
+            id=candidate['id'],nickname=candidate.get('nickname') or candidate.get('real_name') or '',
+            team=candidate.get('team') or 'FA',league=candidate.get('league') or '',
+            rating=round(score,1),gap=round(score-base_score,1),differences=gaps)))
+    ranked.sort(key=lambda item:(item[0],item[1]))
+    return [item[-1] for item in ranked[:limit]]

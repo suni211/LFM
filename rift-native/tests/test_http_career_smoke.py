@@ -85,9 +85,11 @@ class HttpCareerSmokeTests(unittest.TestCase):
         status,data=self.call('/rookie-offers',token=token)
         self.assertEqual(200,status,data)
         self.assertEqual(5,len(data['offers']))
+        image='data:image/png;base64,'+base64.b64encode(
+            bytes.fromhex('89504e470d0a1a0a')+b'test-small').decode()
         status,data=self.call('/careers',dict(mode='create',
             name='Smoke Phoenix',short='SMP',league='LCK CL',
-            color='#254a7a',emblem='shield'),token)
+            color='#254a7a',emblem='shield',logo_data=image),token)
         self.assertEqual(201,status,data)
         career=data['id']
         status,data=self.call('/careers',token=token)
@@ -109,10 +111,8 @@ class HttpCareerSmokeTests(unittest.TestCase):
             with open(self.log.name,encoding='utf-8') as stream:
                 raise AssertionError('Training '+str(status)+': '+str(data)+'\nServer trace:\n'+stream.read()[-7000:])
         self.assertIn('players',data)
-        image='data:image/png;base64,'+base64.b64encode(
-            bytes.fromhex('89504e470d0a1a0a')+b'test-small').decode()
         status,data=self.call('/club-logo',dict(id=career,logo_data=image),token)
-        self.assertEqual(200,status,data)
+        self.assertEqual(403,status,data)
         status,data=self.call('/club-brandings',token=token)
         self.assertEqual(200,status,data)
         self.assertEqual(image,data['brandings']['LCK CL\nSmoke Phoenix']['logo_data'])
@@ -137,7 +137,7 @@ class HttpCareerSmokeTests(unittest.TestCase):
         status,data=self.call('/club-identity?league=LCK%20CL&team=Smoke%20Phoenix',token=token)
         self.assertEqual(200,status,data)
         self.assertIn('sponsor-change',{x['event'] for x in data['history']})
-        self.assertIn('logo-change',{x['event'] for x in data['history']})
+        self.assertIn('club-founded',{x['event'] for x in data['history']})
 
 if __name__=='__main__':
     unittest.main()

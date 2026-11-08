@@ -497,11 +497,11 @@ async function managementPage(kind) {
          '<div class="medical-actions">'+[['rest','휴식'],['rehab','재활'],['normal','일반 훈련']].map(([key,label])=>
          '<button class="act '+(item.treatment===key?'selected':'')+'" data-treat="'+esc(p.id)+'" data-mode="'+key+'">'+label+'</button>').join('')+'</div></div>'
        }).join('')+'</div><section class="panel"><h2>2군·후보 선수와의 면담</h2>'+
-       departures.requests.map(r=>'<div class="medical-departure"><b>'+esc(names[r.person_id]||'선수 정보 확인 중')+'</b>'+
+       (departures.requests.length?departures.requests.map(r=>'<div class="medical-departure"><b>'+esc(names[r.person_id]||'선수 정보 확인 중')+'</b>'+
         '<span>'+esc(r.reason)+' · 사기 '+(r.morale??'-')+'</span>'+
         '<button class="act" data-release="'+esc(r.person_id)+'" data-approve="true">FA 합의 방출</button>'+
-        '<button class="act" data-release="'+esc(r.person_id)+'" data-approve="false">거절</button></div>').join('')||
-         '<p class="empty">선수 방출 요청 없음</p>'+'</section>'
+        '<button class="act" data-release="'+esc(r.person_id)+'" data-approve="false">거절</button></div>').join(''):
+         '<p class="empty">선수 방출 요청 없음</p>')+'</section>'
   } else if (kind === 'relations') {
     const contracts=data.contracts||[],pmap=Object.fromEntries(contracts.map(x=>[x.person.id,x.person]))
     const bonds=(data.relationships||[]).map(item=>{
@@ -576,7 +576,7 @@ async function schedule() {
   '<div class="calendar-summary"><div><small>현재</small><strong>'+currentWeek+'주</strong></div><div><small>진행 경기</small><strong>'+ended+'경기</strong></div><div><small>다음 상대</small><strong>'+esc(nextGame?displayTeam(current.club_profile?.league||'',nextGame.opponent):'미정')+'</strong></div></div>'+
   '<section class="panel calendar-panel"><div class="calendar-toolbar"><div><h2>시즌 일정 · '+start+'~'+Math.min(104,start+13)+'주</h2><small>승패·예정 경기와 휴식 주간을 카드로 확인합니다</small></div>'+
   '<div class="calendar-controls"><button data-calendar-prev '+(calendarPage===0?'disabled':'')+'>〈 이전</button><button data-calendar-now>이번 주</button><button data-calendar-next '+(calendarPage===maxPage?'disabled':'')+'>다음 〉</button></div></div>'+
-  '<div class="calendar-weekheaders">'+['월','화','수','목','금','토','일'].map(day=>'<span>'+day+'</span>').join('')+'</div>'+
+  '<div class="calendar-weekheaders">'+['첫 번째','두 번째','세 번째','네 번째','다섯 번째','여섯 번째','일곱 번째'].map(day=>'<span>'+day+' 주차 칸</span>').join('')+'</div>'+
   '<div class="calendar-grid">'+cells+'</div>'+
   '<div class="calendar-legend"><span><i class="dot-pending"></i> 예정</span><span><i class="dot-complete"></i> 종료</span><span><i class="dot-current"></i> 이번 주</span></div>'+
   '<p class="muted-note">현재 경기 엔진은 요일이 아닌 주차로 움직입니다. 달력의 열은 날짜가 아니라 주차 카드를 정렬한 시각적 그리드이며 임의의 경기 날짜를 만들지 않습니다.</p></section>','/app/schedule')

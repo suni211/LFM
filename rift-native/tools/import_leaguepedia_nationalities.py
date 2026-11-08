@@ -68,9 +68,23 @@ def name_parts(text):
         c for c in text.casefold() if not unicodedata.combining(c))))
 
 def same_real_name(a,b):
+    """Equivalent real names under Western/East Asian ordering and hyphenation.
+
+    A distinctive IGN must *also* match elsewhere in the importer. This does
+    not license nationality inference solely from a common surname.
+    """
     if not a or not b:
         return False
-    return norm(a) == norm(b) or name_parts(a) == name_parts(b)
+    if norm(a) == norm(b) or name_parts(a) == name_parts(b):
+        return True
+    def rotations(name):
+        plain=unicodedata.normalize("NFKD",str(name or ""))
+        tokens=re.findall(r"[a-z0-9]+","".join(
+            c.casefold() for c in plain if not unicodedata.combining(c)))
+        if not 2<=len(tokens)<=7:
+            return set()
+        return {"".join(tokens[i:]+tokens[:i]) for i in range(len(tokens))}
+    return bool(rotations(a)&rotations(b))
 
 def country_code(raw):
     raw = str(raw or "").strip()

@@ -44,6 +44,10 @@ fi
 sudo install -d -o root -g root -m 755 "$APP_ROOT"
 sudo install -d -o lfm -g lfm -m 750 "$DATA_ROOT"
 sudo install -d -o lfm -g lfm -m 750 "$DATA_ROOT/backups"
+# Quiesce only LFM services before snapshot and file updates.
+# Other services (including existing lol-card-game) remain untouched.
+sudo systemctl stop lfm-match-worker.service 2>/dev/null || true
+sudo systemctl stop lfm-api.service 2>/dev/null || true
 if sudo test -s "$DATA_ROOT/server.db"; then
   backup="$DATA_ROOT/backups/server-$(date -u +%Y%m%dT%H%M%SZ).db"
   sudo sqlite3 "$DATA_ROOT/server.db" ".backup '$backup'"
@@ -57,6 +61,8 @@ for folder in server engine web assets; do
   sudo rsync -a --delete --exclude='__pycache__/' "$src/$folder/" "$APP_ROOT/$folder/"
 done
 sudo chown -R root:root "$APP_ROOT"
+# A failed redeploy leaves the saved SQLite backup under /var/lib/lfm/backups.
+# Inspect health logs before retrying; do not delete or blindly restore data.
 if [[ ! -x "$APP_ROOT/.venv/bin/python" ]]; then
   sudo python3 -m venv "$APP_ROOT/.venv"
 fi

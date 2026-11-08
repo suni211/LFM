@@ -501,8 +501,11 @@ function leagueStandingsTable(rows,league,currentTeam='') {
   return `<div class="table-scroll"><table class="league-table"><thead><tr><th>순위</th><th>구단</th><th>경기</th><th>승</th><th>패</th><th>세트 득실</th><th>득실차</th></tr></thead><tbody>${(rows||[]).map((r,i)=>`<tr class="${r.team===currentTeam?'mine':''}"><td>${r.rank==null?'—':r.rank}</td><td>${logoImg(league,r.team)}<a href="/app/team/${encodeURIComponent(league)}/${encodeURIComponent(r.team)}">${esc(r.team)}</a></td><td>${r.played||0}</td><td>${r.wins||0}</td><td>${r.losses||0}</td><td>${r.sets_won||0}:${r.sets_lost||0}</td><td>${(r.sets_won||0)-(r.sets_lost||0)>0?'+':''}${(r.sets_won||0)-(r.sets_lost||0)}</td></tr>`).join('')}</tbody></table></div>${(rows||[]).every(r=>!r.played)?'<p class="muted-note">아직 완료된 경기가 없습니다. 첫 경기 이후 순위가 확정됩니다.</p>':''}`
 }
 function frontOfficeCard(p) {
-  const source=p.source==='real'?'실존 프런트·코칭스태프':p.source==='generated'?'생성 프런트·코칭스태프':'게임 내 직책'
-  return '<div class="front-person"><div class="front-role">'+esc(p.role||'직책 미확인')+'</div><strong>'+esc(p.name||'정보 미등록')+'</strong>'+flagAndCountry(p)+'<small>'+source+'</small></div>'
+  const labels={real:'실존 프런트·코칭스태프',generated:'생성 프런트·코칭스태프',verified:'구단 공식 출처',simulation:'게임 내 가상 운영진','registered-coach':'등록된 코치진',user:'유저 감독',game:'게임 내 직책'}
+  const source=labels[p.source]||'게임 내 직책'
+  const link=typeof p.source_url==='string'&&/^https:\/\//.test(p.source_url)?'<a class="front-source" href="'+esc(p.source_url)+'" target="_blank" rel="noopener">정보 출처</a>':''
+  const detail=p.role_key==='OWNER'?'구단 운영 주체':p.role_key==='EXECUTIVE'?'구단 대표':p.role_key==='MANAGER'?'전술 및 선수단 책임자':'코칭·구단 운영 인력'
+  return '<div class="front-person"><div class="front-role">'+esc(p.role||'직책 미확인')+'</div><strong>'+esc(p.name||'정보 미등록')+'</strong>'+flagAndCountry(p)+'<small>'+esc(detail)+'</small><small>'+esc(source)+'</small>'+link+'</div>'
 }
 function frontOfficePanel(data) {
   const positions=[...(data.front_office||[])]
@@ -530,7 +533,7 @@ async function team(league,name,tab) {
   let main=''
   if(active==='overview')main=`<div class="fm-club-dashboard"><section class="panel fm-dashboard-standing"><h2>리그 순위 <a href="/app/league/${encodeURIComponent(league)}">리그 상세</a></h2>${table}</section><section class="panel fm-dashboard-squad"><h2>이번 시즌 1군 · ${teamPlayers.length}명</h2>${rosterCards}<a class="panel-link" href="/app/team/${encodeURIComponent(league)}/${encodeURIComponent(name)}/roster">전체 명단 보기</a></section><section class="panel fm-dashboard-front"><h2>프런트·코칭스태프</h2>${frontOfficePanel(data)}</section><section class="panel fm-dashboard-news"><h2>구단 뉴스</h2>${latestTeamNews(data)}</section><section class="panel fm-dashboard-finance"><h2>재정 흐름</h2>${finance}</section><section class="panel fm-dashboard-form"><h2>최근 공식 경기</h2>${resultStrip(data.recent||[])}</section></div>`
   else if(active==='roster')main=`<section class="panel"><h2>1군 선수 · ${teamPlayers.length}명</h2>${rosterTable(teamPlayers)}</section><section class="panel"><h2>2군 육성 선수 · ${(data.academy||[]).length}명</h2>${rosterTable((data.academy||[]).filter(p=>p.kind==='player'))}</section>`
-  else if(active==='front')main=`<section class="panel"><h2>프런트 및 코칭스태프</h2><p class="muted-note">선수와 구분하여 구단주, 감독, 수석코치, 코치, 단장 및 실무진을 직책별로 표시합니다.</p>${frontOfficePanel(data)}</section><section class="panel"><h2>구단 운영 정보</h2><p>담당 감독 · ${esc(data.manager||'미등록')}</p><p>구단주 · ${esc(data.owner||'미등록')}</p></section>`
+  else if(active==='front')main=`<section class="panel"><h2>프런트 및 코칭스태프</h2><p class="muted-note">선수와 구분하여 구단주, 감독, 수석코치, 코치, 단장 및 실무진을 직책별로 표시합니다.</p>${frontOfficePanel(data)}</section><section class="panel"><h2>구단 운영 정보</h2><p>담당 감독 · ${esc(data.manager||'미등록')}</p><p>구단주·운영 주체 · ${esc(data.owner||'미등록')}</p><p>대표이사·운영 대표 · ${esc(data.owner_info?.representative||'공개 정보 없음')}</p><p>담당 감독 · ${esc(data.manager||'미등록')}</p></section>`
   else if(active==='finance')main=`<div class="fm-club-finance"><section class="panel"><h2>재정 요약</h2>${finance}</section><section class="panel"><h2>거래 원장</h2>${(data.finances?.ledger||[]).map(n=>`<div class="row"><span>${n.season}시즌 ${n.week}주 · ${esc(n.description)}</span><b>${money(n.amount)}</b></div>`).join('')||'<p class="empty">표시할 거래 원장이 없습니다.</p>'}</section></div>`
   else if(active==='matches')main=`<section class="panel"><h2>${data.season||''}시즌 공식 경기 결과</h2>${resultStrip(data.recent||[])}</section><section class="panel"><h2>시즌 성적</h2>${rowNotes}</section>`
   else if(active==='news')main=`<section class="panel"><h2>구단 소식</h2>${latestTeamNews(data)}</section>`

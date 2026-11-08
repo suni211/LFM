@@ -267,16 +267,42 @@ def advance(db,career,season,week):
     if db.execute('SELECT cash FROM club_finances WHERE career_id=?',(career,)).fetchone()[0]<0:
         club_vision.change(db,career,'negative-cash:'+str(now),-2,0,'현금 잔액 적자로 구단주 신임 하락')
 
-def readiness(db,career,at_turn):
-    lineup=recruitment.view(db,career)
-    if not lineup['complete']: return []
-    errors=[]
-    for p in lineup['roster']:
-        row=db.execute('''SELECT c.active,c.end_turn,h.injury_until FROM club_contracts c
-            JOIN club_health h ON h.career_id=c.career_id AND h.person_id=c.person_id
+def readiness_details(db,career,at_turn):
+    """Diagnose lineup errors without falsely approving missing starters."""
+    state=recruitment.view(db,career)
+    failures=[]
+    if not state['complete']:
+        failures.append(dict(person=None,role=None,reason='선수단 등록을 먼저 완료하세요.'))
+        return failures
+    players=[p for p in state['roster'] if p.get('kind')=='player' and p.get('assignment')=='first']
+    for role in recruitment.ROLES:
+        occupants=[p for p in players if p.get('role')==role]
+        if len(occupants)!=1:
+            failures.append(dict(person=None,role=role,reason='주전 '+role+' 포지션에 선수가 '+('없습니다.' if not occupants else '중복 등록되어 있습니다.')))
+            continue
+        p=occupants[0]
+        row=db.execute('''SELECT c.active,c.end_turn,h.injury_until
+            FROM club_contracts c LEFT JOIN club_health h
+            ON h.career_id=c.career_id AND h.person_id=c.person_id
             WHERE c.career_id=? AND c.person_id=?''',(career,p['id'])).fetchone()
-        if row and (not row[0] or row[1]<at_turn or row[2]>at_turn): errors.append(p['id'])
-    return errors
+        if not row:
+            reason='활성 계약이 없습니다.'
+        elif not row[0]:
+            reason='계약이 비활성 상태입니다.'
+        elif row[1]<at_turn:
+            reason='계약이 만료됐습니다.'
+        elif row[2] is not None and row[2]>at_turn:
+            reason='부상 치료 중입니다.'
+        else:
+            continue
+        failures.append(dict(person=p['id'],nickname=catalog.display(p),role=role,reason=reason))
+    return failures
+
+
+def readiness(db,career,at_turn):
+    return [item.get('person') or item.get('role') or 'lineup' for item in
+            readiness_details(db,career,at_turn)]
+
 
 def record_match(db,career,fixture,result):
     ensure(db,career)

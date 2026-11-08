@@ -22,6 +22,11 @@ def init(db):
         CREATE TABLE IF NOT EXISTS agent_relations(
         career_id INTEGER NOT NULL REFERENCES careers(id),person_id TEXT NOT NULL,trust INTEGER NOT NULL,
         PRIMARY KEY(career_id,person_id));''')
+    # Retain original club names as signed: a later transfer must not rewrite history.
+    columns={row[1] for row in db.execute("PRAGMA table_info(transfer_events)")}
+    for column in ('from_team','to_team','league','player_name'):
+        if column not in columns:
+            db.execute('ALTER TABLE transfer_events ADD COLUMN '+column+' TEXT')
 
 def owner(db,p):
     row=db.execute('SELECT career_id,club_key FROM person_ownership WHERE person_id=?',(p['id'],)).fetchone()
@@ -152,8 +157,14 @@ def respond(db,user,career,offer_id,choice,counter_fee=None):
     management.ledger(db,buyer,'transfer-buy:'+str(offer_id),-fee,'transfer','선수·스탭 영입 이적료')
     db.execute('UPDATE club_finances SET transfer_budget=MAX(0,MIN(?,cash)) WHERE career_id=?',(state['transfer_budget']-fee,buyer))
     db.execute("UPDATE transfer_offers SET state='completed',annual_salary=?,fee=? WHERE id=?",(salary,fee,offer_id))
-    db.execute('INSERT INTO transfer_events(offer_id,buyer,seller,person_id,fee,season,week,kind) VALUES(?,?,?,?,?,?,?,?)',
-               (offer_id,buyer,seller,pid,fee,(now-1)//104+1,(now-1)%104+1,person['kind']))
+    previous_team=(db.execute('SELECT name FROM careers WHERE id=?',(seller,)).fetchone()[0]
+                   if seller is not None else person.get('team') or '자유계약')
+    destination_league=clubs.profile(db,buyer)['league']
+    db.execute('''INSERT INTO transfer_events
+        (offer_id,buyer,seller,person_id,fee,season,week,kind,from_team,to_team,league,player_name)
+        VALUES(?,?,?,?,?,?,?,?,?,?,?,?)''',
+        (offer_id,buyer,seller,pid,fee,(now-1)//104+1,(now-1)%104+1,person['kind'],
+         previous_team,club_name,destination_league,catalog.display(person)))
     db.execute('''INSERT INTO agent_relations VALUES(?,?,55) ON CONFLICT(career_id,person_id) DO UPDATE SET trust=MIN(100,trust+5)''',(buyer,pid))
     import fan_community
     fan_community.transfer(db,buyer,offer_id,person)
@@ -175,7 +186,7 @@ def activity(db,kind='',league='',limit=150):
             if pid not in catalog_people:
                 catalog_people[pid]=json.loads(raw)
     sql='''SELECT e.id,e.buyer,e.seller,e.person_id,e.fee,e.season,e.week,e.kind,
-        b.name,s.name,p.league
+        b.name,s.name,p.league,e.from_team,e.to_team,e.league,e.player_name
         FROM transfer_events e JOIN careers b ON b.id=e.buyer
         LEFT JOIN careers s ON s.id=e.seller
         LEFT JOIN club_profiles p ON p.career_id=e.buyer
@@ -184,13 +195,15 @@ def activity(db,kind='',league='',limit=150):
         ORDER BY e.season DESC,e.week DESC,e.id DESC LIMIT ?'''
     events=[]
     for row in db.execute(sql,(kind,kind,kind,league,league,limit)):
-        eid,buyer,seller,pid,fee,season,week,k,to_team,from_team,comp=row
+        eid,buyer,seller,pid,fee,season,week,k,to_team,from_team,comp,saved_from,saved_to,saved_league,saved_name=row
         person=catalog_people.get(pid,{})
         events.append(dict(id=eid,buyer=buyer,seller=seller,person_id=pid,fee=fee,
                            season=season,week=week,kind=k,buyer_name=to_team,
-                           seller_name=from_team,from_team=from_team or person.get('team') or '자유계약',
-                           to_team=to_team,league=comp or person.get('league') or '',
-                           player_name=catalog.display(person) if person else '선수 정보 확인 중',
+                           seller_name=saved_from or from_team,
+                           from_team=saved_from or from_team or person.get('team') or '자유계약',
+                           to_team=saved_to or to_team,
+                           league=saved_league or comp or person.get('league') or '',
+                           player_name=saved_name or (catalog.display(person) if person else '선수 정보 확인 중'),
                            origin='user',status='official'))
     for event in world_transfers.official(db,league,limit):
         if kind and kind!='staff' and event['kind']!=kind: continue

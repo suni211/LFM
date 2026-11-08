@@ -597,18 +597,25 @@ function clubHistoryPanel(history){
     '</section>'
 }
 async function sponsorsPage(){
-  const current=await requireCareer();if(!current)return
-  const data=await api('/sponsor-offers?id='+current.id)
-  const offers=(data.offers||[]).filter(o=>o.status==='offered')
-  const active=(data.contracts||[]).map(o=>'<div class="sponsor-company"><strong>'+esc(o.company)+'</strong><span>'+o.start_season+'~'+o.end_season+'시즌 · 가상 스폰서</span><b>'+money(o.amount)+'</b></div>').join('')
-  const choices=offers.map(o=>'<div class="sponsor-company"><div><small>시즌 '+o.season+' · 지역 '+esc(o.region)+'</small><strong>'+esc(o.company)+'</strong><span>계약 금액 '+money(o.amount)+'</span></div><button class="act" data-sponsor="'+o.id+'">가상 제안 수락</button></div>').join('')
-  shell('<div class="page-heading"><div><p class="eyebrow">SPONSORSHIP</p><h1>스폰서 제안</h1><p>성적과 구단 성장에 따라 지역 기업 이름을 활용한 게임 내 가상 제안이 도착합니다.</p></div></div><section class="panel"><h2>새로운 계약 제안</h2>'+ (choices||'<p class="empty">현재 도착한 새 스폰서 제안이 없습니다. 시즌 성적을 쌓아 보세요.</p>')+'<p class="muted-note">'+esc(data.notice||'실제 기업과의 후원 관계가 아닙니다.')+'</p></section><section class="panel"><h2>스폰서 변경 이력</h2>'+(active||'<p class="empty">체결된 가상 계약이 없습니다.</p>')+'</section>','/app/sponsors')
-  document.querySelectorAll('[data-sponsor]').forEach(btn=>btn.onclick=async()=>{
-    if(!confirm('게임 내 가상 스폰서 제안을 수락하시겠습니까?'))return
-    try{await api('/sponsor-accept',{id:current.id,offer:Number(btn.dataset.sponsor)});careerCache=null;draw()}
-    catch(e){alert(e.message)}
-  })
-  await topbar()
+ const current=await requireCareer();if(!current)return
+ const data=await api('/sponsor-offers?id='+current.id)
+ const existing=data.contracts||[],offers=(data.offers||[]).filter(o=>o.status==='offered')
+ const now=current.season
+ const active=existing.filter(c=>c.end_season>=now)
+ const main=active.find(c=>c.tier==='main'),support=active.filter(c=>c.tier==='support')
+ const banner=(record,title)=>record?
+  '<div class="sponsor-record"><strong>'+esc(record.company)+'</strong><span>'+esc(title)+'</span><b>'+money(record.amount)+'</b><small>'+record.start_season+'~'+record.end_season+'시즌</small></div>':
+  '<div class="sponsor-record empty-sponsor"><strong>아직 계약 없음</strong><small>'+esc(title)+'</small></div>'
+ const offersByTier=tier=>offers.filter(o=>o.tier===tier).map(o=>
+   '<article class="sponsor-offer-card"><small>'+esc(o.region)+' · '+(tier==='main'?'메인':'지역·장비·식음료 파트너')+'</small><h3>'+esc(o.company)+'</h3><strong>'+money(o.amount)+'</strong><p>게임 시뮬레이션 가상 후원 계약</p><button class="act" data-sponsor="'+o.id+'">계약 수락</button></article>').join('')||
+    '<p class="empty">'+(tier==='main'?'이 시즌에는 메인 스폰서 제안이 없습니다.':'새로운 보조 스폰서 제안이 없습니다.')+'</p>'
+ shell('<div class="page-heading"><div><p class="eyebrow">PARTNERSHIPS</p><h1>구단 스폰서십</h1><p>메인 파트너 1곳 · 보조 파트너 최대 '+data.max_support+'곳. 약팀·2군도 지역 후원을 받을 수 있습니다.</p></div></div><div class="sponsor-tier-grid"><section class="panel"><h2>메인 스폰서 · 1개 슬롯</h2>'+banner(main,'메인 계약')+'<h3>새 메인 제안</h3><div class="sponsor-offers">'+offersByTier('main')+'</div></section><section class="panel"><h2>보조 스폰서 · '+support.length+'/'+data.max_support+'</h2><div class="sponsor-support-list">'+(support.map(c=>banner(c,'보조 계약')).join('')||'<p class="empty">계약 중인 보조 스폰서가 없습니다.</p>')+'</div><h3>새 보조 제안</h3><div class="sponsor-offers">'+offersByTier('support')+'</div></section></div><p class="muted-note">'+esc(data.notice||'실제 후원 관계가 아닙니다.')+'</p>','/app/sponsors')
+ document.querySelectorAll('[data-sponsor]').forEach(btn=>btn.onclick=async()=>{
+   if(!confirm('게임 내 가상 스폰서 계약을 수락하시겠습니까?'))return
+   try{await api('/sponsor-accept',{id:current.id,offer:Number(btn.dataset.sponsor)});careerCache=null;await sponsorsPage()}
+   catch(e){alert(e.message)}
+ })
+ await topbar()
 }
 async function clubIdentityHistory(){
  const current=await requireCareer();if(!current)return

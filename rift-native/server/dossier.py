@@ -125,8 +125,16 @@ def view(db, user, league, team):
     manager_row=db.execute('SELECT name FROM manager_profiles WHERE career_id=?',(career['id'],)).fetchone()
     human=clubs.human_owner(db,career['id'])
     if manager_row and human:
+        import nationality
+        own=db.execute("""SELECT a.nationality_code FROM members m
+            JOIN account_managers a ON a.user_id=m.user_id
+            WHERE m.career_id=? AND m.role='admin'
+            AND m.user_id NOT IN (SELECT user_id FROM league_operators)
+            ORDER BY m.user_id LIMIT 1""",(career['id'],)).fetchone()
+        code=own[0] if own else ''
         body['manager_info']=dict(name=manager_row[0],source='user',role='감독',
-                                  nationality_name_ko='',nationality_code='',person_id=None)
+              nationality_name_ko=nationality.COUNTRIES.get(code,''),
+              nationality_code=code,person_id=None)
         body['manager']=manager_row[0]
     body['front_office']=front_office(staff,body['manager_info'],owner_info)
     body['news']=[dict(season=sn,week=wk,headline=headline,body=summary)

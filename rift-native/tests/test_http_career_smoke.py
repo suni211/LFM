@@ -121,6 +121,43 @@ class HttpCareerSmokeTests(unittest.TestCase):
             with open(self.log.name,encoding='utf-8') as stream:
                 raise AssertionError('Training '+str(status)+': '+str(data)+'\nServer trace:\n'+stream.read()[-7000:])
         self.assertIn('players',data)
+        # Real HTTP permission and persistence check: a normal manager can
+        # view all 30 stats but cannot edit any person's profile.
+        status,players=self.call('/people?id='+str(career)+'&kind=player&page=0',token=token)
+        self.assertEqual(200,status,players)
+        person_id=players['people'][0]['id']
+        status,profile=self.call('/person?id='+str(career)+'&person='+person_id,token=token)
+        self.assertEqual(200,status,profile)
+        self.assertFalse(profile['can_edit_attributes'])
+        self.assertEqual(30,len(profile['attributes']['ratings']))
+        self.assertEqual(30,profile['player_analysis']['attributes']['count'])
+        new_attributes={key:14 for key in profile['attributes']['ratings']}
+        new_attributes['라인전']=18
+        status,data=self.call('/operator/person-attributes',
+            dict(person=person_id,ratings=new_attributes),token)
+        self.assertEqual(403,status,data)
+        status,admin=self.call('/register',
+            dict(name='smoke-operator',password='ValidPassword!983'))
+        self.assertEqual(200,status,admin)
+        admin_token=admin['token']
+        with sqlite3.connect(self.db) as db:
+            admin_id=db.execute("SELECT id FROM users WHERE name='smoke-operator'").fetchone()[0]
+            db.execute("INSERT INTO league_operators(user_id) VALUES(?)",(admin_id,))
+        status,data=self.call('/person?id=0&person='+person_id,token=admin_token)
+        self.assertEqual(200,status,data)
+        self.assertTrue(data['can_edit_attributes'])
+        status,bad=self.call('/operator/person-attributes',
+            dict(person=person_id,ratings={'라인전':18}),admin_token)
+        self.assertEqual(400,status,bad)
+        status,updated=self.call('/operator/person-attributes',
+            dict(person=person_id,ratings=new_attributes),admin_token)
+        self.assertEqual(200,status,updated)
+        self.assertEqual('operator-edited',updated['attributes']['source'])
+        status,reloaded=self.call('/person?id='+str(career)+'&person='+person_id,token=token)
+        self.assertEqual(200,status,reloaded)
+        self.assertEqual(new_attributes,reloaded['attributes']['ratings'])
+        self.assertEqual(18,reloaded['player_analysis']['attributes']['sections'][0]['attributes'][0]['value'])
+        self.assertEqual(90,reloaded['person']['game_evaluation']['ratings']['라인전'])
         status,data=self.call('/club-logo',dict(id=career,logo_data=image),token)
         self.assertEqual(403,status,data)
         status,data=self.call('/club-brandings',token=token)

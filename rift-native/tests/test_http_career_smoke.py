@@ -103,6 +103,16 @@ class HttpCareerSmokeTests(unittest.TestCase):
             self.log.flush()
             with open(self.log.name,encoding='utf-8') as stream:
                 raise AssertionError('Dossier '+str(status)+': '+str(data)+'\nServer trace:\n'+stream.read()[-7000:])
+        # A real imported player without numerical source stats still has a
+        # fully labeled game-only FM report; completed game stats stay separate.
+        status,profile=self.call('/person?id='+str(career)+
+            '&person=ddd8c7fdc2c4dbb5e87d',token=token)
+        self.assertEqual(200,status,profile)
+        self.assertEqual('FenRir',profile['person']['nickname'])
+        traits=profile['player_analysis']['attributes']
+        self.assertEqual(28,traits['count'])
+        self.assertEqual('simulation-estimate',traits['source'])
+        self.assertFalse(profile['player_analysis']['season']['available'])
         status,data=self.call('/league-overview?league=LCK%20CL',token=token)
         self.assertEqual(200,status,data)
         status,data=self.call('/training?id='+str(career),token=token)

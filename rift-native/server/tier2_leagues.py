@@ -47,10 +47,15 @@ SOURCES={
 }
 LEGACY_PLACEHOLDERS={"LCK 2군","LDL 2군"}
 LEAGUES=("LCK","LCK CL","LPL","LDL","LEC","LCS","LCP","CBLOL")
-def additional():
-    return [dict(league=league,team=name,players=0,staff=0,unclassified=0,
-                 roster_status="verification_required",competition_level=2,
-                 schedule_type="game-simulation") for league,names in CLUBS.items() for name in names]
+def additional(people=()):
+    entries=[]
+    for league,names in CLUBS.items():
+        for name in names:
+            count=len(academy_people(people,league,name))
+            entries.append(dict(league=league,team=name,players=count,staff=0,
+                unclassified=0,roster_status='parent-academy-linked' if count else 'verification_required',
+                competition_level=2,schedule_type='game-simulation'))
+    return entries
 def resolve(league):
     aliases={"LCK 2군":"LCK CL","LDL 2군":"LDL","LCKCL":"LCK CL",
              "LCK Challengers":"LCK CL"}

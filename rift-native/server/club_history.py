@@ -94,6 +94,10 @@ def rename(db,league,team,new_name,season,week):
     name=new_name.strip()
     if any(ch in name for ch in '<>{}\n\r\t'):
         raise ValueError('구단명에 허용되지 않는 문자가 있습니다.')
+    import catalog
+    if any(row['league']==league and row['team']!=team and row['team'].casefold()==name.casefold()
+           for row in catalog.teams()):
+        raise ValueError('이미 존재하는 구단명입니다.')
     for row in db.execute("""SELECT canonical_team,display_name FROM club_public_identity
         WHERE league=?""",(league,)):
         if row[0]!=team and row[1].casefold()==name.casefold():

@@ -19,7 +19,8 @@ def key(league,team):
 def available(db):
     import promotion
     claimed={row[0] for row in db.execute('SELECT team_key FROM club_profiles WHERE team_key IS NOT NULL')}
-    year=db.execute("SELECT season FROM online_clock WHERE id=1").fetchone()
+    year=db.execute("SELECT season FROM online_clock WHERE id=1").fetchone() if db.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='online_clock'").fetchone() else None
     season=year[0] if year else 1
     return [dict(team,team_key=key(team['league'],team['team']),
                  claimed=key(team['league'],team['team']) in claimed)

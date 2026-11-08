@@ -85,13 +85,10 @@ def interest(db,career,person):
             [dict(kind='player',entity=person['id'])])
 
 def _teams(db):
-    grouped={}
-    for person in catalog.load().get('people',[]):
-        if person.get('kind')!='player' or not person.get('team') or not person.get('league'): continue
-        grouped.setdefault(person['league'],{}).setdefault(person['team'],[]).append(person)
-    for name,league in db.execute('SELECT c.name,p.league FROM careers c JOIN club_profiles p ON p.career_id=c.id'):
-        grouped.setdefault(league,{}).setdefault(name,grouped.get(league,{}).get(name,[]))
-    return grouped
+    # AI-to-AI rumors must be generated from CURRENT unclaimed rosters rather
+    # than the original import sheet, especially after completed AI deals.
+    import world_transfers
+    return world_transfers.rosters(db)
 
 def weekly(db,season,week):
     if not 1<=week<=10: prune(db); return

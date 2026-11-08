@@ -53,6 +53,16 @@ def turn(db,career):
     season,week=db.execute('SELECT season,week FROM careers WHERE id=?',(career,)).fetchone()
     return season_structure.absolute_turn(season,week)
 
+def renewal_eligible(season, week, end_turn, active=True, kind='player'):
+    """Only an active player's expiring-season stove league permits renewal."""
+    if not active or kind != 'player' or type(end_turn) is not int or end_turn < 1:
+        return False
+    expiry_season, _ = season_structure.decode_turn(end_turn)
+    return (expiry_season == season and
+            (1 <= week <= 10 or 145 <= week <= 150) and
+            season_structure.absolute_turn(season, week) <= end_turn)
+
+
 def ensure(db,career):
     actual=clubs.profile(db,career)['mode']=='takeover'
     db.execute('INSERT OR IGNORE INTO club_finances(career_id,cash,transfer_budget,wage_budget) VALUES(?,?,?,?)',
@@ -110,6 +120,7 @@ def snapshot(db,career):
     if not finance: return dict(initialized=False)
     state=dict(zip(('cash','transfer_budget','wage_budget','board','fans'),finance),initialized=True,estimates=True)
     now=turn(db,career)
+    season,week=season_structure.decode_turn(now)
     people={p['id']:p for p in recruitment.view(db,career)['people']}
     contracts=[]
     for pid,salary,end,active in db.execute('SELECT person_id,annual_salary,end_turn,active FROM club_contracts WHERE career_id=?',(career,)):
@@ -119,6 +130,8 @@ def snapshot(db,career):
         fatigue,injury,treatment,morale,growth=health or (0,0,'normal',60,'{}')
         signed=db.execute('SELECT start_turn FROM contract_signings WHERE career_id=? AND person_id=?',(career,pid)).fetchone()
         contracts.append(dict(start_turn=signed[0] if signed else None,person=p,annual_salary=salary,end_turn=end,remaining_turns=max(0,end-now+1),active=bool(active),
+                              renewal_eligible=renewal_eligible(season,week,end,bool(active),p.get('kind')),
+                              expiry_season=season_structure.decode_turn(end)[0] if end > 0 else None,
                               fatigue=fatigue,injury_turns=max(0,injury-now),treatment=treatment,morale=morale,growth=json.loads(growth)))
     manager_row=db.execute('SELECT stats FROM manager_profiles WHERE career_id=?',(career,)).fetchone()
     manager_for_agent={'stats':json.loads(manager_row[0])} if manager_row else {'stats':{'협상':10}}
@@ -161,12 +174,14 @@ def action(db,career,data):
         pid=data['person']; salary,years=data['annual_salary'],data['years']
         contract=next((p for p in state['contracts'] if p['person']['id']==pid),None)
         if not contract: raise ValueError('contract not found')
+        if not contract['renewal_eligible']:
+            raise ValueError('계약 만료 시즌의 스토브리그에서만 재계약할 수 있습니다.')
         if type(salary) is not int or type(years) is not int or years not in (1,2,3) or not contract.get('agent_asking_salary',contract['annual_salary'])<=salary<=10**11:
             raise ValueError('salary offer below agent demand')
         if state['annual_payroll']-(contract['annual_salary'] if contract['active'] else 0)+salary>state['wage_budget']: raise ValueError('wage budget exceeded')
-        db.execute('UPDATE club_contracts SET annual_salary=?,end_turn=?,active=1 WHERE career_id=? AND person_id=?',(salary,now+150*years-1,career,pid))
+        db.execute('UPDATE club_contracts SET annual_salary=?,end_turn=?,active=1 WHERE career_id=? AND person_id=?',(salary,((now-1)//150+1+years)*150,career,pid))
         db.execute('INSERT INTO contract_signings VALUES(?,?,?) ON CONFLICT(career_id,person_id) DO UPDATE SET start_turn=excluded.start_turn',(career,pid,now))
-        club_messages.publish(db,career,'renew:'+pid+':'+str(now)+':'+str(max(now,contract['end_turn']+1)),(now-1)//150+1,(now-1)%150+1,'계약 연장',contract['person'].get('display_name',catalog.display(contract['person']))+'의 계약을 '+str(years)+'시즌 연장했습니다. 게임용 계약입니다.')
+        club_messages.publish(db,career,'renew:'+pid+':'+str(now)+':'+str(max(now,contract['end_turn']+1)),(now-1)//150+1,(now-1)%150+1,'계약 연장',contract['person'].get('display_name',catalog.display(contract['person']))+'의 계약을 '+str(years)+'시즌 연장했습니다.')
     elif op=='treatment':
         pid=data['person']; mode=data['treatment']
         if mode not in ('normal','rest','rehab'): raise ValueError('invalid treatment')

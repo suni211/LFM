@@ -491,10 +491,14 @@ class Handler(BaseHTTPRequestHandler):
                 query=parse_qs(url.query)
                 try:
                     cid=int(query['id'][0])
+                    before=int(query['before'][0]) if 'before' in query else None
+                    if url.path=='/news' and online_world.operator(db,uid):
+                        if cid!=0: raise ValueError('operator newsroom id must be 0')
+                        return self.reply(200,{'news':news.operator_feed(db,uid,
+                            query.get('competition',[''])[0],before)})
                     if not 1<=cid<=2**63-1: raise ValueError()
                     if url.path=='/follows':
                         return self.reply(200,{'follows':news.preferences(db,uid,cid)})
-                    before=int(query['before'][0]) if 'before' in query else None
                     return self.reply(200,{'news':news.feed(db,uid,cid,query.get('competition',[''])[0],
                         query.get('scope',['home'])[0],before)})
                 except PermissionError:
@@ -609,6 +613,7 @@ class Handler(BaseHTTPRequestHandler):
                     'amateurs and prospects cannot be signed','already a pro player','player has retired',
                     'another club is developing this player','already your prospect','this player is in another club tryout',
                     'prospect list is full','talk again later','not your prospect','not ready for pro debut',
+                    '계약 만료 시즌의 스토브리그에서만 재계약할 수 있습니다.',
                     'debut the prospect before the pro roster','operators choose a team',
                     '닉네임과 이름을 각각 1~30자로 입력하세요.','감독 닉네임은 영문 2~20자만 사용할 수 있습니다.','이미 사용 중인 감독 닉네임입니다.','감독 능력치는 각각 1~20, 합계 60으로 설정하세요.','감독 국적을 목록에서 선택해 주세요.','invalid shotcallers','오더 담당은 현재 1군 주전 선수 중에서 선택하세요.'}
             message=str(error)

@@ -78,9 +78,20 @@ def invited(db,user_id,team_key):
     return any(row['team_key']==team_key and row['available'] for row in list_offers(db,user_id))
 
 def accept(db,user_id,team_key):
-    if not invited(db,user_id,team_key):
+    """Accept atomically even if this same transaction has just assigned ownership."""
+    row=db.execute("""SELECT status FROM rookie_manager_offers
+        WHERE user_id=? AND team_key=?""",(user_id,team_key)).fetchone()
+    if not row or row[0]!='offered':
         raise ValueError('받은 구단 부임 제안만 수락할 수 있습니다.')
-    db.execute("""UPDATE rookie_manager_offers SET status='accepted'
+    club=db.execute("SELECT career_id FROM club_profiles WHERE team_key=?",(team_key,)).fetchone()
+    if club:
+        owner=db.execute("""SELECT m.user_id FROM members m
+            WHERE m.career_id=? AND m.role='admin'
+            AND m.user_id NOT IN (SELECT user_id FROM league_operators) LIMIT 1""",(club[0],)).fetchone()
+        if owner and owner[0]!=user_id:
+            raise ValueError('다른 감독이 먼저 부임하여 해당 제안이 마감되었습니다.')
+    result=db.execute("""UPDATE rookie_manager_offers SET status='accepted'
                   WHERE user_id=? AND team_key=? AND status='offered'""",(user_id,team_key))
+    if result.rowcount!=1:raise ValueError('부임 제안 수락이 반영되지 않았습니다.')
     db.execute("""UPDATE rookie_manager_offers SET status='closed'
                   WHERE user_id=? AND team_key!=? AND status='offered'""",(user_id,team_key))

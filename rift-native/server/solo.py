@@ -307,7 +307,7 @@ def ladder(db, career, role='', region='KR', scope='all'):
 def _turn(db):
     import online_world
     clock=online_world.clock(db)
-    return clock,(clock['season']-1)*104+clock['week']
+    return clock,(clock['season']-1)*150+clock['week']
 
 def _payload(db, person_id):
     row=db.execute('SELECT payload FROM solo_people WHERE person_id=?',(person_id,)).fetchone()

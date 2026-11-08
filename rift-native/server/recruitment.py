@@ -123,22 +123,34 @@ def finalize(db,career):
 
 
 def repair_generated_handles(db):
-    """Migrate in-game generated handles once, without touching real players or IDs."""
+    """Shorten game-created player handles without touching real nicknames."""
     rows=db.execute('SELECT id,payload FROM generated_people ORDER BY id').fetchall()
     generated=[(pid,json.loads(raw)) for pid,raw in rows]
     used={str(p.get('nickname') or '').casefold() for p in catalog.load()['people']}
-    # Keep already migrated names, but discard old template names from the collision pool.
-    for _,p in generated:
-        if p.get('nickname_scheme')=='distinct-en-v1':
-            used.add(str(p.get('nickname') or '').casefold())
+    # Solo-only amateurs have a separate independent nickname migration.
+    # Already valid names remain unchanged to preserve saved references.
+    targets=[]
     for pid,p in generated:
-        if p.get('real_person') or p.get('nickname_scheme')=='distinct-en-v1':
-            continue
+        nick=str(p.get('nickname') or '')
+        if p.get('real_person') or p.get('origin')=='solo-queue-only':
+            used.add(nick.casefold())
+        elif handles.valid(nick) and not handles.too_similar(nick,used):
+            used.add(nick.casefold())
+            if p.get('nickname_scheme')!='distinct-en-v2-short':
+                p['nickname_scheme']='distinct-en-v2-short'
+                db.execute('UPDATE generated_people SET payload=? WHERE id=?',
+                           (json.dumps(p,ensure_ascii=False),pid))
+        else:
+            targets.append((pid,p))
+    # No old nickname-key may be reused until this migration is complete.
+    used.update(str(p.get('nickname') or '').casefold() for _,p in targets
+                if p.get('nickname'))
+    for pid,p in targets:
         old=str(p.get('nickname') or '')
         nick=handles.choose(pid,used)
         used.add(nick.casefold())
         p.setdefault('original_nickname',old)
-        p.update(nickname=nick,nickname_scheme='distinct-en-v1')
+        p.update(nickname=nick,nickname_scheme='distinct-en-v2-short')
         p.pop('nickname_ko',None)
         db.execute('UPDATE generated_people SET nickname_key=?,payload=? WHERE id=?',
                    (nick.casefold(),json.dumps(p,ensure_ascii=False),pid))

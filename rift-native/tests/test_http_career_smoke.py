@@ -240,6 +240,26 @@ class HttpCareerSmokeTests(unittest.TestCase):
         self.assertEqual(200,status,data)
         self.assertIn('sponsor-change',{x['event'] for x in data['history']})
         self.assertIn('club-founded',{x['event'] for x in data['history']})
+        # Operator's single advance updates the world and every user's career.
+        status,before=self.call('/world',token=token)
+        self.assertEqual(200,status,before)
+        status,advanced=self.call('/operator/advance',
+            dict(version=before['version']),token=admin_token)
+        self.assertEqual(200,status,advanced)
+        self.assertTrue(advanced['advanced'])
+        self.assertEqual(before['version']+1,advanced['version'])
+        status,updated=self.call('/world',token=token)
+        self.assertEqual(200,status,updated)
+        self.assertEqual(advanced['week'],updated['week'])
+        self.assertEqual(advanced['season'],updated['season'])
+        self.assertEqual(advanced['version'],updated['version'])
+        status,manager=self.call('/careers',token=token)
+        self.assertEqual(200,status,manager)
+        self.assertEqual(advanced['week'],manager['careers'][0]['week'])
+        self.assertEqual(advanced['season'],manager['careers'][0]['season'])
+        status,conflict=self.call('/operator/advance',
+            dict(version=before['version']),token=admin_token)
+        self.assertEqual(409,status,conflict)
 
 if __name__=='__main__':
     unittest.main()

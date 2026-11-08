@@ -4,6 +4,9 @@ on:
     branches:
       - fix/solo-pro-floor-league-foundation
       - fix/fm-unified-nationality-2026-11-08
+      - fix/fm-season-150-ai-negotiation-20261108
+      - main
+  pull_request:
   workflow_dispatch:
 
 jobs:
@@ -39,4 +42,4 @@ jobs:
       - name: Player FM dossier attributes and recorded match analytics
         run: python3 -m unittest discover -s rift-native/tests -p 'test_player_dossier.py' -v
       - name: Validate calendars, read-only operator clock and seasonal honors
-        run: cd rift-native/server && python -m unittest test_season_awards test_season_calendar test_player_economy -v
+        run: cd rift-native/server && python -m unittest test_season_awards test_season_calendar test_season_structure test_player_economy -v

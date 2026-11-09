@@ -182,18 +182,21 @@ class Handler(BaseHTTPRequestHandler):
                 fingerprints={filename:hashlib.sha256((web/filename).read_bytes()).hexdigest()[:16]
                     if (web/filename).is_file() else None
                     for filename in ('index.html','app.js','app.css')}
-                return self.reply(200,{'status':'ok','revision':'fm-engine-spectator-stove-20261109',
+                return self.reply(200,{'status':'ok','revision':'fm-highlights-user-teams-20261109',
                     'web_sha256':fingerprints,'capabilities':['clubs','dashboard','search','community','draft-swap','management','fearless','response-timeout-180','manual-draft','fountain-defense','backdoor-protection','six-slot-builds','competitions','account-errors','tactics','phase-orders','personal-training','champion-pool','solo-ladder','prospect-debut','operator-desk','stove-leaks','easter-academy','client-updates','web','engine-spectator','stove-receipts'],'champion_abilities':'partial'})
             if urlsplit(self.path).path.startswith('/updates/'):
                 import updates
                 return updates.serve(self, urlsplit(self.path).path)
             if not uid: return self.reply(401,{'error':'unauthorized'})
             url = urlsplit(self.path)
+            if url.path=='/operator/users':
+                if not online_world.operator(db,uid):return self.reply(403,{'error':'forbidden'})
+                return self.reply(200,{'users':__import__('operator_users').directory(db)})
             if url.path=='/operator/world':
                 if not online_world.operator(db,uid):return self.reply(403,{'error':'forbidden'})
                 world=online_world.clock(db)
                 games=[dict(zip(('id','season','week','team','opponent','state','competition','stage','best_of'),r)) for r in db.execute('SELECT f.id,f.season,f.week,c.name,f.opponent,f.state,f.competition,f.stage,f.best_of FROM fixtures f JOIN careers c ON c.id=f.career_id WHERE f.season=? ORDER BY f.week,f.id',(world['season'],))]
-                return self.reply(200,dict(world=world,clubs=clubs.directory(db),fixtures=games,accounts=db.execute('SELECT COUNT(*) FROM users').fetchone()[0],qualification=qualification.snapshot(db,world['season'])))
+                return self.reply(200,dict(world=world,clubs=clubs.directory(db),fixtures=games,accounts=db.execute('SELECT COUNT(*) FROM users').fetchone()[0],qualification=qualification.snapshot(db,world['season']),users=__import__('operator_users').directory(db)))
             if url.path=='/honors':
                 query=parse_qs(url.query)
                 season=int(query['season'][0]) if 'season' in query else None
@@ -472,6 +475,11 @@ class Handler(BaseHTTPRequestHandler):
                         return self.reply(404,{'error':'not found'})
                     directory=DB.parent/'spectator'
                     manifest=spectator_recording.read_manifest(directory,fixture,set_index)
+                    if manifest and manifest.get('complete') and not manifest.get('highlights'):
+                        saved=db.execute('SELECT f.result,s.state FROM fixtures f LEFT JOIN match_series s ON s.fixture_id=f.id WHERE f.id=?',(fixture,)).fetchone()
+                        snapshot=json.loads(saved[0] or saved[1] or '{}')
+                        sets=snapshot.get('sets',[])
+                        if set_index<len(sets):manifest['highlights']=[dict(start=c['start'],end=c['end']) for c in sets[set_index].get('highlights',[])]
                     if url.path=='/spectator':
                         return self.reply(200,manifest or dict(version=1,fixture=fixture,set=set_index,chunk_count=0,recorded_until=0,complete=False,available=False,units=[]))
                     chunk=int(query['chunk'][0])

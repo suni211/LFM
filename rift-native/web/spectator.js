@@ -4,16 +4,17 @@ function stopEngineViewer(){if(engineViewer){engineViewer.closed=true;cancelAnim
 async function mountEngineViewer(fixture,setIndex=0){
   stopEngineViewer()
   const host=document.getElementById('engine-spectator');if(!host)return
-  const state={closed:false,frames:[],loaded:0,time:0,speed:8,playing:true,complete:false,units:new Map(),images:new Map(),raf:0,timer:0,lastWall:0,frame:0,focus:null,showScore:false,started:false}
+  const state={closed:false,frames:[],loaded:0,time:0,speed:2,playing:true,complete:false,units:new Map(),images:new Map(),raf:0,timer:0,lastWall:0,frame:0,focus:null,showScore:false,started:false,highlights:[],highlightIndex:0}
   engineViewer=state
-  host.innerHTML=`<div class="spectator-toolbar"><b>${setIndex+1}세트 관전</b><button class="act" id="spectator-play">일시 정지</button><label>재생 속도 <select id="spectator-speed">${[1,2,4,8,16,32].map(n=>`<option value="${n}" ${n===8?'selected':''}>${n}배</option>`).join('')}</select></label><button class="act" id="spectator-reset">처음부터</button><label><input id="spectator-camera" type="checkbox" checked/> 교전 카메라</label><span id="spectator-status">경기 연결 중</span></div><div class="spectator-score"><b class="blue" id="spectator-blue">BLUE</b><strong id="spectator-clock">00:00</strong><b class="red" id="spectator-red">RED</b></div><div class="spectator-layout"><div class="spectator-map-wrap"><canvas id="spectator-map" width="1024" height="1024" aria-label="기존 매치엔진 실제 경기 관전 화면"></canvas><div id="spectator-events" class="spectator-events" aria-live="polite"></div></div><aside id="spectator-players" class="spectator-players"></aside></div><input id="spectator-seek" class="spectator-seek" type="range" min="0" max="0" value="0" step="0.2" aria-label="기록된 경기 시각"/><small>선수·전투·오브젝트는 서버 엔진의 실제 기록입니다. 결과는 재생 종료 후 표시됩니다.</small>`
+  host.innerHTML=`<div class="spectator-toolbar"><b>${setIndex+1}세트 하이라이트</b><button class="act" id="spectator-play">일시 정지</button><label>재생 속도 <select id="spectator-speed">${[1,2,4,8,16,32].map(n=>`<option value="${n}" ${n===2?'selected':''}>${n}배</option>`).join('')}</select></label><button class="act" id="spectator-reset">현재 장면 다시 보기</button><button class="act" id="spectator-next-clip">다음 장면</button><b id="spectator-clip-label">주요 장면</b><label><input id="spectator-camera" type="checkbox" checked/> 교전 카메라</label><span id="spectator-status">경기 연결 중</span></div><div class="spectator-score"><b class="blue" id="spectator-blue">BLUE</b><strong id="spectator-clock">00:00</strong><b class="red" id="spectator-red">RED</b></div><div class="spectator-layout"><div class="spectator-map-wrap"><canvas id="spectator-map" width="1024" height="1024" aria-label="기존 매치엔진 실제 경기 관전 화면"></canvas><div id="spectator-events" class="spectator-events" aria-live="polite"></div></div><aside id="spectator-players" class="spectator-players"></aside></div><input id="spectator-seek" class="spectator-seek" type="range" min="0" max="0" value="0" step="0.2" aria-label="현재 하이라이트 시각"/><small>선수·전투·오브젝트는 서버 엔진의 실제 기록입니다. 결과는 재생 종료 후 표시됩니다.</small>`
   const canvas=document.getElementById('spectator-map'),ctx=canvas.getContext('2d');if(!ctx){host.innerHTML='<p class="err">브라우저의 Canvas 지원이 필요합니다.</p>';return}
   const map=new Image();map.src=BASE+'/media/replay-map.png'
   const camera=document.getElementById('spectator-camera'),seek=document.getElementById('spectator-seek')
   document.getElementById('spectator-speed').onchange=e=>{state.speed=Number(e.target.value)}
   document.getElementById('spectator-play').onclick=e=>{state.playing=!state.playing;e.target.textContent=state.playing?'일시 정지':'계속 재생'}
-  document.getElementById('spectator-reset').onclick=()=>{state.time=state.frames[0]?.[0]||0;state.frame=0;state.playing=true;state.showScore=false;document.getElementById('spectator-play').textContent='일시 정지'}
-  seek.oninput=e=>{state.time=Number(e.target.value);state.showScore=false}
+  document.getElementById('spectator-reset').onclick=()=>{state.time=state.highlights[state.highlightIndex]?.start||state.frames[0]?.[0]||0;state.frame=0;state.playing=true;state.showScore=false;document.getElementById('spectator-play').textContent='일시 정지'}
+  seek.oninput=e=>{const clip=state.highlights[state.highlightIndex];if(clip)state.time=Math.max(clip.start,Math.min(clip.end,Number(e.target.value)));state.showScore=false}
+  document.getElementById('spectator-next-clip').onclick=()=>{if(state.highlightIndex+1<state.highlights.length&&state.highlights[state.highlightIndex+1].start<=(state.frames.at(-1)?.[0]??0)){state.highlightIndex++;state.time=state.highlights[state.highlightIndex].start;state.showScore=false;state.playing=true}}
   const icon=unit=>{if(!state.images.has(unit.name)){const img=new Image();img.src='https://ddragon.leagueoflegends.com/cdn/'+CHAMP_PATCH+'/img/champion/'+encodeURIComponent(championMeta[unit.name]?.image?.full||unit.name+'.png');state.images.set(unit.name,img)}return state.images.get(unit.name)}
   const clock=t=>String(Math.floor(t/60)).padStart(2,'0')+':'+String(Math.floor(t%60)).padStart(2,'0')
   let lastStats=-1,lastEvents=''
@@ -60,13 +61,14 @@ async function mountEngineViewer(fixture,setIndex=0){
     try{
       const manifest=await api('/spectator?id='+fixture+'&set='+setIndex);if(state.closed)return
       for(const unit of manifest.units||[])state.units.set(unit.id,unit)
-      state.complete=manifest.complete;state.manifestChunks=manifest.chunk_count;let fetched=0
+      state.complete=manifest.complete;state.manifestChunks=manifest.chunk_count;state.highlights=(manifest.highlights||[]).filter(c=>Number.isFinite(c.start)&&Number.isFinite(c.end)&&c.end>=c.start);let fetched=0
+      if(!state.complete){document.getElementById('spectator-status').textContent='주요 장면 연결 대기';state.timer=setTimeout(refresh,1500);return}
       while(state.loaded<manifest.chunk_count&&fetched<12&&!state.closed){
         const data=await api('/spectator-chunk?id='+fixture+'&set='+setIndex+'&chunk='+state.loaded);if(state.closed)return
         for(const f of data.frames||[]){if(!state.frames.length||f[0]>state.frames.at(-1)[0])state.frames.push(f)}state.loaded++;fetched++
       }
-      if(state.frames.length){if(!state.started){state.started=true;state.time=state.frames[0][0]};seek.max=state.frames.at(-1)[0]}
-      document.getElementById('spectator-status').textContent=state.frames.length?'경기 화면 연결됨':manifest.available===false?'관전 기록 대기':'경기 연결 중'
+      if(state.frames.length&&state.highlights.length){if(!state.started){state.started=true;state.time=state.highlights[0].start}}
+      document.getElementById('spectator-status').textContent=state.highlights.length?'하이라이트 연결됨':state.complete?'기록된 주요 장면 없음':manifest.available===false?'관전 기록 대기':'경기 연결 중'
       if(manifest.available===false&&document.getElementById('engine-spectator')===host&&document.getElementById('match-results')){document.getElementById('spectator-status').textContent='이전 경기에는 전체 관전 기록이 없습니다. 아래 하이라이트를 이용하세요.'}
     }catch(error){if(!state.closed)document.getElementById('spectator-status').textContent='연결 재시도 · '+error.message}
     if(!state.closed&&!(state.complete&&state.loaded===state.manifestChunks))state.timer=setTimeout(refresh,state.loaded?1800:1000)
@@ -74,12 +76,15 @@ async function mountEngineViewer(fixture,setIndex=0){
   function animate(now){
     if(state.closed||!host.isConnected){stopEngineViewer();return}
     const dt=state.lastWall?Math.min(.2,(now-state.lastWall)/1000):0;state.lastWall=now
-    if(state.frames.length){
-      const end=state.frames.at(-1)[0];if(state.playing)state.time=Math.min(end,state.time+dt*state.speed)
+    if(state.frames.length&&state.highlights.length&&state.frames.at(-1)[0]>=state.highlights[state.highlightIndex].start){
+      let clip=state.highlights[state.highlightIndex];const loadedEnd=state.frames.at(-1)[0];let end=Math.min(clip.end,loadedEnd);
+      if(state.playing)state.time=Math.min(end,state.time+dt*state.speed)
+      if(state.time>=clip.end&&state.highlightIndex+1<state.highlights.length&&state.highlights[state.highlightIndex+1].start<=loadedEnd){state.highlightIndex++;clip=state.highlights[state.highlightIndex];state.time=clip.start;end=Math.min(clip.end,loadedEnd)}
+      seek.min=clip.start;seek.max=end;document.getElementById('spectator-clip-label').textContent='주요 장면 '+(state.highlightIndex+1)+' / '+state.highlights.length;document.getElementById('spectator-next-clip').disabled=state.highlightIndex+1>=state.highlights.length
       while(state.frame>0&&state.frames[state.frame][0]>state.time)state.frame--
       while(state.frame+1<state.frames.length&&state.frames[state.frame+1][0]<=state.time)state.frame++
       const frame=state.frames[state.frame],next=state.frames[state.frame+1];draw(frame,next,next?Math.max(0,Math.min(1,(state.time-frame[0])/(next[0]-frame[0]))):0)
-      if(state.complete&&state.loaded>0&&state.time>=end&&!state.showScore){state.showScore=true;document.getElementById('spectator-status').textContent='세트 관전 종료';document.dispatchEvent(new CustomEvent('engine-set-viewed',{detail:{fixture,set:setIndex}}))}
+      if(state.complete&&state.loaded===state.manifestChunks&&state.highlightIndex===state.highlights.length-1&&state.time>=end&&!state.showScore){state.showScore=true;document.getElementById('spectator-status').textContent='세트 관전 종료';document.dispatchEvent(new CustomEvent('engine-set-viewed',{detail:{fixture,set:setIndex}}))}
     }
     state.raf=requestAnimationFrame(animate)
   }
@@ -106,3 +111,4 @@ document.addEventListener('engine-set-viewed',event=>{
   }
   toolbar.append(button)
 })
+

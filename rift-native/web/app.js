@@ -246,7 +246,8 @@ async function operatorDesk() {
   const stats='<div class="grid3"><section class="panel"><h2>현재 주차</h2><strong>'+data.world.season+'시즌 '+data.world.week+'주차</strong></section><section class="panel"><h2>온라인 구단</h2><strong>'+data.clubs.length+'개</strong></section><section class="panel"><h2>국적 대조 현황</h2><strong>'+audit.with_code+' / '+audit.total+'</strong><p>국적 미확인 '+audit.missing_code+'명 · 국가 정보 후보 '+audit.source_backed_country_hints+'명 (별도 검증 필요)</p></section></div>'
   const seasons='<section class="panel"><h2>예정 경기 일정</h2>'+matches+'<a class="text-link" href="/app/schedule">전체 리그 캘린더</a></section>'
   const links='<section class="panel"><h2>운영 도구</h2><div class="row"><a class="act" href="/app/history">시즌 역사관 · 리그별 수상</a><a class="act" href="/app/players">선수 30개 능력치</a><a class="act" href="/app/leagues">LCK CL · LDL 리그</a></div></section>'
-  shell(summary+stats+seasons+links,'/app/operator')
+  const users='<section class="panel"><h2>유저 · 현재 소속 팀</h2><div class="table-scroll"><table><thead><tr><th>계정</th><th>감독 닉네임</th><th>현재 소속 팀</th><th>리그</th><th>상태</th></tr></thead><tbody>'+(data.users||[]).map(u=>'<tr><td>'+esc(u.account)+'</td><td>'+esc(u.nickname||'설정 전')+'</td><td>'+(u.operator?'팀 운영 없음':u.clubs.length?u.clubs.map(c=>'<a href="/app/team/'+encodeURIComponent(c.league||'')+'/'+encodeURIComponent(c.team)+'">'+logoImg(c.league,c.team)+esc(c.team)+'</a>').join('<br/>'):'미소속')+'</td><td>'+esc(u.clubs.map(c=>c.league).join(' / ')||'—')+'</td><td>'+esc(u.status)+'</td></tr>').join('')+'</tbody></table></div></section>'
+  shell(summary+stats+users+seasons+links,'/app/operator')
   await topbar()
 }
 async function worldSchedule(selected='LCK') {
@@ -1238,8 +1239,8 @@ async function matchEnginePage(id){
     '<button class="act" id="match-feedback-submit">전달</button></div></section>':''
   const currentSet=Math.min(4,sets.length)
   const preferred=0
-  const setButtons=Array.from({length:Math.max(1,sets.length+(series.phase==='ready'?1:0))},(_,i)=>'<button class="act" data-spectator-set="'+i+'">'+(i+1)+'세트 관전</button>').join('')
-  const engineNote='<section class="panel spectator-panel"><h2>경기 관전</h2><div class="spectator-set-tabs">'+setButtons+'</div><div id="engine-spectator"></div></section>'
+  const setButtons=Array.from({length:Math.max(1,sets.length+(series.phase==='ready'?1:0))},(_,i)=>'<button class="act" data-spectator-set="'+i+'">'+(i+1)+'세트 하이라이트</button>').join('')
+  const engineNote='<section class="panel spectator-panel"><h2>경기 하이라이트 관전</h2><div class="spectator-set-tabs">'+setButtons+'</div><div id="engine-spectator"></div></section>'
   const html='<div class="page-heading"><div><p class="eyebrow">MATCH ENGINE · SIMULATION</p>'+
     '<h1>'+esc(current.name)+' vs '+esc(game.opponent)+'</h1>'+
     '<p>서버 매치 엔진 결과 · 전술 / 선수 능력 / 확정된 챔피언이 적용된 경기</p></div>'+

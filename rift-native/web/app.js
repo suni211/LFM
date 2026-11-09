@@ -688,11 +688,11 @@ async function matchEngineLobby(){
       '<span>'+esc(score?score.join(' : '):draftActive?'밴픽 진행':'경기 조회')+'</span></a>'
   }).join('')
   shell('<div class="page-heading"><div><p class="eyebrow">PYTHON MATCH ENGINE</p>'+
-    '<h1>매치 엔진</h1><p>Python 시뮬레이터의 실제 경기 결과, 선수 기록, 녹화된 하이라이트를 조회합니다.</p></div>'+
+    '<h1>매치 엔진</h1><p>실제 매치엔진의 경기 화면과 선수 기록을 관전합니다.</p></div>'+
     '<a class="act" href="/app/draft">밴픽 센터</a></div>'+
     '<section class="panel"><h2>경기 엔진 연결</h2>'+
     '<p>확정된 밴픽과 선수 능력치·전술은 서버 Python 매치 워커로 전달됩니다. 경기 결과는 저장 후 자동 반영됩니다.</p>'+
-    '<p class="muted-note">이 탭은 웹 경기 기록·하이라이트 화면입니다. 별도의 Python SDL 데스크톱 중계 프로그램 자체를 웹에서 실행하는 방식은 아닙니다.</p>'+
+    '<p class="muted-note">확정된 챔피언과 선수·전술이 기존 engine 디렉터리의 매치엔진에 반영됩니다.</p>'+
     '</section><section class="panel"><h2>내 구단 매치 엔진 경기 · '+games.length+'건</h2>'+
     (rows||'<p class="empty">현재 진행 중이거나 완료된 경기가 없습니다. 운영자가 주차를 진행하면 일정에 경기가 생성됩니다.</p>')+
     '</section>','/app/match-engine')
@@ -1079,13 +1079,13 @@ function matchStatusSignature(game){
 async function pollMatchEngine(){
   const m=location.pathname.match(/^\/(?:rift\/)?app\/match\/(\d+)$/)
   if(!m||!token()||!matchWatch||matchPollBusy||matchWatch.id!==Number(m[1]))return
-  if(matchWatch.completed)return
+  if(matchWatch.completed||typeof engineViewer!=='undefined'&&engineViewer)return
   matchPollBusy=true
   try{
     const response=await api('/fixtures?id='+matchWatch.careerId)
     const game=(response.fixtures||[]).find(item=>item.id===matchWatch.id)
     if(game&&matchStatusSignature(game)!==matchWatch.signature)
-      await matchEnginePage(matchWatch.id)
+      {if(typeof stopEngineViewer==='function')stopEngineViewer();await matchEnginePage(matchWatch.id)}
   }catch(_error){
     // A temporary HTTP error should not close the match view.
   }finally{matchPollBusy=false}
@@ -1191,17 +1191,17 @@ async function matchEnginePage(id){
   const game=(data.fixtures||[]).find(item=>item.id===id)
   if(!game){go('/app/schedule');return}
   const series=game.series||{}
-  if(['choice','draft_pending','draft','swap'].includes(series.phase))
+  if(['choice','draft_pending','draft','swap'].includes(series.phase)&&!(series.sets||game.result?.sets||[]).length)
     return go('/app/draft/'+id)
   const sets=series.sets||game.result?.sets||[]
-  const score=game.result?.score||series.score||[0,0]
+  const score=series.score||[0,0]
   const winner=game.result?.winner
   const isFinished=game.state==='finished'
   const isFailed=game.state==='failed'
-  const summary=isFinished?(winner===0?'승리':winner===1?'패배':'경기 종료'):
-    isFailed?'매치 엔진 실행 오류':
+  const summary=isFinished?'경기 기록 관전':
+    isFailed?'경기 진행 오류':
     series.phase==='feedback'?'세트 종료 · 감독 피드백 대기':
-    series.phase==='ready'?'매치 엔진 시뮬레이션 대기 또는 실행 중':
+    series.phase==='ready'?'경기 진행 중':
     '경기 진행 대기'
   const highlights=game.result?.highlights||
     sets.flatMap(item=>item.highlights||[])
@@ -1230,29 +1230,29 @@ async function matchEnginePage(id){
     '<div><small>ENGINE STATUS</small><h2>'+esc(summary)+'</h2>'+
     '<p>'+esc(game.competition||'정규 시즌')+' · '+esc(game.stage||'경기')+
     ' · BO'+game.best_of+' · '+game.season+'시즌 '+game.week+'주차</p></div>'+
-    '<div class="match-score"><small>현재 세트 스코어</small><strong>'+score[0]+' : '+score[1]+'</strong></div></section>'
+    '<div class="match-score"><small>BO'+game.best_of+'</small><strong>경기 관전</strong></div></section>'
   const feedback=series.phase==='feedback'?
     '<section class="panel"><h2>감독 세트 피드백</h2>'+
     '<p>다음 세트가 시작되기 전 피드백을 전달하세요.</p>'+
     '<div class="row"><input id="match-feedback-input" maxlength="300" placeholder="선수단에게 전달할 세트 피드백"/>'+
     '<button class="act" id="match-feedback-submit">전달</button></div></section>':''
-  const engineNote=!isFinished&&!isFailed?
-    '<section class="panel"><h2>경기 엔진 실시간 연결</h2>'+
-    '<p>매치 워커가 서버에서 경기를 처리합니다. 진행 상태 및 세트 결과를 약 2.5초마다 확인하여 화면에 자동 반영합니다.</p>'+
-    '<p class="muted-note">엔진 전체 경기를 실시간 영상으로 송출하는 기능은 아직 없습니다. 완료된 주요 장면은 아래 미니맵 하이라이트에서 재생할 수 있습니다.</p></section>':
-    isFailed?'<section class="panel"><h2>매치 엔진 오류</h2><p class="err">경기 처리가 실패했습니다. 관리자에게 워커 로그 확인을 요청하세요.</p></section>':''
+  const currentSet=Math.min(4,sets.length)
+  const preferred=0
+  const setButtons=Array.from({length:Math.max(1,sets.length+(series.phase==='ready'?1:0))},(_,i)=>'<button class="act" data-spectator-set="'+i+'">'+(i+1)+'세트 관전</button>').join('')
+  const engineNote='<section class="panel spectator-panel"><h2>경기 관전</h2><div class="spectator-set-tabs">'+setButtons+'</div><div id="engine-spectator"></div></section>'
   const html='<div class="page-heading"><div><p class="eyebrow">MATCH ENGINE · SIMULATION</p>'+
     '<h1>'+esc(current.name)+' vs '+esc(game.opponent)+'</h1>'+
     '<p>서버 매치 엔진 결과 · 전술 / 선수 능력 / 확정된 챔피언이 적용된 경기</p></div>'+
     '<a class="act" href="/app/schedule">경기 일정</a></div>'+status+engineNote+
-    feedback+(boxscores||'<section class="panel"><h2>세트 기록</h2><p>첫 세트 결과가 아직 없습니다.</p></section>')+
-    '<section class="panel"><h2>경기 하이라이트 · '+highlights.length+'개</h2>'+
+    feedback+'<details class="match-results" id="match-results"><summary>세트 결과 · 선수 기록 보기</summary>'+(boxscores||'<section class="panel"><h2>세트 기록</h2><p>첫 세트 결과가 아직 없습니다.</p></section>')+'</details>'+
+    '<details class="panel"><summary>경기 하이라이트</summary><h2>주요 장면 · '+highlights.length+'개</h2>'+
     (clips||'<p>엔진 하이라이트가 생성되면 여기서 볼 수 있습니다.</p>')+
-    '<div id="match-replay-viewer" class="match-replay-viewer" hidden></div></section>'
+    '<div id="match-replay-viewer" class="match-replay-viewer" hidden></div></details>'
   stopMatchReplay()
   shell(html,'/app/match/'+id)
   matchWatch={id,careerId:current.id,signature:matchStatusSignature(game),
     completed:isFinished||isFailed}
+  if(typeof mountEngineViewer==='function'){mountEngineViewer(id,preferred);document.querySelectorAll('[data-spectator-set]').forEach(b=>b.onclick=()=>mountEngineViewer(id,Number(b.dataset.spectatorSet)))}
   document.querySelectorAll('[data-match-highlight]').forEach(button=>button.onclick=()=>{
     playMatchHighlight(id,Number(button.dataset.matchHighlight))
   })
@@ -1778,7 +1778,7 @@ async function solo() {
 async function transfers() {
   const current = await requireCareer(); if (!current) return
   const [offers, activity,ai] = await Promise.all([api('/transfer-offers?id=' + current.id), api('/transfer-activity?id=' + current.id), api('/ai-transfer-decisions?league='+encodeURIComponent(current.club_profile?.league||'')).catch(()=>({decisions:[]}))])
-  shell(`<div class="panel"><h2>이적 제안</h2><input id="pid" placeholder="선수 id"/><input id="salary" value="0"/><input id="fee" value="0"/><button class="act" id="quote">제안</button>${offers.offers.map(item => `<div class="row">#${item.id} ${esc(item.state)} 연봉 ${money(item.annual_salary)} 이적료 ${money(item.fee)}<button class="act" data-offer="${item.id}" data-choice="accept">수락</button><button class="act" data-offer="${item.id}" data-choice="decline">거절</button><button class="act" data-offer="${item.id}" data-choice="cancel">취소</button></div>`).join('')}</div><div class="panel"><h2>AI 구단의 이적 판단</h2><p>예상 경기 기여도와 인지도·굿즈 순이익, 연봉 부담을 비교해 영입합니다.</p>${(ai.decisions||[]).slice(0,20).map(d=>'<div class="row"><b>'+esc(d.club)+' · '+esc(d.player)+'</b><span>'+esc(d.decision==='signed-free-agent'?'FA 영입 확정':'영입 관심')+'</span><small>레이팅 '+d.rating+' · 인지도 '+d.fame+' · 굿즈 예상 순이익 '+money(d.merch_profit)+' · 연봉 '+money(d.salary)+'</small></div>').join('')||'<p>AI 구단의 이적 판단 기록이 아직 없습니다.</p>'}</div><div class="panel"><h2>이적 기록</h2>${activity.events.map(item => `<div class="row">${esc(item.buyer_name || '')} ${money(item.fee)}</div>`).join('')}</div>`, '/app/transfers')
+  shell(`<div class="panel"><h2>이적 제안</h2><input id="pid" placeholder="선수 id"/><input id="salary" value="0"/><input id="fee" value="0"/><button class="act" id="quote">제안</button>${offers.offers.map(item => `<div class="row">#${item.id} ${esc(item.state)} 연봉 ${money(item.annual_salary)} 이적료 ${money(item.fee)}<button class="act" data-offer="${item.id}" data-choice="accept">수락</button><button class="act" data-offer="${item.id}" data-choice="decline">거절</button><button class="act" data-offer="${item.id}" data-choice="cancel">취소</button></div>`).join('')}</div><div class="panel"><h2>AI 구단의 이적 판단</h2><p>예상 경기 기여도와 인지도·굿즈 순이익, 연봉 부담을 비교해 영입합니다.</p>${(ai.decisions||[]).slice(0,20).map(d=>'<div class="row"><b>'+esc(d.club)+' · '+esc(d.player)+'</b><span>'+esc(d.decision==='signed-free-agent'?'FA 영입 확정':d.decision==='signed-ai-transfer'?'이적 확정':'영입 관심')+'</span><small>레이팅 '+d.rating+' · 인지도 '+d.fame+' · 굿즈 예상 순이익 '+money(d.merch_profit)+' · 연봉 '+money(d.salary)+'</small></div>').join('')||'<p>AI 구단의 이적 판단 기록이 아직 없습니다.</p>'}</div><div class="panel"><h2>이적 기록</h2>${activity.events.map(item => `<div class="row market-receipt"><small>${item.season}시즌 ${item.week}주</small><a href="/app/player/${esc(item.person_id)}"><b>${esc(item.nickname||item.person_id)}</b></a><span>${esc(item.seller_name||'FA · 무소속')} → <b>${esc(item.buyer_name||'FA · 무소속')}</b></span><strong>${item.action==='free-agent'?'계약 만료 · FA': '이적 완료'}</strong><small>${item.fee==null?'이적료 미기록':item.fee===0?'자유계약':money(item.fee)}</small></div>`).join('')||'<p class="empty">완료된 이적이 없습니다. 접촉설과 협상 중인 제안은 완료 기록에 포함하지 않습니다.</p>'}</div>`, '/app/transfers')
   document.getElementById('quote').onclick = () => api('/transfer-offer', {id:current.id, person:document.getElementById('pid').value.trim(), annual_salary:Number(document.getElementById('salary').value), fee:Number(document.getElementById('fee').value), years:2, pitch:'development'}).then(() => draw()).catch(error => alert(error.message))
   document.querySelectorAll('[data-offer]').forEach(button => button.onclick = () => api('/transfer-response', {id:current.id, offer:Number(button.dataset.offer), choice:button.dataset.choice}).then(() => draw()).catch(error => alert(error.message)))
   await topbar()
@@ -1910,6 +1910,7 @@ async function community(postId) {
   await topbar()
 }
 async function draw() {
+  if(typeof stopEngineViewer==='function')stopEngineViewer()
   const path = location.pathname.slice(BASE.length) || "/"
   if (!token()) { login(); return }
   if (!Object.keys(media.colors).length) {

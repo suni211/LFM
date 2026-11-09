@@ -22,7 +22,10 @@
   <script>
     const script = document.createElement('script');
     script.src = root + '/static/app.js' + assetVersion;
-    document.body.append(script);
+    const spectator = document.createElement('script');
+    spectator.src = root + '/static/spectator.js' + assetVersion;
+    spectator.onload = () => document.body.append(script);
+    document.body.append(spectator);
   </script>
 </body>
 </html>

@@ -18,6 +18,11 @@ def init(db):
 def load():
     data=json.loads(PEOPLE.read_text(encoding='utf-8'))
     people=data['people']
+    portrait_file=PEOPLE.parent/'portrait-index.json'
+    portrait_index=json.loads(portrait_file.read_text(encoding='utf-8')) if portrait_file.exists() else {}
+    for person in people:
+        if person.get('real_person') and person.get('kind')=='player' and person['id'] in portrait_index:
+            person.update({k:v for k,v in portrait_index[person['id']].items() if k.startswith('photo')})
     # Identity and profession corrections are shared by every feature,
     # not just the club profile: imported staff never become players.
     staff_groups=defaultdict(list)

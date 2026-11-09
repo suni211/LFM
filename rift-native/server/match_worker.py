@@ -13,6 +13,7 @@ import match_people
 from series import auto_draft,Draft
 from worker_lock import exclusive
 from highlight_recording import Recorder
+from spectator_recording import SpectatorRecorder
 from server import connect, init
 
 def team_styles(db,fixture,blue):
@@ -110,12 +111,17 @@ def main():
                     match = Match(seed,draft.roster,styles,plans) if draft else Match(seed,styles=styles,plans=plans)
                     with closing(connect()) as db:
                         match_people.apply(db,fixture,match,draft.blue if draft else 0)
+                    spectator=SpectatorRecorder(DB.parent/'spectator',fixture,len(state['sets']) if state else 0,draft.blue if draft else 0)
                     recorder = Recorder(clips)
                     recorder.record(match)
+                    spectator.record(match)
                     while match.winner is None:
                         match.step()
                         recorder.record(match)
+                        spectator.record(match)
+                    spectator.record(match,final=True)
                     result = match.result()
+                    result['replay_set']=len(state['sets']) if state else 0
                     offset = sum(len(game['highlights']) for game in state['sets']) if state else 0
                     result['highlights'] = recorder.finish(match,DB.parent / 'highlights',fixture,offset)
                     with closing(connect()) as db:

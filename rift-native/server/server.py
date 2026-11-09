@@ -182,18 +182,31 @@ class Handler(BaseHTTPRequestHandler):
                 fingerprints={filename:hashlib.sha256((web/filename).read_bytes()).hexdigest()[:16]
                     if (web/filename).is_file() else None
                     for filename in ('index.html','app.js','app.css')}
-                return self.reply(200,{'status':'ok','revision':'fm-unified-awards-nationality-20261108',
-                    'web_sha256':fingerprints,'capabilities':['clubs','dashboard','search','community','draft-swap','management','fearless','response-timeout-180','manual-draft','fountain-defense','backdoor-protection','six-slot-builds','competitions','account-errors','tactics','phase-orders','personal-training','champion-pool','solo-ladder','prospect-debut','operator-desk','stove-leaks','easter-academy','client-updates','web'],'champion_abilities':'partial'})
+                return self.reply(200,{'status':'ok','revision':'fm-draft-hover-watch-20261109',
+                    'web_sha256':fingerprints,'capabilities':['clubs','dashboard','search','community','draft-swap','management','fearless','response-timeout-180','manual-draft','fountain-defense','backdoor-protection','six-slot-builds','competitions','account-errors','tactics','phase-orders','personal-training','champion-pool','solo-ladder','prospect-debut','operator-desk','stove-leaks','easter-academy','client-updates','web','engine-spectator','stove-receipts'],'champion_abilities':'partial'})
             if urlsplit(self.path).path.startswith('/updates/'):
                 import updates
                 return updates.serve(self, urlsplit(self.path).path)
             if not uid: return self.reply(401,{'error':'unauthorized'})
             url = urlsplit(self.path)
+            if url.path=='/draft-meta':
+                import draft_meta
+                q=parse_qs(url.query)
+                return self.reply(200,draft_meta.report(db,q.get('league',[''])[0],int(q.get('season',[online_world.clock(db)['season']])[0])))
+            if url.path=='/watch-matches':
+                import match_watch
+                q=parse_qs(url.query)
+                result=match_watch.listing(db,int(q['fixture'][0]) if 'fixture' in q else None,int(q.get('page',['0'])[0]),q.get('league',[''])[0])
+                if 'fixture' in q and not result['fixtures']:return self.reply(404,{'error':'not found'})
+                return self.reply(200,result)
+            if url.path=='/operator/users':
+                if not online_world.operator(db,uid):return self.reply(403,{'error':'forbidden'})
+                return self.reply(200,{'users':__import__('operator_users').directory(db)})
             if url.path=='/operator/world':
                 if not online_world.operator(db,uid):return self.reply(403,{'error':'forbidden'})
                 world=online_world.clock(db)
                 games=[dict(zip(('id','season','week','team','opponent','state','competition','stage','best_of'),r)) for r in db.execute('SELECT f.id,f.season,f.week,c.name,f.opponent,f.state,f.competition,f.stage,f.best_of FROM fixtures f JOIN careers c ON c.id=f.career_id WHERE f.season=? ORDER BY f.week,f.id',(world['season'],))]
-                return self.reply(200,dict(world=world,clubs=clubs.directory(db),fixtures=games,accounts=db.execute('SELECT COUNT(*) FROM users').fetchone()[0],qualification=qualification.snapshot(db,world['season'])))
+                return self.reply(200,dict(world=world,clubs=clubs.directory(db),fixtures=games,accounts=db.execute('SELECT COUNT(*) FROM users').fetchone()[0],qualification=qualification.snapshot(db,world['season']),users=__import__('operator_users').directory(db)))
             if url.path=='/honors':
                 query=parse_qs(url.query)
                 season=int(query['season'][0]) if 'season' in query else None
@@ -461,6 +474,34 @@ class Handler(BaseHTTPRequestHandler):
                     return self.reply(404,{'error':'not found'})
                 except ValueError:
                     return self.reply(400,{'error':'invalid people request'})
+            if url.path in ('/spectator','/spectator-chunk'):
+                import spectator_recording
+                query=parse_qs(url.query)
+                try:
+                    fixture=int(query['id'][0]);set_index=int(query.get('set',['0'])[0])
+                    if not 1<=fixture<=2**63-1 or not 0<=set_index<5:raise ValueError()
+                    row=db.execute('SELECT career_id,state FROM fixtures WHERE id=?',(fixture,)).fetchone()
+                    if not row or row[1] not in ('queued','finished'):
+                        return self.reply(404,{'error':'not found'})
+                    directory=DB.parent/'spectator'
+                    manifest=spectator_recording.read_manifest(directory,fixture,set_index)
+                    if manifest and manifest.get('complete') and not manifest.get('highlights'):
+                        saved=db.execute('SELECT f.result,s.state FROM fixtures f LEFT JOIN match_series s ON s.fixture_id=f.id WHERE f.id=?',(fixture,)).fetchone()
+                        snapshot=json.loads(saved[0] or saved[1] or '{}')
+                        sets=snapshot.get('sets',[])
+                        if set_index<len(sets):manifest['highlights']=[dict(start=c['start'],end=c['end']) for c in sets[set_index].get('highlights',[])]
+                    if url.path=='/spectator':
+                        return self.reply(200,manifest or dict(version=1,fixture=fixture,set=set_index,chunk_count=0,recorded_until=0,complete=False,available=False,units=[]))
+                    chunk=int(query['chunk'][0])
+                    if not manifest or not 0<=chunk<manifest['chunk_count']:return self.reply(404,{'error':'not found'})
+                except (KeyError,ValueError):return self.reply(400,{'error':'invalid spectator request'})
+                target=spectator_recording.paths(directory,fixture,set_index)/f'{chunk}.json.gz'
+                if not target.is_file():return self.reply(404,{'error':'not found'})
+                raw=target.read_bytes();self.send_response(200)
+                self.send_header('Content-Type','application/json; charset=utf-8')
+                self.send_header('Content-Encoding','gzip');self.send_header('Content-Length',str(len(raw)))
+                self.send_header('Cache-Control','private, no-store');self.end_headers();self.wfile.write(raw)
+                return
             if url.path == '/highlight':
                 query = parse_qs(url.query)
                 try:
@@ -472,8 +513,7 @@ class Handler(BaseHTTPRequestHandler):
                     return self.reply(400, {'error':'invalid highlight'})
                 row = db.execute("""SELECT f.result,s.state FROM fixtures f
                     LEFT JOIN match_series s ON s.fixture_id=f.id
-                    JOIN members m ON m.career_id=f.career_id
-                    WHERE f.id=? AND m.user_id=? AND f.state IN ('queued','finished')""",(fixture,uid)).fetchone()
+                    WHERE f.id=? AND f.state IN ('queued','finished')""",(fixture,)).fetchone()
                 if not row:
                     return self.reply(404, {'error':'not found'})
                 if row[0]:

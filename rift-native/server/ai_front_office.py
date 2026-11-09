@@ -144,8 +144,9 @@ def _choose(db,cid,season,week,market):
             can_sign=0
         else:
             now=(season-1)*150+week
-            signed=db.execute("""INSERT OR IGNORE INTO club_roster(
-                career_id,person_id,payload,assignment,role) VALUES(?,?,?,?,?)""",
+            signed=db.execute("""INSERT INTO club_roster(
+                career_id,person_id,payload,assignment,role) VALUES(?,?,?,?,?)
+                ON CONFLICT(career_id,person_id) DO UPDATE SET payload=excluded.payload,assignment=excluded.assignment,role=excluded.role WHERE club_roster.assignment='departed'""",
                 (cid,pid,json.dumps(dict(p,team=team,league=league),ensure_ascii=False),
                  'reserve',p['role'])).rowcount>0
             if signed:
@@ -160,8 +161,8 @@ def _choose(db,cid,season,week,market):
                     DO UPDATE SET career_id=excluded.career_id,club_key=NULL""",(pid,cid))
                 db.execute("""INSERT OR IGNORE INTO club_contracts
                     (career_id,person_id,annual_salary,end_turn,active)
-                    VALUES(?,?,?,?,1)""",(cid,pid,score['annual_salary'],now+149))
-                db.execute("""INSERT OR IGNORE INTO contract_signings VALUES(?,?,?)""",(cid,pid,now))
+                    VALUES(?,?,?,?,1) ON CONFLICT(career_id,person_id) DO UPDATE SET annual_salary=excluded.annual_salary,end_turn=excluded.end_turn,active=1""",(cid,pid,score['annual_salary'],now+149))
+                db.execute("""INSERT INTO contract_signings VALUES(?,?,?) ON CONFLICT(career_id,person_id) DO UPDATE SET start_turn=excluded.start_turn""",(cid,pid,now))
                 db.execute("""INSERT OR IGNORE INTO club_health(career_id,person_id)
                     VALUES(?,?)""",(cid,pid))
                 if fee:
@@ -181,6 +182,8 @@ def _choose(db,cid,season,week,market):
          score['player_rating'],score['reputation'],
          score['playing_benefit'],score['projected_net_value']))
     if signed:
+        import transfers
+        transfers.record_receipt(db,f'ai:{cid}:{season}:{week}:{pid}',p,source['seller'],cid,season,week,fee,source_name='FA · 무소속' if source['kind']=='free-agent' else p.get('team') or None)
         import club_messages
         club_messages.publish(db,cid,'ai-signed:'+pid+':'+str(season)+':'+str(week),
             season,week,'AI 구단 영입',team+'이 '+(p.get('nickname') or pid)+
@@ -188,7 +191,7 @@ def _choose(db,cid,season,week,market):
 
 def weekly(db,season,week):
     # Decision-making is a durable monthly event, not repeated per GET.
-    if week!=2 and week%4!=1:return
+    if week not in (1,2,3,4,5,6,7,8,9,10,145,146,147,148,149,150) and week%4!=1:return
     # Support legacy database snapshots and clock-only integration tests.
     required={'club_finances','club_contracts','person_ownership',
               'ai_transfer_decisions','recruitment_state','club_roster'}

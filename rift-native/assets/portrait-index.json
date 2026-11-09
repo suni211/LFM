@@ -1,0 +1,50 @@
+{
+  "3bb2866cb7b0f75e2fd6": {
+    "photo": "portraits/3bb2866cb7b0f75e2fd6.png",
+    "photo_source": "https://lolesports.com/",
+    "photo_original_url": "https://static.lolesports.com/players/1717746515444_patch.png",
+    "photo_player_id": "106368709696011395",
+    "photo_crop": "verified_face_only",
+    "photo_retrieved": "2026-11-09"
+  },
+  "c315257863c92e34f0af": {
+    "photo": "portraits/c315257863c92e34f0af.png",
+    "photo_source": "https://lolesports.com/",
+    "photo_original_url": "https://static.lolesports.com/players/1687500575896_BYGKeres.png",
+    "photo_player_id": "104573210012169189",
+    "photo_crop": "verified_face_only",
+    "photo_retrieved": "2026-11-09"
+  },
+  "ce888517a01f22466383": {
+    "photo": "portraits/ce888517a01f22466383.png",
+    "photo_source": "https://lolesports.com/",
+    "photo_original_url": "https://static.lolesports.com/players/1705751335855_BYG1116.png",
+    "photo_player_id": "109642949457528702",
+    "photo_crop": "verified_face_only",
+    "photo_retrieved": "2026-11-09"
+  },
+  "055ad1ac8dae3a621aa3": {
+    "photo": "portraits/055ad1ac8dae3a621aa3.png",
+    "photo_source": "https://lolesports.com/",
+    "photo_original_url": "https://static.lolesports.com/players/1705751150159_HPSPrage.png",
+    "photo_player_id": "110548011912550056",
+    "photo_crop": "verified_face_only",
+    "photo_retrieved": "2026-11-09"
+  },
+  "894e1699b08441ffd3ae": {
+    "photo": "portraits/894e1699b08441ffd3ae.png",
+    "photo_source": "https://lolesports.com/",
+    "photo_original_url": "https://static.lolesports.com/players/1775222121391_Steller.png",
+    "photo_player_id": "113662600266438786",
+    "photo_crop": "verified_face_only",
+    "photo_retrieved": "2026-11-09"
+  },
+  "ce863e87537f7b899b43": {
+    "photo": "portraits/ce863e87537f7b899b43.png",
+    "photo_source": "https://lolesports.com/",
+    "photo_original_url": "https://static.lolesports.com/players/1775222131362_NPC.png",
+    "photo_player_id": "115254322087856493",
+    "photo_crop": "verified_face_only",
+    "photo_retrieved": "2026-11-09"
+  }
+}

@@ -236,7 +236,9 @@ def advance(db,career,season,week):
         if not contract['active']: continue
         pid=contract['person']['id']; name=catalog.display(contract['person'])
         if contract['end_turn']<now:
-            db.execute('UPDATE club_contracts SET active=0 WHERE career_id=? AND person_id=?',(career,pid))
+            import player_departures,transfers
+            player_departures.release(db,career,pid)
+            transfers.record_receipt(db,'expired:'+str(career)+':'+pid+':'+str(contract['end_turn']),contract['person'],career,None,season,week,action='free-agent')
             club_messages.publish(db,career,'expired:'+pid+':'+str(now),season,week,'계약 만료',name+'의 계약이 만료됐습니다. 재계약 또는 선수단 교체가 필요합니다.')
             continue
         salary=contract['annual_salary'];payroll+=(salary*now)//150-(salary*(now-1))//150

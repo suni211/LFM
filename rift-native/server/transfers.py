@@ -8,6 +8,7 @@ import club_messages
 import staffing
 
 def init(db):
+    db.execute('''CREATE TABLE IF NOT EXISTS market_receipts(event_key TEXT PRIMARY KEY,person_id TEXT NOT NULL,nickname TEXT NOT NULL,from_club TEXT NOT NULL,to_club TEXT NOT NULL,season INTEGER NOT NULL,week INTEGER NOT NULL,fee INTEGER NOT NULL,kind TEXT NOT NULL,action TEXT NOT NULL,offer_id INTEGER)''')
     db.executescript('''CREATE TABLE IF NOT EXISTS person_ownership(
         person_id TEXT PRIMARY KEY,career_id INTEGER REFERENCES careers(id),club_key TEXT);
         CREATE TABLE IF NOT EXISTS transfer_offers(
@@ -162,15 +163,44 @@ def respond(db,user,career,offer_id,choice,counter_fee=None):
     db.execute("UPDATE transfer_offers SET state='completed',annual_salary=?,fee=? WHERE id=?",(salary,fee,offer_id))
     db.execute('INSERT INTO transfer_events(offer_id,buyer,seller,person_id,fee,season,week,kind) VALUES(?,?,?,?,?,?,?,?)',
                (offer_id,buyer,seller,pid,fee,(now-1)//150+1,(now-1)%150+1,person['kind']))
+    record_receipt(db,'offer:'+str(offer_id),person,seller,buyer,(now-1)//150+1,(now-1)%150+1,fee,offer_id=offer_id)
     db.execute('''INSERT INTO agent_relations VALUES(?,?,55) ON CONFLICT(career_id,person_id) DO UPDATE SET trust=MIN(100,trust+5)''',(buyer,pid))
     import fan_community
     fan_community.transfer(db,buyer,offer_id,person)
     rumors.step(db,buyer,offer_id,'accept',person)
     club_messages.publish(db,buyer,'signed:'+str(offer_id),(now-1)//150+1,(now-1)%150+1,'영입 완료',catalog.display(person)+' 영입과 게임용 계약이 확정됐습니다. 선수단 배치에서 선발·후보·유소년을 지정하세요.')
 
+def record_receipt(db,key,person,seller,buyer,season,week,fee=0,action='transfer',offer_id=None,source_name=None):
+    def name(cid):
+        row=db.execute('SELECT name FROM careers WHERE id=?',(cid,)).fetchone() if cid else None
+        return row[0] if row else ''
+    from_name=source_name if source_name is not None else name(seller) or (person.get('team') if seller is None and action!='free-agent' else '') or 'FA · 무소속'
+    to_name=name(buyer) or 'FA · 무소속'
+    db.execute('INSERT OR IGNORE INTO market_receipts VALUES(?,?,?,?,?,?,?,?,?,?,?)',
+        (key,person['id'],person.get('nickname_ko') or person.get('nickname') or catalog.display(person),from_name,to_name,season,week,fee,person.get('kind','player'),action,offer_id))
+
 def activity(db,kind=''):
     if kind not in ('','player','coach','staff'): raise ValueError('invalid transfer kind')
     rows=db.execute('''SELECT e.id,e.buyer,e.seller,e.person_id,e.fee,e.season,e.week,e.kind,b.name,s.name
         FROM transfer_events e JOIN careers b ON b.id=e.buyer LEFT JOIN careers s ON s.id=e.seller
         WHERE (?='' OR e.kind=? OR ?='staff' AND e.kind='coach') ORDER BY e.id DESC LIMIT 150''',(kind,kind,kind))
-    return [dict(zip(('id','buyer','seller','person_id','fee','season','week','kind','buyer_name','seller_name'),row)) for row in rows]
+    original=[dict(zip(('id','buyer','seller','person_id','fee','season','week','kind','buyer_name','seller_name'),row)) for row in rows]
+    known={p['id']:p for p in catalog.load()['people']}
+    receipts=[dict(zip(('key','person_id','nickname','seller_name','buyer_name','season','week','fee','kind','action','offer_id'),r)) for r in db.execute("SELECT * FROM market_receipts WHERE (?='' OR kind=? OR ?='staff' AND kind='coach') ORDER BY season DESC,week DESC,rowid DESC LIMIT 150",(kind,kind,kind))]
+    recorded={r['offer_id'] for r in receipts if r['offer_id'] is not None}
+    # Preserve legacy settlements without presenting negotiation rumors as transfers.
+    for item in original:
+        offer=db.execute('SELECT offer_id FROM transfer_events WHERE id=?',(item['id'],)).fetchone()[0]
+        if offer in recorded:continue
+        p=known.get(item['person_id'],{})
+        item.update(nickname=p.get('nickname_ko') or p.get('nickname') or item['person_id'],action='transfer',seller_name=item.get('seller_name') or '이전 소속 미기록')
+        receipts.append(item)
+    # Previously completed AI signings are real decisions, not rumor generation.
+    if db.execute("SELECT 1 FROM sqlite_master WHERE name='ai_transfer_decisions'").fetchone():
+        keys={r.get('key') for r in receipts}
+        for cid,season,week,pid,nick,decision in db.execute("SELECT career_id,season,week,player_id,player_name,decision FROM ai_transfer_decisions WHERE decision IN ('signed-free-agent','signed-ai-transfer') ORDER BY season DESC,week DESC LIMIT 150"):
+            key=f'ai:{cid}:{season}:{week}:{pid}'
+            if key in keys:continue
+            name=db.execute('SELECT name FROM careers WHERE id=?',(cid,)).fetchone()
+            receipts.append(dict(key=key,person_id=pid,nickname=known.get(pid,{}).get('nickname_ko') or nick,seller_name='FA · 무소속' if decision=='signed-free-agent' else '이전 소속 미기록',buyer_name=name[0] if name else '구단',season=season,week=week,fee=None,kind='player',action='transfer'))
+    return sorted(receipts,key=lambda r:(-r['season'],-r['week'],str(r.get('key',r.get('id','')))))[:150]

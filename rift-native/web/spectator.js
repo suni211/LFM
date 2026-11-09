@@ -98,12 +98,14 @@ document.addEventListener('engine-set-viewed',event=>{
   button.onclick=async()=>{
     button.disabled=true
     try{
-      const current=await requireCareer();if(!current)return
-      const response=await api('/fixtures?id='+current.id);const game=response.fixtures.find(g=>g.id===fixture)
+      const watching=/\/app\/watch\//.test(location.pathname)
+      const current=watching?null:await requireCareer();if(!watching&&!current)return
+      const response=await api(watching?'/watch-matches?fixture='+fixture:'/fixtures?id='+current.id);const game=response.fixtures.find(g=>g.id===fixture)
       if(!game)return
       const sets=game.series?.sets||game.result?.sets||[]
       if(sets.length>set+1||game.series?.phase==='ready'&&sets.length===set+1){await mountEngineViewer(fixture,set+1);return}
       if(game.state==='finished'){document.getElementById('match-results').open=true;button.textContent='경기 종료 · 기록 펼침';return}
+      if(watching){button.textContent='다음 세트 하이라이트 대기';return}
       if(['choice','draft','draft_pending','swap'].includes(game.series?.phase)){go('/app/draft/'+fixture);return}
       if(game.series?.phase==='feedback'){const note=document.querySelector('#match-feedback-input');if(note)note.focus();button.textContent='세트 피드백 대기';return}
       button.textContent='다음 세트 준비 중'
@@ -111,4 +113,3 @@ document.addEventListener('engine-set-viewed',event=>{
   }
   toolbar.append(button)
 })
-

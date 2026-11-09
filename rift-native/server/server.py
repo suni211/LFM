@@ -182,13 +182,23 @@ class Handler(BaseHTTPRequestHandler):
                 fingerprints={filename:hashlib.sha256((web/filename).read_bytes()).hexdigest()[:16]
                     if (web/filename).is_file() else None
                     for filename in ('index.html','app.js','app.css')}
-                return self.reply(200,{'status':'ok','revision':'fm-highlights-user-teams-20261109',
+                return self.reply(200,{'status':'ok','revision':'fm-draft-hover-watch-20261109',
                     'web_sha256':fingerprints,'capabilities':['clubs','dashboard','search','community','draft-swap','management','fearless','response-timeout-180','manual-draft','fountain-defense','backdoor-protection','six-slot-builds','competitions','account-errors','tactics','phase-orders','personal-training','champion-pool','solo-ladder','prospect-debut','operator-desk','stove-leaks','easter-academy','client-updates','web','engine-spectator','stove-receipts'],'champion_abilities':'partial'})
             if urlsplit(self.path).path.startswith('/updates/'):
                 import updates
                 return updates.serve(self, urlsplit(self.path).path)
             if not uid: return self.reply(401,{'error':'unauthorized'})
             url = urlsplit(self.path)
+            if url.path=='/draft-meta':
+                import draft_meta
+                q=parse_qs(url.query)
+                return self.reply(200,draft_meta.report(db,q.get('league',[''])[0],int(q.get('season',[online_world.clock(db)['season']])[0])))
+            if url.path=='/watch-matches':
+                import match_watch
+                q=parse_qs(url.query)
+                result=match_watch.listing(db,int(q['fixture'][0]) if 'fixture' in q else None,int(q.get('page',['0'])[0]),q.get('league',[''])[0])
+                if 'fixture' in q and not result['fixtures']:return self.reply(404,{'error':'not found'})
+                return self.reply(200,result)
             if url.path=='/operator/users':
                 if not online_world.operator(db,uid):return self.reply(403,{'error':'forbidden'})
                 return self.reply(200,{'users':__import__('operator_users').directory(db)})
@@ -471,7 +481,7 @@ class Handler(BaseHTTPRequestHandler):
                     fixture=int(query['id'][0]);set_index=int(query.get('set',['0'])[0])
                     if not 1<=fixture<=2**63-1 or not 0<=set_index<5:raise ValueError()
                     row=db.execute('SELECT career_id,state FROM fixtures WHERE id=?',(fixture,)).fetchone()
-                    if not row or not (news.member(db,uid,row[0]) or online_world.operator(db,uid)):
+                    if not row or row[1] not in ('queued','finished'):
                         return self.reply(404,{'error':'not found'})
                     directory=DB.parent/'spectator'
                     manifest=spectator_recording.read_manifest(directory,fixture,set_index)
@@ -503,8 +513,7 @@ class Handler(BaseHTTPRequestHandler):
                     return self.reply(400, {'error':'invalid highlight'})
                 row = db.execute("""SELECT f.result,s.state FROM fixtures f
                     LEFT JOIN match_series s ON s.fixture_id=f.id
-                    JOIN members m ON m.career_id=f.career_id
-                    WHERE f.id=? AND m.user_id=? AND f.state IN ('queued','finished')""",(fixture,uid)).fetchone()
+                    WHERE f.id=? AND f.state IN ('queued','finished')""",(fixture,)).fetchone()
                 if not row:
                     return self.reply(404, {'error':'not found'})
                 if row[0]:
